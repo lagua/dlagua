@@ -2,11 +2,11 @@ dojo.provide("dlagua.w.MenuBar");
 dojo.require("dlagua.c.Subscribable");
 dojo.require("dijit.MenuBar");
 dojo.require("dlagua.w.MenuBarItem");
-dojo.declare("dlagua.w.MenuBar",[dlagua.c.Subscribable,dijit.MenuBar],{
+dojo.declare("dlagua.w.MenuBar",[dijit.MenuBar,dlagua.c.Subscribable],{
 	store: null,
 	selected:null,
 	locale:"",
-	rootType:"",
+	rootType:"content",
 	currentId:"",
 	maxDepth:2,
 	loading:false,

@@ -1,7 +1,7 @@
 dojo.provide("dlagua.w.App");
-
+dojo.require("dlagua.c.Subscribable");
 dojo.require("dijit.layout.BorderContainer");
-dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer], {
+dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable], {
 	gutters:false,
 	currentItem:null,
 	state:"initial",
@@ -11,8 +11,9 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer], {
 	servicetype:"",
 	useLocale:true,
 	depth:0,
+	meta:{},
+	replaced:[],
 	fromHash:false,
-	_subscribes:[],
 	infer:function(path,servicetype,depth,fromHash,truncated){
 		var d = new dojo.Deferred();
 		var inferred = {};
@@ -52,7 +53,6 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer], {
 		if(this.useLocale) locale = restar.shift();
 		path = restar.join("/");
 		var item = {
-			domain:this.meta.domain.id,
 			state:state,
 			locale:locale,
 			path:path

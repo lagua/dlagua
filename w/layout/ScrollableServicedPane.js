@@ -20,7 +20,7 @@ dojo.require("dojo.store.Memory");
 dojo.require("dojo.store.Cache");
 dojo.require("dlagua.c.rpc.FeedReader");
 
-dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dlagua.c.Subscribable,dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin],{
+dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.c.Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,

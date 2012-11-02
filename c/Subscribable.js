@@ -1,4 +1,4 @@
-define("dlagua/c/Subscribable", ["dojo", "dojo/Stateful"], function(dojo) {
+define("dlagua/c/Subscribable", ["dojo", "dojo/Stateful", "dlagua/c/subscribe"], function(dojo) {
 
 dojo.declare("dlagua.c.Subscribable", [dojo.Stateful], {
 	_subscribes:null, // subscription to update the id
@@ -17,8 +17,8 @@ dojo.declare("dlagua.c.Subscribable", [dojo.Stateful], {
 	},
 	subscribe: function(
 			/*String*/ topic,
-			/*String|Function*/ method){
-		var handle = dojo.subscribe(topic, this, method);
+			/*String*/ params){
+		var handle = dlagua.c.subscribe(topic, this, params);
 		if(!this._subscribes) this._subscribes = [];
 		// return handles for Any widget that may need them
 		this._subscribes.push(handle);
