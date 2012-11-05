@@ -1,7 +1,16 @@
-dojo.provide("dlagua.w.App");
-dojo.require("dlagua.c.Subscribable");
-dojo.require("dijit.layout.BorderContainer");
-dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable], {
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/Deferred",
+	"dojo/Stateful",
+	"dojo/topic",
+	"dojo/hash",
+	"dijit/layout/BorderContainer",
+	"dlagua/c/Subscribable"
+],function(declare,lang,array,Deferred,Stateful,topic,dhash,BorderContainer,Subscribable){
+
+return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	gutters:false,
 	currentItem:null,
 	state:"initial",
@@ -15,7 +24,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	replaced:[],
 	fromHash:false,
 	infer:function(path,servicetype,depth,fromHash,truncated){
-		var d = new dojo.Deferred();
+		var d = new Deferred();
 		var inferred = {};
 		inferred.__view = "";
 		if(!this.localechanged && ((this.servicetype=="persvr" && fromHash) || servicetype=="persvr")) {
@@ -35,7 +44,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				}
 			}
 		}
-		this.meta.inferred = dojo.mixin(this.meta.inferred,inferred);
+		this.meta.inferred = lang.mixin(this.meta.inferred,inferred);
 		d.callback(true);
 		return d;
 	},
@@ -65,12 +74,12 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			for(var i=0;i<this.i18n.length;i++) {
 				i18n.locale = this.i18n[i].locale;
 				if(this.i18n[i].component==node.data.id) {
-					if(this.i18n[i].properties) i18n = dojo.mixin(i18n,this.i18n[i].properties);
+					if(this.i18n[i].properties) i18n = lang.mixin(i18n,this.i18n[i].properties);
 					break;
 				}
 			}
 		}
-		return dojo.mixin(this.meta,{i18n:i18n});
+		return lang.mixin(this.meta,{i18n:i18n});
 	},
 	replaceInferred:function(){
 		var k,v;
@@ -82,8 +91,8 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				if(node.dojoo) {
 					for(k in this.replaced["inferred"][id]) {
 						v = this.replaced["inferred"][id][k];
-						if(dojo.isString(v)) {
-							var newv = dojo.replace(v,meta).replace("undefined","");
+						if(lang.isString(v)) {
+							var newv = lang.replace(v,meta).replace("undefined","");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -94,7 +103,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				//console.log("reset inferred: ",id,k,v);
 				for(k in this.replaced["inferred"][id]) {
 					v = this.replaced["inferred"][id][k];
-					if(dojo.isString(v)) node.data[k] = v;
+					if(lang.isString(v)) node.data[k] = v;
 				}
 			}
 		}
@@ -110,8 +119,8 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				if(node.dojoo) {
 					for(k in this.replaced["i18n"][id]) {
 						v = this.replaced["i18n"][id][k];
-						if(dojo.isString(v)) {
-							var newv = dojo.replace(v,meta).replace("undefined","");
+						if(lang.isString(v)) {
+							var newv = lang.replace(v,meta).replace("undefined","");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -122,7 +131,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				//console.log("reset i18n: ",id,k,v);
 				for(k in this.replaced["i18n"][id]) {
 					v = this.replaced["i18n"][id][k];
-					if(dojo.isString(v)) node.data[k] = v;
+					if(lang.isString(v)) node.data[k] = v;
 				}
 				//delete this.replaced["i18n"][id];
 			}
@@ -130,14 +139,14 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		return reset;
 	},
 	onItem: function(){
-		var item = dojo.mixin({},this.currentItem);
+		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
 		var state = item.state || this.state;
 		var path = item.path;
 		var locale = item.locale;
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
-		var d = new dojo.Deferred();
+		var d = new Deferred();
 		if(!item.__fromHash) {
 			item.__fromHash = false;
 		}
@@ -151,7 +160,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		if(this.state!=state) {
 			console.log("changing state!")
 			this.set("state", state);
-			this.rebuild().then(dojo.hitch(this,function(){
+			this.rebuild().then(lang.hitch(this,function(){
 				this.resize();
 				// reset item to trigger stuff below
 				d = this.onItem();
@@ -169,7 +178,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		}
 		// only change from item, block the hash subscription
 		// let slip the next call
-		this.infer(path,servicetype,depth,fromHash,item.__truncated).then(dojo.hitch(this,function(){
+		this.infer(path,servicetype,depth,fromHash,item.__truncated).then(lang.hitch(this,function(){
 			var reset = [];
 			if(localechanged) {
 				if(this.meta.inferred) this.meta.inferred.locale = locale;
@@ -183,18 +192,18 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 				this.set("depth", depth);
 			}
 			reset = reset.concat(this.replaceInferred());
-			dojo.forEach(reset,function(r){
+			array.forEach(reset,function(r){
 				r.dojoo.set(r.key,r.value);
 			});
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
-				dojo.publish("/app/pagechange",[item]);
+				topic.publish("/app/pagechange",[item]);
 				var hash = (state!="initial" ? state+":"+locale+"/"+path : locale+"/"+path);
-				dojo.hash(hash);
+				dhash(hash);
 				this.set("path",path);
 				d.callback(true);
 			} else {
-				dojo.publish("/app/pagechange",[item]);
+				topic.publish("/app/pagechange",[item]);
 				d.callback(true);
 			}
 		}));
@@ -202,12 +211,12 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	},
 	startup: function(){
 		console.log("app startup called");
-		var hash = dojo.hash() || this.defaultHash;
+		var hash = dhash() || this.defaultHash;
 		if(hash) {
 			var item = this.hashToItem(hash);
 			this.infer(item.path);
 		}
-		dojo.subscribe("/dojo/hashchange", this, function(hash){
+		topic.subscribe("/dojo/hashchange", this, function(hash){
 			if(this.changeFromApp) {
 				this.changeFromApp = false;
 				return;
@@ -217,11 +226,11 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			this.set("currentItem",item);
 		});
 		this.watch("state",function(){
-			dojo.publish("/app/statechange",[this.state]);
+			topic.publish("/app/statechange",this.state);
 		});
 		this.watch("locale",function(){
 			this.localechanged = true;
-			dojo.publish("/app/localechange",[this.locale]);
+			topic.publish("/app/localechange",this.locale);
 		});
 		// use this to force locale for locale-unaware navigation or no nav
 		this.watch("newlocale",function(){
@@ -229,28 +238,30 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			this.onItem();
 		});
 		this.watch("path",function(){
-			dojo.publish("/app/pathchange",[this.path]);
+			topic.publish("/app/pathchange",this.path);
 		});
 		this.watch("servicetype",function(){
-			dojo.publish("/app/servicetypechange",[this.servicetype]);
+			topic.publish("/app/servicetypechange",this.servicetype);
 		});
 		this.connect(window,"onresize",function(){
 			this.resize();
 		});
 		// all navigation components:
-		this.watch("currentItem",dojo.hitch(this,function(){
+		this.watch("currentItem",lang.hitch(this,function(){
 			this.onItem()
 		}));
 		
 		this.inherited(arguments);
 		// set the has AFTER all children were started
-		var hash = dojo.hash();
+		var hash = dhash();
 		if(!hash) {
-			if(this.defaultHash) dojo.hash(this.defaultHash);
+			if(this.defaultHash) dhash(this.defaultHash);
 		} else {
 			setTimeout(function(){
-				dojo.publish("/dojo/hashchange",[hash]);
+				topic.publish("/dojo/hashchange",hash);
 			},100);
 		}
 	}
+});
+
 });
