@@ -9,6 +9,13 @@ dlagua is the workhorse of Lagua Web Solutions. It mirrors the structure of the 
 This means dojo is extended (not forked) to create production quality modules, all actually used in web apps designed by Lagua.
 Apps can be declared in HTML using the data-dojo-* attributes, and use persevere 2.0 by default as a persistent JSON storage layer. A typical app would be:
 
+	<script>
+		// as dlagua currently extends from dojo1.6, we need to require some additional packages (e.g. persvr/rql) through requirejs 
+		dojo.require("dojo.parser");
+		dlagua.c._base.addRequirejs().then(function(){
+			dojo.parser.parse();
+		});
+	</script>
     <div id="myApp" data-dojo-type="lagua.App">
     	<script type='dojo/method'>
 			this.subscribe("/components/menu"); // create a subscription to the menu

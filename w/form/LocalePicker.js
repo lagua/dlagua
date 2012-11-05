@@ -1,7 +1,7 @@
 dojo.provide("dlagua.w.form.LocalePicker");
 
 dojo.require("dijit.form.FilteringSelect");
-dojo.require("dlagua.w.form.Label");
+dojo.require("dforma.Label");
 dojo.require("dojo.data.ObjectStore");
 dojo.require("dlagua.c.store.JsonRest");
 dojo.require("dlagua.c.Subscribable");
@@ -44,8 +44,8 @@ dojo.declare("dlagua.w.form.LocalePicker", [dlagua.c.Subscribable, dijit.form.Fi
 				var query = args.query;
 				if(typeof query == "object"){ // can be null, but that is ignore by for-in
 					query = dojo.delegate(query); // don't modify the original
-					if(utils.rql) {
-						var qo = utils.rql.Parser.parseQuery(dojo.objectToQuery(query));
+					if(persvr.rql) {
+						var qo = persvr.rql.Parser.parseQuery(dojo.objectToQuery(query));
 						for(var i in qo){
 							if(typeof required == "string"){
 								qo[i] = RegExp("^" + dojo.regexp.escapeString(required, "*?").replace(/\*/g, '.*').replace(/\?/g, '.') + "$", args.queryOptions && args.queryOptions.ignoreCase ? "mi" : "m");

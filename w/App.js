@@ -207,7 +207,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			var item = this.hashToItem(hash);
 			this.infer(item.path);
 		}
-		this.subscribe("/dojo/hashchange", function(hash){
+		dojo.subscribe("/dojo/hashchange", this, function(hash){
 			if(this.changeFromApp) {
 				this.changeFromApp = false;
 				return;
@@ -248,7 +248,9 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		if(!hash) {
 			if(this.defaultHash) dojo.hash(this.defaultHash);
 		} else {
-			dojo.publish("/dojo/hashchange",[hash]);
+			setTimeout(function(){
+				dojo.publish("/dojo/hashchange",[hash]);
+			},100);
 		}
 	}
 });

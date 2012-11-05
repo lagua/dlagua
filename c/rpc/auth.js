@@ -11,7 +11,7 @@ dlagua.c.rpc.auth = function(url,params){
 	var d = new dojo.Deferred();
 	var sessionParam = params.sessionParam;
 	var json = true;
-	var phrase;
+	var token;
 	var authMsg;
 	var authDialog;
 	var form;
@@ -34,9 +34,8 @@ dlagua.c.rpc.auth = function(url,params){
 			},
 			error:function(res,io) {
 				// return here! first process auth then reload
-				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
-				var sp = io.xhr.getResponseHeader("phrase");
-				if(sp) phrase = sp;
+				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+res.message;
+				if(res.token) token = res.token;
 				d.errback(err);
 			}
 		});
@@ -46,7 +45,7 @@ dlagua.c.rpc.auth = function(url,params){
 		if(!form.validate()) return;
 		authMsg.innerHTML = "";
 		var data = form.get("value");
-		if(phrase!="") data.passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd, phrase, 256);
+		if(token!="") data.passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd, token, 256);
 		var req = {
 			"id":"call-id",
 			"method":"authenticate",

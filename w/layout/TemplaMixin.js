@@ -10,16 +10,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 	data:null,
 	mixeddata:null,
 	applyTemplate: function(tpl){
-		// we're sure we are started
-		this._started = true;
-		var d = new dojo.Deferred();
-		this._contentDeferred = new dojo.Deferred();
-		this._contentDeferred.then(dojo.hitch(this,function(sxs){
-			delete this._contentDeferred;
-			d.callback(sxs);
-		}));
 		this.set("content",this.mixeddata.render(tpl));
-		return d;
 	},
 	_load:function(){
 		var d = new dojo.Deferred();
@@ -28,7 +19,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 			return d;
 		}
 		this.resolveLinks().then(dojo.hitch(this,function(){
-			this._resolved = true;
+			this.__resolved = true;
 			this.mixeddata = this._mixinRecursive(dojo.clone(this.data),new dlagua.c.templa.Mixin());
 			d.callback(true);
 		}));
@@ -58,15 +49,15 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 		item.node = this;
 		return dojo.mixin(item,mu_mixin);
 	},
-	resolveLinks: function(){
+	resolveLinks: function(data,skipX){
 		var d = new dojo.Deferred();
-		if(this._resolved) {
-			d.callback();
+		if(data.__resolved) {
+			d.callback(data);
 			return d;
 		}
 		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 		if(!((parent && parent.schema) || this.schema)) {
-			d.callback();
+			d.callback(data);
 			return d;
 		}
 		var self = this;
@@ -80,7 +71,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 		var rplen = resolveProps.length;
 		dojo.forEach(schema.links, function(link){
 			if(rplen && dojo.indexOf(resolveProps,link.rel)===-1) return;
-			if(link.resolution=="lazy" && self.data[link.rel]) {
+			if(link.resolution=="lazy" && data[link.rel]) {
 				toResolve.push(link.rel);
 			}
 		});
@@ -92,50 +83,42 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 		}
 		var cnt = toResolve.length;
 		var cntx = toResolveX.length;
-		var total = cnt+cntx;
+		var total = cnt;
+		if(!skipX) total += cntx;
 		if(total>0) {
 			dojo.forEach(toResolve, function(rel){
-				var link = self.data[rel]["$ref"];
+				var link = data[rel]["$ref"];
 				// TODO make store xdomain capable
 				parent.store.query(link).then(function(res){
-					self.data[rel] = res;
+					data[rel] = res;
 					total--;
 					if(total==0) {
-						d.callback();
+						d.callback(data);
 					}
 				});
 			});
-			dojo.forEach(toResolveX, function(x){
-				var link = self.data[x];
-				dojo.xhrGet({
-					url:"/xbrota/rest/"+parent.locale+"/"+link,
-					load:function(res){
-						self.data[x] = res;
-						total--;
-						if(total==0) {
-							d.callback();
+			if(!skipX) {
+				dojo.forEach(toResolveX, function(x){
+					var link = data[x];
+					dojo.xhrGet({
+						url:"/xbrota/rest/"+parent.locale+"/"+link,
+						load:function(res){
+							data[x] = res;
+							total--;
+							if(total==0) {
+								d.callback(data);
+							}
 						}
-					}
-				})
-			});
+					})
+				});
+			}
 		} else {
-			d.callback();
+			d.callback(data);
 		}
 		return d;
 	},
 	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 		this._setContent(data || "");
-		setTimeout(dojo.hitch(this,function(){
-			if(!this.containerNode) {
-				if(this._contentDeferred) this._contentDeferred.callback(false);
-				return;
-			}
-			if(this._contentDeferred) {
-				var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
-				// otherwise, let the parent widget resolve _contentDeferred
-				if(!(parent && parent.hasDeferredContent)) this._contentDeferred.callback(true);
-			}
-		}),1);
 	},
 	_setContent: function(/*String|DocumentFragment*/ cont, /*Boolean*/ isFakeContent){
 		// summary:
@@ -163,7 +146,6 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 					}catch(e){
 						console.error('Fatal '+this.id+' could not change content due to '+e.message, e);
 					}
-					if(this._contentDeferred) this._contentDeferred.callback(false);
 				})/*,
 				_onError */
 			});

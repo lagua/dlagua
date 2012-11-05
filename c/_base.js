@@ -13,33 +13,43 @@ define("dlagua/c/_base",["dojo"],function(dojo){
 		    } else {
 		    	script.onload = callback;
 		    }
-		    document.body.appendChild(script);
+		    document.head.appendChild(script);
 		},
 		_addRQL: function(){
+			var d = new dojo.Deferred();
 			require(["rql/parser","rql/query","rql/js-array"],function(rqlParser,rqlQuery,rqlArray){
-				utils.rql = {
+				persvr.rql = {
 					Parser:rqlParser,
 					Query:rqlQuery,
 					Array:rqlArray
 				}
+				d.callback(true);
 			});
+			return d;
 		},
 		addRequirejs: function(){
+			var d = new dojo.Deferred();
 			// pre-dojo-1.7 stuff
 			var baseUrl = "/persvr/packages/";
 			if(!window.require) {
 				window.require = {
 					baseUrl: baseUrl
 				};
-				dlagua.c.addScript(baseUrl+"requirejs/require.js",function(){
-					if(!window.utils) window.utils = {};
-					if(!utils.rql) {
-						dlagua.c._addRQL();
+				dlagua.c._base.addScript(baseUrl+"requirejs/require.js",function(){
+					if(!window.persvr) window.persvr = {};
+					if(!window.persvr.rql) {
+						dlagua.c._base._addRQL().then(function(){
+							d.callback(true);
+						});
+					} else {
+						d.callback(true);
 					}
 				});
+			} else {
+				d.callback(true);
 			}
+			return d;
 		}
-
 	});
 	return dlagua.c._base;
 });

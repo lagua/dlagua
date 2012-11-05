@@ -3,9 +3,9 @@ dojo.require("dijit.form.DropDownButton");
 dojo.require("dijit.TooltipDialog");
 dojo.require("dijit.form.Select");
 dojo.require("dijit.form.CheckBox");
-dojo.require("dlagua.w.form.Group");
-dojo.require("dlagua.w.form.Label");
-dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
+dojo.require("dforma.Group");
+dojo.require("dforma.Label");
+dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 	baseClass:"dlaguaOptionDropDownButton",
 	options:null,
 	href:null,
@@ -27,7 +27,7 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 	_addOptions:function(options){
 		var self = this;
 		var widgetid = this.id;
-		this.contentgroup = new dlagua.w.form.Group({
+		this.contentgroup = new dforma.Group({
 			"class":"dlaguaOptionDropDownContent"
 		}).placeAt(this.dropDown.containerNode);
 		for(var k in options) {
@@ -36,13 +36,13 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 			switch(k) {
 			case "filters":
 				var filters = dojo.clone(ops);
-				this.filtergroup = new dlagua.w.form.Group({
+				this.filtergroup = new dforma.Group({
 					"class":"dlaguaOptionDropDownFilters"
 				});
 				this.contentgroup.addChild(this.filtergroup);
 				for(j in filters) {
 					var f = filters[j];
-					l = new dlagua.w.form.Label({
+					l = new dforma.Label({
 						label:f.label,
 						child:new dijit.form.CheckBox({
 							name:j,
@@ -58,7 +58,7 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 			break;
 			case "sorting":
 				var sorting = dojo.clone(ops);
-				this.sortgroup = new dlagua.w.form.Group({
+				this.sortgroup = new dforma.Group({
 					"class":"dlaguaOptionDropDownSorting"
 				});
 				this.contentgroup.addChild(this.sortgroup);
@@ -74,7 +74,7 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 					});
 				}
 				// TODO: localize
-				l = new dlagua.w.form.Label({
+				l = new dforma.Label({
 					label:"Sorteren:",
 					child:s
 				});
