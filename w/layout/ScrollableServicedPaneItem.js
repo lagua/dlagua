@@ -17,8 +17,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPaneItem", [dijit._Widget, dijit
 	},
 	startup:function(){
 		if(this._started) return;
+		this._started = true;
 		if(!this.data) {
-			this._started = true;
 			this.onLoad();
 			return;
 		}
@@ -34,15 +34,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPaneItem", [dijit._Widget, dijit
 	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 		this._setContent(data || "");
 		setTimeout(dojo.hitch(this,function(){
-			if(!this.containerNode) {
-				if(this._contentDeferred) this._contentDeferred.callback(false);
-				return;
-			}
+			if(!this.containerNode) return;
 			this.marginBox = dojo.marginBox(this.containerNode);
-			if(this._contentDeferred) {
-				var parent = (this.parent || this.getParent());
-				if(!(parent && parent.hasDeferredContent)) this._contentDeferred.callback(true);
-			}
 		}),1);
 	},
 	updateLayout:function() {
@@ -50,6 +43,5 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPaneItem", [dijit._Widget, dijit
 		this.marginBox = dojo.marginBox(this.containerNode);
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
-		if(this._contentDeferred) this._contentDeferred.callback(true);
 	}
 });

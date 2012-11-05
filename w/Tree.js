@@ -3,7 +3,7 @@ dojo.provide("dlagua.w.Tree");
 dojo.require("dlagua.c.Subscribable");
 dojo.require("dijit.Tree");
 
-dojo.declare("dlagua.w.Tree",[dlagua.c.Subscribable, dijit.Tree],{
+dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 	persist:false,
 	_connections:[],
 	_found:null,

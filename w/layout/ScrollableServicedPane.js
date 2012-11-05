@@ -102,18 +102,18 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.addWatch("reload",this.loadFromItem);
 		this.orifilter = this.filter;
 		this.addWatch("filters",function(){
-			if(!utils.rql) return;
+			if(!persvr.rql) return;
 			if(!this.orifilters) {
 				this.orifilters = this.filters;
 			} else {
 				this.orifilters = dojo.mixin(this.orifilters,this.filters);
 			}
 			this.filters = null;
-			var fa = new utils.rql.Query.Query();
+			var fa = new persvr.rql.Query.Query();
 			var keys = {};
 			for(var k in this.orifilters){
 				if(this.orifilters[k].checked) {
-					var fo = utils.rql.Parser.parseQuery(this.orifilters[k].filter);
+					var fo = persvr.rql.Parser.parseQuery(this.orifilters[k].filter);
 					fo.walk(function(name,terms){
 						var k = terms[0];
 						var v;
@@ -130,7 +130,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				}
 			}
 			if(this.orifilter) {
-				var oo = utils.rql.Parser.parseQuery(this.orifilter);
+				var oo = persvr.rql.Parser.parseQuery(this.orifilter);
 				oo.walk(function(name,terms){
 					var k = terms[0];
 					var v;
@@ -199,11 +199,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			dojo.style(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
 		}
-		var node = this.fixedFooter;
-		if(node.parentNode == this.domNode){ // local footer
-			this.isLocalFooter = true;
-			node.style.bottom = "0px";
-		}
 		this.init(params);
 		if(this.count>this.maxCount) this.count = this.maxCount;
 		// wait for any pub/sub loaders
@@ -232,7 +227,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	},
 	replaceChildTemplate: function(child,templateDir) {
 		if(!templateDir) templateDir = this.templateDir;
-		var template = this.getTemplate();
+		var template = this.getTemplate(templateDir);
 		if(this.xDomainResolver) {
 			var resolver = this.xDomainResolver;
 			var self = this;
@@ -549,12 +544,12 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 	},
 	createQuery:function(){
-		if(!utils.rql) return;
-		var qo = this.query ? utils.rql.Parser.parseQuery(this.query) : new utils.rql.Query.Query();
+		if(!persvr.rql) return;
+		var qo = this.query ? persvr.rql.Parser.parseQuery(this.query) : new persvr.rql.Query.Query();
 		if(this.filterByLocale) qo = qo.eq("locale",this.locale);
 		if(this.filter) {
 			// try to parse it first
-			var fo = utils.rql.Parser.parseQuery(this.filter);
+			var fo = persvr.rql.Parser.parseQuery(this.filter);
 			fo.walk(function(name,terms){
 				var k = terms[0];
 				var v;
@@ -639,7 +634,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		// has to wait a little for completion of hideAddressBar()
 		var c = 0;
 		var _this = this;
-		var h = dojo.position(this.domNode).h;
 		setTimeout(function(){
 			if(!_this || _this._beingDestroyed) {
 				return;
@@ -655,21 +649,24 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	getModel:function(){
 		return this.model || this.currentItem.model;
 	},
-	getTemplate:function(){
+	getTemplate:function(templateDir){
 		var xtemplate = "";
 		var item = this.currentItem;
 		if(!item) return;
+		if(!templateDir) templateDir = this.templateDir;
 		if(!this.childTemplate && item[this.templateProperty]) {
 			var tpath = item[this.templateProperty];
 			if(this.templateProperty=="path" && this.filterById) {
-				var par = tpath.split("/");
-				var i=0;
-				for(;i<par.length;i++){
-					if(par[i]==this.filterById) break;
+				var ar = tpath.split("/");
+				var i;
+				for(i=0;i<ar.length;i++){
+					if(ar[i]==this.filterById) {
+						break;
+					}
 				}
-				tpath = par.splice(0,i).join("/");
+				tpath = ar.splice(0,i).join("/");
 			}
-			xtemplate = (this.templateDir ? this.templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
+			xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
 		}
 		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	},
@@ -682,11 +679,10 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
 		});
 		this.listitems.push(listItem);
-		this.addChild(listItem,insertIndex);
 		this.connect(listItem,"onLoad",function(){
-			var self = this;
-			if(self._beingDestroyed) return;
+			if(this._beingDestroyed) return;
 			if(this.xDomainResolver) {
+				var self = this;
 				var resolver = this.xDomainResolver;
 				var content = resolver.params || {};
 				content[resolver.fileParamName] = dojo.moduleUrl(this.templateModule).path+"/"+this.template;
@@ -697,33 +693,22 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					load:function(res){
 						if(self._beingDestroyed) return;
 						var tpl = resolver.transformer(res);
-						self.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
-						listItem.applyTemplate(tpl).then(function(sxs){
-							if(sxs) {
-								dojo.fadeIn({node:listItem.containerNode}).play();
-								self.childrenReady++;
-								if(self.childrenReady == self.listitems.length) self.onReady();
-							}
-						});
-					}
-				});
-			} else {
-				var tpl = dojo.cache(this.templateModule,this.template);
-				// FIXME: not so nice check...
-				// BUT not all schema properties will be present in the template
-				// childrenReady might be troublesome...
-				this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
-				listItem.applyTemplate(tpl).then(function(sxs){
-					if(sxs) {
+						listItem.applyTemplate(tpl);
 						dojo.fadeIn({node:listItem.containerNode}).play();
 						self.childrenReady++;
 						if(self.childrenReady == self.listitems.length) self.onReady();
 					}
 				});
+			} else {
+				var tpl = dojo.cache(this.templateModule,this.template);
+				listItem.applyTemplate(tpl);
+				dojo.fadeIn({node:listItem.containerNode}).play();
+				this.childrenReady++;
+				if(this.childrenReady == this.listitems.length) this.onReady();
 			}
 			this.itemnodesmap[item[this.idProperty]] = listItem;
 		});
-		listItem.startup();
+		this.addChild(listItem,insertIndex);
 	},
 	_initContent: function(item) {
 		// setcontent = false will not set the content here
