@@ -1,6 +1,6 @@
-define("dlagua/c/rpc/XformRest", ["dojo", "dlagua/c/rpc/ExistRest"], function(dojo) {
+define("dlagua/c/rpc/XformRest", ["dojo", "dlagua/c/rpc/ExistRest"], function(dojo,ExistRest) {
 
-dojo.declare("dlagua.c.rpc.XformRest",[dlagua.c.rpc.ExistRest],{
+return dojo.declare("dlagua.c.rpc.XformRest",[ExistRest],{
 	ref:null,
 	loadItem: function(item,postfix,newItem) {
 		if(fluxProcessor && this.ref) {

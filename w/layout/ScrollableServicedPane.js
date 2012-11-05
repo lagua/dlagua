@@ -1,26 +1,46 @@
-dojo.provide("dlagua.w.layout.ScrollableServicedPane");
-
-dojo.require("dojo.io.script");
-dojo.require("dlagua.c.Subscribable");
-dojo.require("dijit.layout._LayoutWidget");
-dojo.require("dijit._Templated");
-dojo.require("dojox.mobile.parser");
-dojo.require("dojox.mobile");
-dojo.require("dlagua.x.mobile._ScrollableMixin");
-dojo.requireIf(!dojo.isWebKit, "dlagua.x.mobile.compat");
-dojo.requireIf(!dojo.isWebKit, "dojo.fx");
-dojo.requireIf(!dojo.isWebKit, "dojo.fx.easing");
-dojo.require("dijit.form.Button");
-dojo.require("dojox.timing._base");
-dojo.require("dojo.cache");
-dojo.require("dlagua.c.store.JsonRest");
-dojo.require("dojo.date.stamp");
-dojo.require("dlagua.w.layout.ScrollableServicedPaneItem");
-dojo.require("dojo.store.Memory");
-dojo.require("dojo.store.Cache");
-dojo.require("dlagua.c.rpc.FeedReader");
-
-dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.c.Subscribable],{
+//TODO:
+/* take apart ScrollablePane and _ServicedMixin
+ * make services require plugin RPCs
+ * move persvr to RPC
+ * make _MustacheTemplatableMixin -> move hasDeferredContent there?
+ * take out skip / autofire / timer and add param for plugin
+ * dynamic loading of modules:
+ * make JSON / ATOM / XML pluggable, require first
+ */
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/_base/event",
+	"dojo/_base/window",
+	"dojo/_base/fx",
+	"dojo/on",
+	"dojo/request",
+	"dojo/dom-geometry",
+	"dojo/dom-style",
+	"dojo/topic",
+	"dojo/aspect",
+	"dojo/Deferred",
+	"dijit/layout/_LayoutWidget",
+	"dijit/_Templated",
+	"dlagua/x/mobile/_ScrollableMixin",
+	"dijit/form/Button",
+	"dojox/timing",
+	"dojox/mobile/sniff",
+	"dlagua/c/store/JsonRest",
+	"dlagua/w/layout/ScrollableServicedPaneItem",
+	"dojo/store/Memory",
+	"dojo/store/Cache",
+	"dlagua/c/rpc/FeedReader",
+	"persvr/rql/query",
+	"persvr/rql/parser",
+	"dojo/text!lagua/w/layout/templates/ScrollableServicedPane.html",
+	"dojox/mobile/parser",
+	"dojox/mobile",
+	"dojox/mobile/compat"
+	"dlagua/c/Subscribable",
+],function(declare,lang,array,event,win,fx,on,request,domGeom,domStyle,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,Button,timing,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,rqlQuery,rqlParser,templateString){
+return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
@@ -77,94 +97,53 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	autoSkipInterval:300,
 	filterByLocale:true,
 	baseClass:"dlaguaScrollableServicedPane",
-	templateString: dojo.cache("dlagua.w.layout", "templates/ScrollableServicedPane.html"),
+	templateString:templateString,
 	useScrollBar:true,
 	startup: function(){
 		if(this._started){ return; }
-		this._timer = new dojox.timing.Timer(this.autoSkipInterval);
+		if(!has('touch')){
+			this.connect(this.containerNode, (!has('mozilla') ? "onmousewheel" : "DOMMouseScroll"), this.onScroll);
+		}
+		this._timer = new timing.Timer(this.autoSkipInterval);
 		var params={};
 		this.listitems = [];
 		this.itemnodesmap = {};
-		// servicetype+locale will be set by loader
-		this.addWatch("locale",this.forcedLoad);
-		this.addWatch("filter",function(){
-			console.log(this.id,"reloading from filter",this.filter)
-			this.orifilter = this.filter;
-			this.forcedLoad();
-		});
-		this.addWatch("filterById",this.forcedLoad);
-		this.addWatch("newData",function(){
-			dojo.forEach(this.newData,dojo.hitch(this,function(item,i,items){
-				this.addItem(item,i,items,"first");
-				this.currentId = item[this.idProperty];
-			}));
-		});
-		this.addWatch("reload",this.loadFromItem);
 		this.orifilter = this.filter;
-		this.addWatch("filters",function(){
-			if(!persvr.rql) return;
-			if(!this.orifilters) {
-				this.orifilters = this.filters;
-			} else {
-				this.orifilters = dojo.mixin(this.orifilters,this.filters);
-			}
-			this.filters = null;
-			var fa = new persvr.rql.Query.Query();
-			var keys = {};
-			for(var k in this.orifilters){
-				if(this.orifilters[k].checked) {
-					var fo = persvr.rql.Parser.parseQuery(this.orifilters[k].filter);
-					fo.walk(function(name,terms){
-						var k = terms[0];
-						var v;
-						if(terms.length>1) v = terms[1];
-						if(keys[k]) {
-							fa = fa.or();
-						}
-						if(v) {
-							fa = fa[name](k,v);
-						} else {
-							fa = fa[name](k);
-						}
-					});
-				}
-			}
-			if(this.orifilter) {
-				var oo = persvr.rql.Parser.parseQuery(this.orifilter);
-				oo.walk(function(name,terms){
-					var k = terms[0];
-					var v;
-					if(terms.length>1) v = terms[1];
-					if(keys[k]) {
-						fa = fa.or();
-					}
-					if(v) {
-						fa = fa[name](k,v);
-					} else {
-						fa = fa[name](k);
-					}
-				});
-			}
-			this.filter = fa.toString();
-			this.forcedLoad();
-		});
-		this.addWatch("sort",function(){
-			this.newsort = true;
-			this.forcedLoad();
-			this.newsort = false;
-		});
-		this.addWatch("childTemplate",function(){
-			this.replaceChildTemplate();
-		});
-		this.addWatch("currentId",this.selectItemByCurrentId);
-		this.addWatch("currentItem",this.loadFromItem);
+		// servicetype+locale will be set by loader
+		this.own(
+			this.watch("locale",this.forcedLoad),
+			this.watch("filter",function(){
+				console.log(this.id,"reloading from filter",this.filter)
+				this.orifilter = this.filter;
+				this.forcedLoad();
+			}),
+			this.watch("filterById",this.forcedLoad),
+			this.watch("newData",function(){
+				array.forEach(this.newData,lang.hitch(this,function(item,i,items){
+					this.addItem(item,i,items,"first");
+					this.currentId = item[this.idProperty];
+				}));
+			}),
+			this.watch("reload",this.loadFromItem),
+			this.watch("filters",this.onFilters),
+			this.watch("sort",function(){
+				this.newsort = true;
+				this.forcedLoad();
+				this.newsort = false;
+			}),
+			this.watch("childTemplate",function(){
+				this.replaceChildTemplate();
+			}),
+			this.watch("currentId",this.selectItemByCurrentId),
+			this.watch("currentItem",this.loadFromItem)
+		);
 		var self = this;
 		if(this.header) {
 			if(this.pageButtons) {
-				this.prevButton = new dijit.form.Button({
+				this.prevButton = new Button({
 					label:"Prev",
 					showLabel:false,
-					"class":"dlaguaScrollableServicedPanePrevButton",
+					"class":"laguaScrollableServicedPanePrevButton",
 					onMouseDown:function(){
 						self.autoFire(-1);
 					},
@@ -174,17 +153,17 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				});
 				this.fixedHeader.appendChild(this.prevButton.domNode);
 			}
-			params.fixedHeaderHeight = dojo.marginBox(this.fixedHeader).h;
+			params.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
 		} else {
-			dojo.style(this.fixedHeader,"display","none");
+			domStyle.set(this.fixedHeader,"display","none");
 			params.fixedHeaderHeight = 0;
 		}
 		if(this.footer) {
 			if(this.pageButtons) {
-				this.nextButton = new dijit.form.Button({
+				this.nextButton = new Button({
 					label:"Next",
 					showLabel:false,
-					"class":"dlaguaScrollableServicedPaneNextButton",
+					"class":"laguaScrollableServicedPaneNextButton",
 					onMouseDown:function(){
 						self.autoFire(1);
 					},
@@ -194,9 +173,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				});
 				this.fixedFooter.appendChild(this.nextButton.domNode);
 			}
-			params.fixedFooterHeight = dojo.marginBox(this.fixedFooter).h;
+			params.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
 		} else {
-			dojo.style(this.fixedFooter,"display","none");
+			domStyle.set(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
 		}
 		this.init(params);
@@ -210,6 +189,52 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			}
 		}
 		this.inherited(arguments);
+	},
+	onFilters:function(){
+		if(!this.orifilters) {
+			this.orifilters = this.filters;
+		} else {
+			this.orifilters = lang.mixin(this.orifilters,this.filters);
+		}
+		this.filters = null;
+		var fa = new rqlQuery.Query();
+		var keys = {};
+		for(var k in this.orifilters){
+			if(this.orifilters[k].checked) {
+				var fo = rqlParser.parseQuery(this.orifilters[k].filter);
+				fo.walk(function(name,terms){
+					var k = terms[0];
+					var v;
+					if(terms.length>1) v = terms[1];
+					if(keys[k]) {
+						fa = fa.or();
+					}
+					if(v) {
+						fa = fa[name](k,v);
+					} else {
+						fa = fa[name](k);
+					}
+				});
+			}
+		}
+		if(this.orifilter) {
+			var oo = rqlParser.parseQuery(this.orifilter);
+			oo.walk(function(name,terms){
+				var k = terms[0];
+				var v;
+				if(terms.length>1) v = terms[1];
+				if(keys[k]) {
+					fa = fa.or();
+				}
+				if(v) {
+					fa = fa[name](k,v);
+				} else {
+					fa = fa[name](k);
+				}
+			});
+		}
+		this.filter = fa.toString();
+		this.forcedLoad();
 	},
 	forcedLoad: function(){
 		this.reload = true;
@@ -225,35 +250,18 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.loadFromItem();
 	},
+	_fetchTpl: function(template) {
+		// TODO add xdomain fetch
+		var d = new Deferred();
+		require(["dojo/text!"+this.templateModule+"/"+template],function(tpl){
+			d.resolve(tpl);
+		});
+		return d;
+	},
 	replaceChildTemplate: function(child,templateDir) {
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
-		if(this.xDomainResolver) {
-			var resolver = this.xDomainResolver;
-			var self = this;
-			var content = resolver.params || {};
-			content[resolver.fileParamName] = dojo.moduleUrl(this.templateModule).path+"/"+template;
-			dojo.io.script.get({
-				url:resolver.path,
-				content:content,
-				callbackParamName:resolver.callbackParamName,
-				load:function(res){
-					var tpl = resolver.transformer(res);
-					// FIXME: not so nice check...
-					this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
-					if(child){
-						child.applyTemplate(tpl);
-					} else {
-						dojo.forEach(self.listitems,function(li){
-							li.applyTemplate(tpl);
-						});
-					}
-				}
-			});
-		} else {
-			var tpl = dojo.cache(this.templateModule,template);
-			// FIXME: not so nice check...
-			this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
+		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
 			if(child && child!="childTemplate"){
 				child.applyTemplate(tpl);
 			} else {
@@ -264,7 +272,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 	},
 	getSchema:function(){
-		var d = new dojo.Deferred;
+		var d = new Deferred;
 		// prevent getting schema again
 		if(this.schemata[this.store.schemaUri]) {
 			this.schemaUri = this.store.schemaUri;
@@ -274,12 +282,12 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				if(schema.properties[k].hrkey) this.hrProperty = k;
 			}
 			this.store.idProperty = this.idProperty;
-			d.callback(true);
+			d.resolve(true);
 			return d;
 		}
 		if(!this.schemaUri || this.schemaUri!=this.store.schemaUri) {
 			this.schemaUri = this.store.schemaUri;
-			this.store.getSchema(this.store.schemaUri,{useXDomain:(this.useXDomain)}).then(dojo.hitch(this,function(schema){
+			this.store.getSchema(this.store.schemaUri).then(lang.hitch(this,function(schema){
 				this.schema = schema;
 				this.schemata[this.schemaUri] = schema;
 				for(var k in schema.properties) {
@@ -287,10 +295,10 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					if(schema.properties[k].hrkey) this.hrProperty = k;
 				}
 				this.store.idProperty = this.idProperty;
-				d.callback(true);
+				d.resolve(true);
 			}));
 		} else {
-			d.callback(true);
+			d.resolve(true);
 		}
 		return d;
 	},
@@ -357,7 +365,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		//this.idProperty = this.hrProperty = "";
 		this.childrenReady = 0;
 		// make a shallow copy to compare next load
-		var item = dojo.mixin({},this.currentItem);
+		var item = lang.mixin({},this.currentItem);
 		// copy type if have one
 		if(item.type) this.servicetype = item.type;
 		this.oldItem = item;
@@ -376,13 +384,13 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				if(!this.newsort && item.sort) this.sort = item.sort;
 				if(item.filter) this.orifilter = this.filter = item.filter;
 				if(!this.store) {
-					this.store = new dlagua.c.store.JsonRest({
+					this.store = new JsonRest({
 						target:target,
 						schemaUri:schemaUri
 					});
 					if(this.stores) {
 						if(!this.stores[target]) {
-							this.stores[target] = new dojo.store.Cache(this.store, new dojo.store.Memory());
+							this.stores[target] = new Cache(this.store, new Memory());
 						}
 					}
 				} else {
@@ -410,11 +418,11 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	rebuild:function(item) {
 		this.currentService = item.service; 
 		this.destroyDescendants();
-		dojo.style(this.containerNode,{
+		domStyle.set(this.containerNode,{
 			top:0
 		});
-		var lh = dojo.connect(this,"onReady",this,function(){
-			dojo.disconnect(lh);
+		var lh = aspect.after(this,"onReady",function(){
+			lh.remove();
 			if(this.useScrollBar) {
 				this.showScrollBar();
 				this.scrollToInitPos();
@@ -425,30 +433,32 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
-			this.getSchema().then(dojo.hitch(this,function(){
-				var q = this.createQuery();
-				var start = this.start;
-				this.start += this.count;
-				var results = this.results = this.store.query(q,{
-					start:start,
-					count:this.count,
-					useXDomain:this.useXDomain
-				});
-				results.total.then(dojo.hitch(this,function(total){
-					this.total = total;
-					if(total===0 || isNaN(total)) this.onReady();
+			this._fetchTpl(this.templateModule,this.template).then(lang.hitch(this,function(tpl){
+				this.tpl = tpl;
+				this.getSchema().then(lang.hitch(this,function(){
+					var q = this.createQuery();
+					var start = this.start;
+					this.start += this.count;
+					var results = this.results = this.store.query(q,{
+						start:start,
+						count:this.count
+					});
+					results.total.then(lang.hitch(this,function(total){
+						this.total = total;
+						if(total===0 || isNaN(total)) this.onReady();
+					}));
+					results.forEach(lang.hitch(this,this.addItem));
 				}));
-				results.forEach(dojo.hitch(this,this.addItem));
 			}));
 		} else if(this.servicetype=="atom") {
-        	var fr = new dlagua.c.rpc.FeedReader();
-        	fr.read(item.service+"/"+item.path).then(dojo.hitch(this,function(items){
+        	var fr = new FeedReader();
+        	fr.read(item.service+"/"+item.path).then(lang.hitch(this,function(items){
         		var total = items.length;
         		this.total = total;
 				if(total===0 || isNaN(total)) {
 					this.onReady();
 				} else {
-					dojo.forEach(items,this.addItem,this);
+					array.forEach(items,this.addItem,this);
 				}
         	}));
 		} else {
@@ -463,7 +473,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	destroyRecursive: function(/*Boolean*/ preserveDom){
 		// summary:
 		//		Destroy the ContentPane and its contents
-		this.unwatchAll();
 		this.inherited(arguments);
 	},
 	skip:function(dir) {
@@ -471,14 +480,14 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.scrollToItem(nxt);
 	},
 	_stopFiring: function(){
-		dojo.disconnect(this.MOUSE_UP);
+		this.MOUSE_UP.remove();
 		this.MOUSE_UP = null;
 		this._timer.stop();
 		this._timer.onTick = function(){};
 	},
 	autoFire: function(dir) {
 		if(this.MOUSE_UP) return;
-		this.MOUSE_UP = dojo.connect(dojo.body(),"onmouseup",this,this._stopFiring);
+		this.MOUSE_UP = on(win.body(),"onmouseup",lang.hitch(this,this._stopFiring));
 		if(!this._timer.isRunning) {
 			var _me = this;
 			this._timer.onTick = function() {
@@ -522,7 +531,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.selectedItem = this.listitems[index];
 		console.log("selectedItem",this.selectedItem);
-		if(this.id) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
+		if(this.id) topic.publish("/components/"+this.id,this.listitems[index].data);
 
 		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
 			// try to get more stuff from the store...
@@ -534,28 +543,26 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			var q = this.createQuery();
 			var results = this.results = this.store.query(q,{
 				start:start,
-				count:count,
-				useXDomain:this.useXDomain
+				count:count
 			});
-			results.total.then(dojo.hitch(this,function(total){
+			results.total.then(lang.hitch(this,function(total){
 				this.total = total;
 			}));
-			results.forEach(dojo.hitch(this,this.addItem));
+			results.forEach(lang.hitch(this,this.addItem));
 		}
 	},
 	createQuery:function(){
-		if(!persvr.rql) return;
-		var qo = this.query ? persvr.rql.Parser.parseQuery(this.query) : new persvr.rql.Query.Query();
+		var qo = this.query ? rqlParser.parseQuery(this.query) : new rqlQuery.Query();
 		if(this.filterByLocale) qo = qo.eq("locale",this.locale);
 		if(this.filter) {
 			// try to parse it first
-			var fo = persvr.rql.Parser.parseQuery(this.filter);
+			var fo = rqlParser.parseQuery(this.filter);
 			fo.walk(function(name,terms){
 				var k = terms[0];
 				var v;
 				if(terms.length>1) v = terms[1];
 				if(v) {
-					if(dojo.isString(v)) v = v.replace("undefined","*");
+					if(typeof v == "string") v = v.replace("undefined","*");
 					qo = qo[name](k,v);
 				} else {
 					qo = qo[name](k);
@@ -598,53 +605,13 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		if(i>=len) i=0;
 		this.setSelectedItem(i);
 	},
-	onFlickAnimationEnd:function(e){
-		if(e && e.srcElement){
-			dojo.stopEvent(e);
-		}
-		this.stopAnimation();
+	onFlickAnimationEnd: function(e){
 		this.checkSelectedItem();
-		if(this._bounce){
-			var _this = this;
-			var bounce = _this._bounce;
-			setTimeout(function(){
-				_this.slideTo(bounce, 0.3, "ease-out");
-			}, 0);
-			_this._bounce = undefined;
-		}else{
-			this.hideScrollBar();
-			this.removeCover();
-			this.startTime = 0;
-		}
+		this.inherited(arguments);
 	},
-	layout:function(){
-		this.resizeView();
-	},
-	resizeView: function(e){
-		// moved from init() to support dynamically added fixed bars
-		if(this.footer) {
-			this.fixedFooterHeight = dojo.marginBox(this.fixedFooter).h;
-		}
-		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
-		if(this.header) {
-			this.fixedHeaderHeight = dojo.marginBox(this.fixedHeader).h;
-			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
-		}
-
-		// has to wait a little for completion of hideAddressBar()
-		var c = 0;
-		var _this = this;
-		setTimeout(function(){
-			if(!_this || _this._beingDestroyed) {
-				return;
-			}
-			if(_this.useScrollBar) {
-				_this.showScrollBar();
-				_this.scrollToInitPos();
-			} else {
-				_this.resetScrollBar();
-			}
-		}, 100);
+	resize: function(changeSize, resultSize) {
+		_LayoutWidget.prototype.resize.apply(this,arguments);
+		this.inherited(arguments);
 	},
 	getModel:function(){
 		return this.model || this.currentItem.model;
@@ -679,41 +646,20 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
 		});
 		this.listitems.push(listItem);
-		this.connect(listItem,"onLoad",function(){
+		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 			if(this._beingDestroyed) return;
-			if(this.xDomainResolver) {
-				var self = this;
-				var resolver = this.xDomainResolver;
-				var content = resolver.params || {};
-				content[resolver.fileParamName] = dojo.moduleUrl(this.templateModule).path+"/"+this.template;
-				dojo.io.script.get({
-					url:resolver.path,
-					content:content,
-					callbackParamName:resolver.callbackParamName,
-					load:function(res){
-						if(self._beingDestroyed) return;
-						var tpl = resolver.transformer(res);
-						listItem.applyTemplate(tpl);
-						dojo.fadeIn({node:listItem.containerNode}).play();
-						self.childrenReady++;
-						if(self.childrenReady == self.listitems.length) self.onReady();
-					}
-				});
-			} else {
-				var tpl = dojo.cache(this.templateModule,this.template);
-				listItem.applyTemplate(tpl);
-				dojo.fadeIn({node:listItem.containerNode}).play();
-				this.childrenReady++;
-				if(this.childrenReady == this.listitems.length) this.onReady();
-			}
+			listItem.applyTemplate(this.tpl);
+			fx.fadeIn({node:listItem.containerNode}).play();
+			this.childrenReady++;
+			if(this.childrenReady == this.listitems.length) this.onReady();
 			this.itemnodesmap[item[this.idProperty]] = listItem;
-		});
+		}));
 		this.addChild(listItem,insertIndex);
 	},
 	_initContent: function(item) {
 		// setcontent = false will not set the content here
 		var self = this;
-		var listItem = new dlagua.w.layout.ScrollableServicedPaneItem({
+		var listItem = new ScrollableServicedPaneItem({
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
@@ -723,20 +669,18 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				self.onReady();
 			},100);
 		} else {
-			dojo.xhrGet({
-				url:href,
-				load:function(res){
-					listItem.set("content",res);
-					setTimeout(function(){
-						self.onReady();
-					},10);
-				}
+			request(href,{
+			}).then(function(res){
+				listItem.set("content",res);
+				setTimeout(function(){
+					self.onReady();
+				},1);
 			});
 		}
 		this.listitems.push(listItem);
 		this.addChild(listItem);
 		this.itemnodesmap[item[this.idProperty]] = listItem;
-		dojo.fadeIn({node:listItem.containerNode}).play();
+		fx.fadeIn({node:listItem.containerNode}).play();
 	},
 	onReady: function(){
 		console.log("done loading "+this.id);

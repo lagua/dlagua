@@ -1,5 +1,5 @@
-dojo.provide("dlagua.w.layout._XFormMixin");
-dojo.declare("dlagua.w.layout._XFormMixin",[],{
+define(["dojo"],function(dojo){
+return dojo.declare("dlagua.w.layout._XFormMixin",[],{
 	xformTarget:null,
 	xformLoaded: function() {
 		// make sure the DOM is moved
@@ -49,4 +49,6 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		if(this.servicetype=="xform") this.unloadXform();
 		this.inherited(arguments);
 	}
+});
+
 });

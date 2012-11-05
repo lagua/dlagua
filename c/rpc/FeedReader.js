@@ -1,6 +1,6 @@
-define("dlagua/c/rpc/FeedReader", ["dojo", "dlagua/c/Subscribable"], function(dojo) {
+define("dlagua/c/rpc/FeedReader", ["dojo", "dlagua/c/Subscribable"], function(dojo,Subscribable) {
 
-dojo.declare("dlagua.c.rpc.FeedReader",[dlagua.c.Subscribable],{
+return dojo.declare("dlagua.c.rpc.FeedReader",[Subscribable],{
 	type:"atom",
 	read:function(feed) {
 		if(!feed) return;

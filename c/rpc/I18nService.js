@@ -1,6 +1,6 @@
-define("dlagua/c/rpc/I18nService", ["dojo", "dlagua/c/Subscribable"], function(dojo) {
+define("dlagua/c/rpc/I18nService", ["dojo", "dlagua/c/Subscribable"], function(dojo,Subscribable) {
 	
-dojo.declare("dlagua.c.rpc.I18nService",[dlagua.c.Subscribable],{
+return dojo.declare("dlagua.c.rpc.I18nService",[Subscribable],{
 	locale:"",
 	domain:"",
 	target:"",

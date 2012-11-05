@@ -1,4 +1,4 @@
-dojo.provide("dlagua.c.string.cleanWhitespace");
+define("dlagua/c/string/cleanWhitespace", ["dojo"], function(dojo) {
 
 dlagua.c.string._cleanWhitespaceRecursive = function(node) {
 	for (var i=0; i<node.childNodes.length; i++) {
@@ -22,5 +22,9 @@ dlagua.c.string.cleanWhitespace = function(/*String*/ value){
 };
 
 String.prototype.cleanWhitespace = function() {
-	return lague.string.cleanWhitespace(this);
+	return dlagua.string.cleanWhitespace(this);
 }
+
+return dlagua.c.string.cleanWhitespace;
+
+});

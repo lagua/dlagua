@@ -1,10 +1,15 @@
-dojo.provide("dlagua.w.layout.ScrollableServicedPaneItem");
-dojo.require("dijit._Widget");
-dojo.require("dijit._Templated");
-dojo.require("dijit._Contained");
-dojo.require("dlagua.w.layout.TemplaMixin");
-
-dojo.declare("dlagua.w.layout.ScrollableServicedPaneItem", [dijit._Widget, dijit._Templated, dijit._Contained, dlagua.w.layout.TemplaMixin], {
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/dom-geometry",
+	"dojo/dom-style",
+	"dojo/html",
+	"dijit/_Widget",
+	"dijit/_Templated",
+	"dijit/_Contained",
+	"dlagua/w/layout/TemplaMixin"
+],function(declare,lang,domGeom,domStyle,_Widget,_Templated,_Contained,TemplaMixin) {
+return declare("lagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained, TemplaMixin], {
 	parent:null, //quickref to parent widget
 	data:null,
 	itemHeight:null,
@@ -22,26 +27,28 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPaneItem", [dijit._Widget, dijit
 			this.onLoad();
 			return;
 		}
-		this._load().then(dojo.hitch(this,this.onLoad));
+		this._load().then(lang.hitch(this,this.onLoad));
 	},
 	resizeChildren: function(){
 		var box = this.marginBox;
-		dojo.style(this.containerNode.firstChild, {
+		domStyle.set(this.containerNode.firstChild, {
 			width: box.w +'px',
 			height: box.h + 'px'
 		});
 	},
 	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 		this._setContent(data || "");
-		setTimeout(dojo.hitch(this,function(){
+		setTimeout(lang.hitch(this,function(){
 			if(!this.containerNode) return;
-			this.marginBox = dojo.marginBox(this.containerNode);
+			this.marginBox = domGeom.marginBox(this.containerNode);
 		}),1);
 	},
 	updateLayout:function() {
 		if(!this || !this.containerNode) return;
-		this.marginBox = dojo.marginBox(this.containerNode);
+		this.marginBox = domGeom.marginBox(this.containerNode);
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
 	}
+});
+
 });

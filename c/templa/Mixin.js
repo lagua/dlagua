@@ -1,9 +1,6 @@
-dojo.provide("dlagua.c.templa.Mixin");
-dojo.require("dojo.Stateful");
-dojo.require("dlagua.x.Mustache");
-dojo.require("dojox.uuid.generateRandomUuid");
+define(["dojo","dojo/Stateful","mustache/mustache"],function(dojo,Stateful,mustache) {
 
-dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
+return dojo.declare("dlagua.c.templa.Mixin",[Stateful],{
 	set:function(key,value) {
 		if(this.parent && key=="value" && this[key]!=value) this.parent.set("__dirty",true);
 		this.inherited(arguments);
@@ -45,7 +42,7 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			dj.require(type);
 		});
 		tpl = div.innerHTML.toString();
-		return dlagua.x.Mustache.to_html(tpl,this);
+		return mustache.render(tpl,this);
 	},
 	_mod:function(){
 		return function(text, render) {
@@ -73,4 +70,6 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			return fn.apply(this,props);
 		};
 	}
+});
+
 });
