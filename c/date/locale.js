@@ -1,10 +1,17 @@
-dojo.provide("dlagua.c.date.locale");
-dojo.require("dojo.date.locale");
-dojo.require("dojo.date.stamp");
+define([
+"dojo",
+"dojo/_base/lang",
+"dojo/_base/array",
+"dojo/i18n",
+"dojo/date/locale",
+"dojo/date/stamp",
+"dojox/uuid/generateRandomUuid",
+"dojox/timing"
+],function(dojo,lang,array,i18n,locale,stamp,generateRandomUuid,timing){
 
-dojo.getObject("c.date.locale", true, dlagua);
+lang.getObject("dlagua.c.date.locale", true);
 
-dlagua.c.date.locale.format = function(val,options) {
+var format = function(val,options) {
 	var date;
 	var txt = "", oritxt = "";
 	if(options.selector=="time") {
@@ -24,10 +31,6 @@ dlagua.c.date.locale.format = function(val,options) {
 		oritxt = txt = dojo.date.locale.format(date,options);
 	}
 	if(options.autoupdate) {
-		dojo.require("dojox.uuid.generateRandomUuid");
-		dojo.require("dojox.timing");
-		dojo.require("dojo.i18n");
-
 		var id = dojox.uuid.generateRandomUuid();
 		var interval = (options.updateInterval || 30*1000);
 		var limit = (options.updateLimit || 7*24*60*60*1000);
@@ -89,3 +92,9 @@ dlagua.c.date.locale.format = function(val,options) {
 	}
 	return txt;
 };
+
+dlagua.c.date.locale.format = format;
+
+return format;
+
+});

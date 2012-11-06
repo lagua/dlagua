@@ -3,7 +3,6 @@ define([
 	"dojo/_base/lang",
 	"dojo/dom-geometry",
 	"dojo/dom-style",
-	"dojo/html",
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained",
@@ -40,12 +39,12 @@ return declare("lagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated
 		this._setContent(data || "");
 		setTimeout(lang.hitch(this,function(){
 			if(!this.containerNode) return;
-			this.marginBox = domGeom.marginBox(this.containerNode);
+			this.marginBox = domGeom.getMarginBox(this.containerNode);
 		}),1);
 	},
 	updateLayout:function() {
 		if(!this || !this.containerNode) return;
-		this.marginBox = domGeom.marginBox(this.containerNode);
+		this.marginBox = domGeom.getMarginBox(this.containerNode);
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
 	}

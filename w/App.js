@@ -45,7 +45,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			}
 		}
 		this.meta.inferred = lang.mixin(this.meta.inferred,inferred);
-		d.callback(true);
+		d.resolve(true);
 		return d;
 	},
 	hashToItem: function(hash) {
@@ -197,14 +197,14 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			});
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
-				topic.publish("/app/pagechange",[item]);
+				topic.publish("/app/pagechange",item);
 				var hash = (state!="initial" ? state+":"+locale+"/"+path : locale+"/"+path);
 				dhash(hash);
 				this.set("path",path);
-				d.callback(true);
+				d.resolve(true);
 			} else {
-				topic.publish("/app/pagechange",[item]);
-				d.callback(true);
+				topic.publish("/app/pagechange",item);
+				d.resolve(true);
 			}
 		}));
 		return d;
@@ -216,7 +216,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			var item = this.hashToItem(hash);
 			this.infer(item.path);
 		}
-		topic.subscribe("/dojo/hashchange", this, function(hash){
+		topic.subscribe("/dojo/hashchange", lang.hitch(this, function(hash){
 			if(this.changeFromApp) {
 				this.changeFromApp = false;
 				return;
@@ -224,7 +224,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			var item = this.hashToItem(hash);
 			item.__fromHash = true;
 			this.set("currentItem",item);
-		});
+		}));
 		this.watch("state",function(){
 			topic.publish("/app/statechange",this.state);
 		});

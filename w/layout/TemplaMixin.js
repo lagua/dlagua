@@ -10,7 +10,8 @@ define([
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained",
-],function(declare,lang,array,domGeom,request,Deferred,html,stamp,_Widget,_Templated,_Contained) {
+	"dlagua/c/templa/Mixin"
+],function(declare,lang,array,domGeom,request,Deferred,html,stamp,_Widget,_Templated,_Contained,Mixin) {
 
 return declare("dlagua.w.layout.TemplaMixin", [], {
 	resolveProperties:null,
@@ -26,9 +27,9 @@ return declare("dlagua.w.layout.TemplaMixin", [], {
 			d.resolve();
 			return d;
 		}
-		this.resolveLinks().then(lang.hitch(this,function(){
+		this.resolveLinks(this.data).then(lang.hitch(this,function(){
 			this.__resolved = true;
-			this.mixeddata = this._mixinRecursive(lang.clone(this.data),new dlagua.c.templa.Mixin());
+			this.mixeddata = this._mixinRecursive(lang.clone(this.data),new Mixin());
 			d.resolve(true);
 		}));
 		return d;

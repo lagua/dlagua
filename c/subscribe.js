@@ -1,13 +1,18 @@
-dojo.provide("dlagua.c.subscribe");
-
-dlagua.c.subscribe = function(/*String*/ topic, context, params){
+define([
+"dojo/_base/lang",
+"dojo/Stateful",
+"dojo/topic",
+"persvr/rql/parser",
+"persvr/rql/js-array"], function(lang, Stateful, dtopic, rqlParser, rqlArray) {
+var subscribe = lang.getObject("dlagua.c", true).subscribe;
+subscribe = function(/*String*/ topic, context, params){
 	if(!params) params = {};
-	var filter=(params.filter && persvr.rql && persvr.rql.Parser && persvr.rql.Array ? persvr.rql.Parser.parseQuery(params.filter) : null);
+	var filter=(params.filter ? rqlParser.parseQuery(params.filter) : null);
 	var refProperty = params.refProperty;
 	var subscrmethd = function(item,olditem) {
 		if(filter) {
 			var ar = [item];
-			var res = persvr.rql.Array.executeQuery(filter,{},ar);
+			var res = rqlArray.executeQuery(filter,{},ar);
 			if(!res.length) {
 				console.log("filtered:",params.filter,item);
 				return;
@@ -15,8 +20,8 @@ dlagua.c.subscribe = function(/*String*/ topic, context, params){
 				console.log("passed:",params.filter,item);
 			}
 		}
-		if(dojo.isObject(item)) {
-			if(dojo.isObject(olditem)) {
+		if(lang.isObject(item)) {
+			if(lang.isObject(olditem)) {
 				refProperty = (refProperty || "changeSet");
 				this.set(refProperty,[item,olditem]);
 			} else {
@@ -28,5 +33,9 @@ dlagua.c.subscribe = function(/*String*/ topic, context, params){
 			this.set(refProperty,item);
 		}
 	};
-	return dojo.subscribe(topic, context, subscrmethd);
+	return dtopic.subscribe(topic, lang.hitch(context, subscrmethd));
 };	
+
+return subscribe;
+
+});

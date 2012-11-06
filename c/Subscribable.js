@@ -1,24 +1,11 @@
-define("dlagua/c/Subscribable", ["dojo", "dojo/Stateful", "dlagua/c/subscribe"], function(dojo) {
+define(["dojo/_base/declare", "dojo/Stateful","dojo/topic", "dlagua/c/subscribe"], function(declare, Stateful, dtopic, dsubscribe) {
 
-dojo.declare("dlagua.c.Subscribable", [dojo.Stateful], {
+return declare("dlagua.c.Subscribable", [Stateful], {
 	_subscribes:null, // subscription to update the id
-	_watchhandles:null,
-	addWatch: function(/*String?*/name, /*Function*/callback){
-		if(!this.watch) return;
-		if(!this._watchhandles) this._watchhandles = [];
-		this._watchhandles.push(this.watch(name,callback));
-	},
-	unwatchAll: function(){
-		if(!this._watchhandles || !this._watchhandles.length) return;
-		while(this._watchhandles.length>0){
-			this._watchhandles[this._watchhandles.length-1].unwatch();
-			this._watchhandles.pop();
-		}
-	},
 	subscribe: function(
 			/*String*/ topic,
 			/*String*/ params){
-		var handle = dlagua.c.subscribe(topic, this, params);
+		var handle = dsubscribe(topic, this, params);
 		if(!this._subscribes) this._subscribes = [];
 		// return handles for Any widget that may need them
 		this._subscribes.push(handle);
@@ -30,7 +17,7 @@ dojo.declare("dlagua.c.Subscribable", [dojo.Stateful], {
 		//		Also removes handle from this widget's list of subscriptions
 		for(var i=0; i<this._subscribes.length; i++){
 			if(this._subscribes[i] == handle){
-				dojo.unsubscribe(handle);
+				dtopic.unsubscribe(handle);
 				this._subscribes.splice(i, 1);
 				return;
 			}

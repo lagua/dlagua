@@ -34,13 +34,13 @@ define([
 	"dlagua/c/rpc/FeedReader",
 	"persvr/rql/query",
 	"persvr/rql/parser",
-	"dojo/text!lagua/w/layout/templates/ScrollableServicedPane.html",
+	"dlagua/c/Subscribable",
+	"dojo/text!dlagua/w/layout/templates/ScrollableServicedPane.html",
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-	"dlagua/c/Subscribable",
-],function(declare,lang,array,event,win,fx,on,request,domGeom,domStyle,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,Button,timing,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,rqlQuery,rqlParser,templateString){
-return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
+],function(declare,lang,array,event,win,fx,on,request,domGeom,domStyle,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,Button,timing,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,rqlQuery,rqlParser,Subscribable,templateString){
+return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
@@ -143,7 +143,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 				this.prevButton = new Button({
 					label:"Prev",
 					showLabel:false,
-					"class":"laguaScrollableServicedPanePrevButton",
+					"class":"dlaguaScrollableServicedPanePrevButton",
 					onMouseDown:function(){
 						self.autoFire(-1);
 					},
@@ -163,7 +163,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 				this.nextButton = new Button({
 					label:"Next",
 					showLabel:false,
-					"class":"laguaScrollableServicedPaneNextButton",
+					"class":"dlaguaScrollableServicedPaneNextButton",
 					onMouseDown:function(){
 						self.autoFire(1);
 					},
@@ -252,11 +252,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 	},
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
-		var d = new Deferred();
-		require(["dojo/text!"+this.templateModule+"/"+template],function(tpl){
-			d.resolve(tpl);
-		});
-		return d;
+		return request(require.toUrl(this.templateModule)+"/"+template);
 	},
 	replaceChildTemplate: function(child,templateDir) {
 		if(!templateDir) templateDir = this.templateDir;
@@ -269,7 +265,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 					li.applyTemplate(tpl);
 				});
 			}
-		}
+		}));
 	},
 	getSchema:function(){
 		var d = new Deferred;
@@ -433,7 +429,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
-			this._fetchTpl(this.templateModule,this.template).then(lang.hitch(this,function(tpl){
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 				this.tpl = tpl;
 				this.getSchema().then(lang.hitch(this,function(){
 					var q = this.createQuery();
@@ -640,7 +636,7 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 	addItem:function(item,index,items,insertIndex) {
 		var content = "";
 		var id = item[this.idProperty];
-		var listItem = new dlagua.w.layout.ScrollableServicedPaneItem({
+		var listItem = new ScrollableServicedPaneItem({
 			parent:this,
 			data:item,
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
@@ -689,4 +685,6 @@ return declare("lagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Template
 		// select currentId for #anchor simulation
 		if(this.currentId) this.selectItemByCurrentId();
 	}
+});
+
 });
