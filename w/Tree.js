@@ -1,15 +1,42 @@
-dojo.provide("dlagua.w.Tree");
+define([
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/array",
+	"dojo/Deferred",
+	"dijit/Tree",
+	"dlagua/c/Subscribable"
+],function(declare,lang,array,Deferred,_Tree,Subscribable) {
 
-dojo.require("dlagua.c.Subscribable");
-dojo.require("dijit.Tree");
+var TreeNode = declare("dlagua.w._TreeNode",[_Tree._TreeNode],{
+	supressEvents:false,
+	_onClick: function(evt){
+		// summary:
+		//		Handler for onclick event on a node
+		// tags:
+		//		private
+		if(this.supressEvents) return;
+		this.tree._onClick(this, evt);
+		this.tree.collapseAll(this);
+		// wait for collapsing (me=tree)
+		var self = this;
+		console.log(this)
+		if(this.isExpandable) {
+			if(!this.isExpanded) {
+				setTimeout(function(){
+					self.tree._expandNode(self);
+				},100);
+			}
+		}
+	}
+});
 
-dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
+var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 	persist:false,
 	_connections:[],
 	_found:null,
 	search: function(lookfor, buildme, item, field, returnfield, d) {
 		if(d===undefined) {
-			d = new dojo.Deferred();
+			d = new Deferred();
 			// new search resets found
 			this._found = null;
 		}
@@ -25,14 +52,14 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 		var m = this.model;
 		var val = m.getValue(item,field);
 		var rval = m.getValue(item,returnfield);
-		if(dojo.indexOf(buildme,rval)==-1) buildme.push(rval);
+		if(array.indexOf(buildme,rval)==-1) buildme.push(rval);
 		if(val == lookfor) {
 			this._found = item;
 			// call childrensearched also here!
 			if(item.__parent && item.__parent.__onChildrenSearched) {
 				item.__parent.__onChildrenSearched();
 			}
-			d.callback(buildme);
+			d.resolve(buildme);
 		} else {
 			//console.log("lookup",item[field],val,lookfor);
 			// should we get children?
@@ -59,11 +86,11 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 									this.__parent.__onChildrenSearched();
 								} else {
 									// no parent, it must be root
-									if(!this.__parent && !self._found) d.callback();
+									if(!this.__parent && !self._found) d.resolve();
 								}
 							}
 						};
-						dojo.forEach(children,function(child){
+						array.forEach(children,function(child){
 							var buildmebranch = buildme.slice(0);
 							self.search(lookfor, buildmebranch, child, field, returnfield, d);
 						});
@@ -73,15 +100,15 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 				if(item.__parent && item.__parent.__onChildrenSearched) {
 					item.__parent.__onChildrenSearched();
 				} else {
-					// FIXME: is this a problem
-					if(!d.results) d.callback();
+					// FIXME how to do this properly?
+					if(!d.results) d.resolve();
 				}
 			}
 		}
 		return d;
 	},
 	searchPartial:function(code,buildme,item,field,returnfield,minDepth){
-		var d = new dojo.Deferred();
+		var d = new Deferred();
 		if(!minDepth) minDepth = 0;
 		var parts = code.split("/");
 		var len = parts.length;
@@ -96,25 +123,25 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 						searchPart(sparts.join("/"),found)
 					} else {
 						console.log(result)
-						d.callback(result);
+						d.resolve(result);
 					}
 				} else {
-					d.callback();
+					d.resolve();
 				}
 			});
 		}
 		if(len) {
 			searchPart(sparts.join("/"),item);
 		} else {
-			d.callback();
+			d.resolve();
 		}
 		return d;
 	},
 	// custom tree selection function
 	selectNodeByField: function(code,field,partial,minDepth) {
-		var d = new dojo.Deferred();
+		var d = new Deferred();
 		if(code==undefined) {
-			d.callback();
+			d.resolve();
 			return d;
 		}
 		var buildme = [];
@@ -124,13 +151,13 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 		} else {
 			sd = this.search(code, buildme, this.model.root, field, "id");
 		}
-		sd.then(dojo.hitch(this,function(result){
+		sd.then(lang.hitch(this,function(result){
 			if(result && result.length > 0) {
 				this.set("path",result).then(function(res){
-					d.callback(res[0]);
+					d.resolve(res ? res[0] : null);
 				});
 			} else {
-				d.callback();
+				d.resolve();
 			}
 		}));
 		return d;
@@ -151,10 +178,10 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 					console.warn(err);
 				}
 			}
-			var childBranches = dojo.filter(node.getChildren() || [], function(node) {
+			var childBranches = array.filter(node.getChildren() || [], function(node) {
 				return node.isExpanded;
 			});
-			var defs = dojo.map(childBranches, collapse);
+			var defs = array.map(childBranches, collapse);
 		}
 		return collapse(parentNode);
 	},
@@ -162,11 +189,11 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 		var me = this;
 		function expand(node) {
 			me._expandNode(node);
-			var childBranches = dojo.filter(node.getChildren() || [], function(node) {
+			var childBranches = array.filter(node.getChildren() || [], function(node) {
 				return node.isExpandable;
 			});
-			var def = new dojo.Deferred();
-			var defs = dojo.map(childBranches, expand);
+			var def = new Deferred();
+			var defs = array.map(childBranches, expand);
 		}
 		return expand(node);
 	},
@@ -178,7 +205,7 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 		}
 		if(this.model.loaded) this.model.loaded = false;
 		this._itemNodesMap={};
-		this._loadDeferred = new dojo.Deferred();
+		this._loadDeferred = new Deferred();
 		this._load();
 	},
 	_createTreeNode: function(/*Object*/ args){
@@ -189,30 +216,11 @@ dojo.declare("dlagua.w.Tree",[dijit.Tree,dlagua.c.Subscribable],{
 		//		However it will probably be removed in a future release in favor of a way
 		//		of just specifying a widget for the label, rather than one that contains
 		//		the children too.
-		return new dlagua.w._TreeNode(args);
+		return new TreeNode(args);
 	}
 });
 
-dojo.provide("dlagua.w._TreeNode");
-dojo.declare("dlagua.w._TreeNode",[dijit._TreeNode],{
-	supressEvents:false,
-	_onClick: function(evt){
-		// summary:
-		//		Handler for onclick event on a node
-		// tags:
-		//		private
-		if(this.supressEvents) return;
-		this.tree._onClick(this, evt);
-		this.tree.collapseAll(this);
-		// wait for collapsing (me=tree)
-		var self = this;
-		console.log(this)
-		if(this.isExpandable) {
-			if(!this.isExpanded) {
-				setTimeout(function(){
-					self.tree._expandNode(self);
-				},100);
-			}
-		}
-	}
+Tree._TreeNode = TreeNode;
+return Tree;
+
 });
