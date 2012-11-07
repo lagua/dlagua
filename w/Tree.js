@@ -153,8 +153,12 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		}
 		sd.then(lang.hitch(this,function(result){
 			if(result && result.length > 0) {
-				this.set("path",result).then(function(res){
-					d.resolve(res ? res[0] : null);
+				this.set("path",result).then(lang.hitch(this,function(){
+					var path = this.get("path");
+					d.resolve(path.length);
+				}),function(){
+					// this onError should be called
+					d.resolve();
 				});
 			} else {
 				d.resolve();
@@ -162,28 +166,43 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		}));
 		return d;
 	},
-	// dojo tree extension to collapse all others on node select
-	// does not work on plus/minus buttons
-	collapseAll: function(exclude){ 
-		var me = this;
-		var parentNode = (exclude ? exclude.getParent() : this.rootNode);
-		if(!parentNode) return;
-		var exid = exclude ? exclude.id : null;
-		function collapse(node) {
-			// never collapse root node, otherwise hides whole tree !
-			if(node.id != parentNode.id && node.id != exid) {
-				try{
-					me._collapseNode(node);
-				} catch(err) {
-					console.warn(err);
+	collapseAll: function(exclude){
+		// summary:
+		//		Collapse all nodes in the tree
+		// returns:
+		//		Deferred that fires when all nodes have collapsed
+		var _this = this;
+		
+		var parentNode = (exclude ? exclude.getParent() : (_this.showRoot ? this.rootNode : null));
+
+		function collapse(node){
+			var def = new Deferred();
+			def.label = "collapseAllDeferred";
+
+			// Collapse children first
+			var childBranches = array.filter(node.getChildren() || [], function(node){
+					return node.isExpandable && node!=exclude;
+				}),
+				defs = array.map(childBranches, collapse);
+
+			// And when all those recursive calls finish, collapse myself, unless I'm the invisible root node,
+			// in which case collapseAll() is finished
+			new DeferredList(defs).then(function(){
+				if(!node.isExpanded || (node == _this.rootNode && !_this.showRoot) || node==parentNode || node==exclude){
+					def.resolve(true);
+				}else{
+					_this._collapseNode(node).then(function(){
+						// When node has collapsed, signal that call is finished
+						def.resolve(true);
+					});
 				}
-			}
-			var childBranches = array.filter(node.getChildren() || [], function(node) {
-				return node.isExpanded;
 			});
-			var defs = array.map(childBranches, collapse);
+
+
+			return def;
 		}
-		return collapse(parentNode);
+
+		return collapse(this.rootNode);
 	},
 	expandFirst: function(node) {
 		var me = this;
