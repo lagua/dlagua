@@ -6,7 +6,7 @@ dojo.require("dojo.data.ObjectStore");
 dojo.require("dlagua.c.store.JsonRest");
 dojo.require("dlagua.c.Subscribable");
 
-dojo.declare("dlagua.w.form.LocalePicker", [dlagua.c.Subscribable, dijit.form.FilteringSelect], {
+dojo.declare("dlagua.w.form.LocalePicker", [dijit.form.FilteringSelect,dlagua.c.Subscribable], {
 	locale:"",
 	locale_extra:"",
 	store:null,
