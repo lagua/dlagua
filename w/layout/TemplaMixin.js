@@ -18,7 +18,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 			d.callback();
 			return d;
 		}
-		this.resolveLinks().then(dojo.hitch(this,function(){
+		this.resolveLinks(this.data).then(dojo.hitch(this,function(){
 			this.__resolved = true;
 			this.mixeddata = this._mixinRecursive(dojo.clone(this.data),new dlagua.c.templa.Mixin());
 			d.callback(true);
