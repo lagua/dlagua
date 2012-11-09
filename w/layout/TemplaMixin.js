@@ -102,8 +102,16 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 					var link = data[x];
 					dojo.xhrGet({
 						url:"/xbrota/rest/"+parent.locale+"/"+link,
+						failOk:true,
 						load:function(res){
 							data[x] = res;
+							total--;
+							if(total==0) {
+								d.callback(data);
+							}
+						},
+						error:function(){
+							data[x] = "";
 							total--;
 							if(total==0) {
 								d.callback(data);
