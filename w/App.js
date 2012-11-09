@@ -172,6 +172,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		this.infer(path,servicetype,depth,fromHash,item.__truncated).then(dojo.hitch(this,function(){
 			var reset = [];
 			if(localechanged) {
+				this.set("locale",locale);
 				if(this.meta.inferred) this.meta.inferred.locale = locale;
 				reset = this.replaceI18n();
 			}
