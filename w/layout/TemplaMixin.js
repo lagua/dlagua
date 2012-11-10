@@ -18,53 +18,107 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 			d.callback();
 			return d;
 		}
-		this.resolveLinks(this.data).then(dojo.hitch(this,function(){
-			this.__resolved = true;
-			this.mixeddata = this._mixinRecursive(dojo.clone(this.data),new dlagua.c.templa.Mixin());
+		var md = new dojo.Deferred();
+		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+		var schema = (parent && parent.schema ? parent.schema : this.schema);
+		if(!schema) {
+			d.callback();
+			return d;
+		}
+		var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
+		this._mixinRecursive(dojo.clone(this.data),schema,resolveProps,new dlagua.c.templa.Mixin(),md);
+		md.then(dojo.hitch(this,function(data){
+			this.mixeddata = data;
 			d.callback(true);
 		}));
 		return d;
 	},
-	_mixinRecursive: function(item,mu_mixin) {
-		for(var k in item) {
-			var val = item[k];
-			if(val && dojo.isArray(val)) {
-				for(var i=0;i<val.length;i++){
-					// break out of loop if any val is not object
-					if(!dojo.isObject(val[i])) break;
-					val[i] = this._mixinRecursive(val[i],mu_mixin);
-					val[i].parent = item;
+	_mixinRecursive: function(item,schema,resolveProps,mu_mixin,d) {
+		if(!d) d = new dojo.Deferred();
+		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+		item.__onChildDone = function(){
+			if(this.__childrenDone) this.__childrenDone--;
+			if(!this.__childrenDone || this.__childrenDone == 0) {
+				if(this.__parent) { 
+					delete this.__onChildDone;
+					delete this.__childrenDone;
+					this.__parent.__onChildDone();
 				}
-			} else if(k.substr(0,2)!="__" && val && dojo.isObject(val)) {
-				if(val instanceof Date) {
-					item[k] = dojo.date.stamp.toISOString(val);
-				} else {
-					item[k] = this._mixinRecursive(dojo.clone(val),mu_mixin);
-					item[k].parent = item;
+				d.callback(this);
+			}
+		};
+		this.resolveLinks(item,schema,resolveProps).then(dojo.hitch(this,function(resolved){
+			resolved.__resolved = true;
+			var children;
+			for(var k in resolved) {
+				var val = item[k];
+				if(val && dojo.isArray(val)) {
+					for(var i=0;i<val.length;i++){
+						// check if val is object
+						// note: these items MUST be resolved
+						if(dojo.isObject(val[i]) && !val[i]["$ref"]) {
+							if(!children) children = {};
+							if(!children[k]) children[k] = [];
+							val[i].__parent = item;
+							children[k].push(val[i]);
+						}
+					}
+				} else if(k.substr(0,2)!="__" && val && dojo.isObject(val)) {
+					if(val instanceof Date) {
+						item[k] = dojo.date.stamp.toISOString(val);
+					} else {
+						// simply mixin this object
+						item[k].ref = parent;
+						item[k].node = this;
+						item[k] = dojo.mixin(val,mu_mixin);
+					}
 				}
 			}
-		}
-		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
-		item.ref = parent;
-		item.node = this;
-		return dojo.mixin(item,mu_mixin);
+			item.ref = parent;
+			item.node = this;
+			item = dojo.mixin(item,mu_mixin);
+			if(children) {
+				// we need a new schema for the children to resolve their xuris..
+				// it must be in schema.links, but we should be sure that we get the correct schema
+				for(var c in children) {
+					var cschema;
+					for(var i=0;i<schema.links.length;i++){
+						var link = schema.links[i];
+						if(link.rel==c) cschema = link.href.split("/")[1];
+					}
+					dojo.xhrGet({
+						url:"/persvr/Class/"+cschema,
+						handleAs:"json",
+						headers:{
+							"Accept":"application/json"
+						},
+						load:dojo.hitch(this,function(schema,io){
+							item.__childrenDone = children[c].length;
+							dojo.forEach(children[c],dojo.hitch(this,function(child,i){
+								this._mixinRecursive(child,schema,[],mu_mixin).then(function(data){
+									children[c][i] = data;
+								});
+							}));
+						})
+					});
+				}
+			} else {
+				item.__onChildDone();
+			}
+		}));
+
+		return d;
 	},
-	resolveLinks: function(data,skipX){
+	resolveLinks: function(data,schema,resolveProps,skipX){
 		var d = new dojo.Deferred();
+		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 		if(data.__resolved) {
 			d.callback(data);
 			return d;
 		}
-		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
-		if(!((parent && parent.schema) || this.schema)) {
-			d.callback(data);
-			return d;
-		}
 		var self = this;
-		var schema = (parent && parent.schema ? parent.schema : this.schema);
 		var toResolve = [];
 		var toResolveX = [];
-		var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
 		if(typeof resolveProps == "string") {
 			resolveProps = resolveProps.split(",");
 		}

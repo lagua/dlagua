@@ -20,7 +20,7 @@ define("dlagua/c/_base",["dojo"],function(dojo){
 				script.onload = callback;
 			}
 			var fjs = d.getElementsByTagName(s)[0];
-			fjs.parentNode.insertBefore(script);
+			fjs.parentNode.insertBefore(script,fjs);
 		},
 		addCss:function(_css,title) {
 			var s = "link", d = document;
@@ -29,7 +29,7 @@ define("dlagua/c/_base",["dojo"],function(dojo){
 			css.rel = "stylesheet";
 			if(title) css.title = title;
 			var first = d.getElementsByTagName(s)[0];
-			first.parentNode.insertBefore(css);
+			first.parentNode.insertBefore(css,first);
 		},
 		_addRQL: function(){
 			var d = new dojo.Deferred();
