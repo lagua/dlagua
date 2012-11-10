@@ -1,25 +1,35 @@
 define("dlagua/c/_base",["dojo"],function(dojo){
 	dojo.mixin(dlagua.c._base,{
-		addScript: function(url,callback) {
-		    var script = document.createElement('script');
-		    script.src = url;
-		    if(navigator.appName == 'Microsoft Internet Explorer') {
-		    	script.onreadystatechange= function () {
-		    		if(script.readyState=='loaded' || script.readyState=='complete') {
-		    			callback();
-		    			script.onreadystatechange = null;
-		    		}
-		    	}
-		    } else {
-		    	script.onload = callback;
-		    }
-		    document.head.appendChild(script);
+		addScript: function(url,callback,id) {
+			var s = "script", d = document;
+			if(id && d.getElementById(id)) {
+				callback();
+				return;
+			}
+			var script = d.createElement(s);
+			script.src = url;
+			if(id) script.id = id;
+			if(navigator.appName == "Microsoft Internet Explorer") {
+				script.onreadystatechange= function () {
+					if(script.readyState=="loaded" || script.readyState=="complete") {
+						callback();
+						script.onreadystatechange = null;
+					}
+				}
+			} else {
+				script.onload = callback;
+			}
+			var fjs = d.getElementsByTagName(s)[0];
+			fjs.parentNode.insertBefore(script);
 		},
-		addCss:function(_css) {
-			var css = dojo.create("link",{
-				href: _css,
-				rel: "stylesheet"
-			},document.head);
+		addCss:function(_css,title) {
+			var s = "link", d = document;
+			var css = d.createElement(s);
+			css.href= _css;
+			css.rel = "stylesheet";
+			if(title) css.title = title;
+			var first = d.getElementsByTagName(s)[0];
+			first.parentNode.insertBefore(css);
 		},
 		_addRQL: function(){
 			var d = new dojo.Deferred();
