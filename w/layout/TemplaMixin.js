@@ -80,33 +80,62 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 			if(children) {
 				// we need a new schema for the children to resolve their xuris..
 				// it must be in schema.links, but we should be sure that we get the correct schema
+				item.__childrenDone = 0;
 				for(var c in children) {
-					var cschema;
+					var cschemaUri;
 					for(var i=0;i<schema.links.length;i++){
 						var link = schema.links[i];
-						if(link.rel==c) cschema = link.href.split("/")[1];
+						if(link.rel==c) {
+							cschemaUri = link.href.split("/")[1];
+							break;
+						}
 					}
-					dojo.xhrGet({
-						url:"/persvr/Class/"+cschema,
-						handleAs:"json",
-						headers:{
-							"Accept":"application/json"
-						},
-						load:dojo.hitch(this,function(schema,io){
-							item.__childrenDone = children[c].length;
-							dojo.forEach(children[c],dojo.hitch(this,function(child,i){
-								this._mixinRecursive(child,schema,[],mu_mixin).then(function(data){
+					if(cschemaUri) {
+						item.__childrenDone += children[c].length;
+						var self = this;
+						var child = {items:children[c]};
+						this.getSchema(cschemaUri).then(dojo.hitch(child,function(childSchema) {
+							dojo.forEach(this.items,dojo.hitch(self,function(cidata,i){
+								this._mixinRecursive(cidata,childSchema,[],mu_mixin).then(function(data){
 									children[c][i] = data;
 								});
 							}));
-						})
-					});
+						}));
+					} else {
+						delete children[c];
+					}
 				}
+				// final check to see if there's any children left
+				var cnt = 0;
+				for(var c in children) {
+					cnt++;
+				}
+				if(cnt===0) item.__onChildDone();
 			} else {
 				item.__onChildDone();
 			}
 		}));
-
+		return d;
+	},
+	getSchema:function(schemaUri){
+		var d = new dojo.Deferred();
+		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+		if(parent.schemata && parent.schemata[schemaUri]) {
+			var schema = parent.schemata[schemaUri];
+			d.callback(schema);
+		} else {
+			dojo.xhrGet({
+				url:"/persvr/Class/"+schemaUri,
+				handleAs:"json",
+				headers:{
+					"Accept":"application/json"
+				},
+				load:function(res,io){
+					parent.schemata[schemaUri] = res;
+					d.callback(res);
+				}
+			});
+		}
 		return d;
 	},
 	resolveLinks: function(data,schema,resolveProps,skipX){
