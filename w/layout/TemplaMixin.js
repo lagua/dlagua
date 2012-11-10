@@ -151,13 +151,14 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 		if(typeof resolveProps == "string") {
 			resolveProps = resolveProps.split(",");
 		}
-		var rplen = resolveProps.length;
-		dojo.forEach(schema.links, function(link){
-			if(rplen && dojo.indexOf(resolveProps,link.rel)===-1) return;
-			if(link.resolution=="lazy" && data[link.rel]) {
-				toResolve.push(link.rel);
-			}
-		});
+		if(resolveProps.length) {
+			dojo.forEach(schema.links, function(link){
+				if(dojo.indexOf(resolveProps,link.rel)==-1) return;
+				if(link.resolution=="lazy" && data[link.rel]) {
+					toResolve.push(link.rel);
+				}
+			});
+		}
 		for(var k in schema.properties) {
 			var p = schema.properties[k];
 			if(p.format == "xuri") {
