@@ -15,6 +15,12 @@ define("dlagua/c/_base",["dojo"],function(dojo){
 		    }
 		    document.head.appendChild(script);
 		},
+		addCss:function(_css) {
+			var css = dojo.create("link",{
+				href: _css,
+				rel: "stylesheet"
+			},document.head);
+		},
 		_addRQL: function(){
 			var d = new dojo.Deferred();
 			require(["rql/parser","rql/query","rql/js-array"],function(rqlParser,rqlQuery,rqlArray){
