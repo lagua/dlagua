@@ -56,7 +56,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 					for(var i=0;i<val.length;i++){
 						// check if val is object
 						// note: these items MUST be resolved
-						if(dojo.isObject(val[i]) && !val[i]["$ref"]) {
+						if(dojo.isObject(val[i])) {
 							if(!children) children = {};
 							if(!children[k]) children[k] = [];
 							val[i].__parent = item;
@@ -66,7 +66,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 				} else if(k.substr(0,2)!="__" && val && dojo.isObject(val)) {
 					if(val instanceof Date) {
 						item[k] = dojo.date.stamp.toISOString(val);
-					} else {
+					} else if(!val["$ref"]) {
 						// simply mixin this object
 						item[k].ref = parent;
 						item[k].node = this;

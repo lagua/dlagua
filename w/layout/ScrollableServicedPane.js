@@ -680,7 +680,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		});
 		this.listitems.push(listItem);
 		this.connect(listItem,"onLoad",function(){
-			if(this._beingDestroyed) return;
+			// as this can take a while, listItem may be destroyed in the meantime
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			if(this.xDomainResolver) {
 				var self = this;
 				var resolver = this.xDomainResolver;
