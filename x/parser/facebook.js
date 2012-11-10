@@ -15,10 +15,10 @@ dlagua.x.parser.facebook.like = function(val,options) {
 	dojo.create("a",{
 		"data-href":options.href,
 		"class":options["class"] || "fb-like",
-		"data-send": options.send || false,
+		"data-send": options.send || "false",
 		"data-layout": options.layout || "button_count",
 		"data-width": options.width || 450,
-		"data-show-faces": options.showFaces || false,
+		"data-show-faces": options.showFaces || "false",
 		innerHTML:val
 	},div);
 	return div.innerHTML;

@@ -24,7 +24,7 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			var type = dojo.attr(node,"data-templa-type");
 			types.push(type);
 			var props = dojo.attr(node,"data-templa-props");
-			var pre = document.createTextNode("{{#_mod}}"+type+"|"+props+"|");
+			var pre = document.createTextNode("{{#_mod}}"+type+"|"+(props || "")+"|");
 			var post = document.createTextNode("{{/_mod}}");
 			dojo.place(pre,node,"first");
 			dojo.place(post,node);

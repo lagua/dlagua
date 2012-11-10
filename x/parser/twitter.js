@@ -20,6 +20,5 @@ dlagua.x.parser.twitter.like = function(val,options) {
 		"data-show-screen-name": options.showScreenName || "false",
 		innerHTML:val
 	},div);
-	console.log("twitter",div)
 	return div.innerHTML;
 };
