@@ -1,6 +1,8 @@
 dojo.provide("dlagua.c.date.locale");
+
 dojo.require("dojo.date.locale");
 dojo.require("dojo.date.stamp");
+dojo.requireLocalization("dlagua.c.date", "interval", null, "ROOT,en,nl");
 
 dojo.getObject("c.date.locale", true, dlagua);
 
@@ -36,7 +38,7 @@ dlagua.c.date.locale.format = function(val,options) {
 		var thresholds = (options.updateThresholds || [60*1000,60*60*1000,24*60*60*1000,7*24*60*60*1000,30*24*60*60*1000]);
 		// TODO: from locale
 		var locale = dojo.i18n.normalizeLocale(options.locale);
-		var lb = dojo.i18n.getLocalization("lagua.date", "interval", locale);
+		var lb = dojo.i18n.getLocalization("dlagua.c.date", "interval", locale);
 		var markers = (options.updateMarkers || ["{moments} {ago}","{value} {minute} {ago}","{value} {hour} {ago}","{value} {day} {ago}","{value} {week} {ago}"]);
 		if(diff<limit) {
 			var i=0;
