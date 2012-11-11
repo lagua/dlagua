@@ -30,8 +30,7 @@ dlagua.x.parser.dispatch.flux = function(val,options) {
 	var text;
 	var targetId = options.targetId;
 	var contextInfo = options.contextInfo;
-	val = val || options.label;
-	return dlagua.x.parser.button(val,{
+	return dlagua.x.parser.dispatch.button(val,{
 		onClick:function(){
 			if(options.values) {
 				for(var k in options.values) {
