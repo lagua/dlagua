@@ -17,7 +17,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	infer:function(path,servicetype,depth,fromHash,truncated){
 		var d = new dojo.Deferred();
 		var inferred = {};
-		inferred.__view = "";
+		inferred.__view = false;
 		if(!this.localechanged && ((this.servicetype=="persvr" && fromHash) || servicetype=="persvr")) {
 			if(depth==this.depth+1 || truncated) {
 				var par = path.split("/");
@@ -83,7 +83,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 					for(k in this.replaced["inferred"][id]) {
 						v = this.replaced["inferred"][id][k];
 						if(dojo.isString(v)) {
-							var newv = dojo.replace(v,meta).replace("undefined","");
+							var newv = dojo.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -111,7 +111,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 					for(k in this.replaced["i18n"][id]) {
 						v = this.replaced["i18n"][id][k];
 						if(dojo.isString(v)) {
-							var newv = dojo.replace(v,meta).replace("undefined","");
+							var newv = dojo.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -138,9 +138,8 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
 		var d = new dojo.Deferred();
-		if(!item.__fromHash) {
-			item.__fromHash = false;
-		}
+		if(!item.__fromHash) item.__fromHash = false;
+		if(!item.__view) item.__view = false;
 		if(item.__truncated) {
 			this.path = path;
 			path = item.__truncated;
