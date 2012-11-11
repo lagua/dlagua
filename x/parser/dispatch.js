@@ -7,6 +7,7 @@ dojo.getObject("c.x.parser.dispatch", true, dlagua);
 
 dlagua.x.parser.dispatch.button = function(val,options) {
 	var id = dojox.uuid.generateRandomUuid();
+	options.label = val || options.label;
 	setTimeout(function(){
 		var bt = new dijit.form.Button(options,id);
 		if(options.on) {
@@ -32,6 +33,7 @@ dlagua.x.parser.dispatch.flux = function(val,options) {
 	var contextInfo = options.contextInfo;
 	return dlagua.x.parser.dispatch.button(val,{
 		onClick:function(){
+			if(!fluxProcessor) return;
 			if(options.values) {
 				for(var k in options.values) {
 					fluxProcessor.setControlValue(k,options.values[k]);
