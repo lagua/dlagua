@@ -19,7 +19,7 @@ dlagua.x.parser.html.overlay = function(val,options) {
 		position:"relative"
 	});
 	var innerdiv = dojo.create("div",{
-		innerHTML:render(val),
+		innerHTML:val,
 		style:"opacity:0;",
 		"class":"dlaguaOverlayInner"
 	},outerdiv);
