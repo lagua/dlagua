@@ -20,7 +20,10 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			p.removeChild(node);
 		});
 		var types = [];
-		dojo.query("span[data-templa-type]",div).forEach(function(node){
+		// look for nesting
+		var partials = {};
+		var partialcount = 0;
+		var getNode = function(node){
 			var type = dojo.attr(node,"data-templa-type");
 			types.push(type);
 			var props = dojo.attr(node,"data-templa-props");
@@ -28,6 +31,24 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			var post = document.createTextNode("{{/_mod}}");
 			dojo.place(pre,node,"first");
 			dojo.place(post,node);
+			return node;
+		}
+		dojo.query("span[data-templa-type] span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+			var partname = "_mod"+partialcount;
+			partials[partname] = p.innerHTML;
+			p.innerHTML = "{{>"+partname+"}}";
+			partialcount++;
+		});
+		dojo.query("span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
 			var p = node.parentNode;
 			var inner;
 			while(inner = node.firstChild){
@@ -45,7 +66,8 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			dj.require(type);
 		});
 		tpl = div.innerHTML.toString();
-		return dlagua.x.Mustache.to_html(tpl,this);
+		tpl = tpl.replace(/{{&gt;/g,"{{>");
+		return dlagua.x.Mustache.to_html(tpl,this,partials);
 	},
 	_mod:function(){
 		return function(text, render) {
@@ -71,6 +93,18 @@ dojo.declare("dlagua.c.templa.Mixin",[dojo.Stateful],{
 			// let value be first arg
 			props.unshift(render(val));
 			return fn.apply(this,props);
+		};
+	},
+	_switch:function(){
+		return function(text, render) {
+			text = render(text);
+			var ar = text.split("|");
+			var val = ar[0];
+			var props = (ar.length>1 ? dojo.fromJson(ar[1]) : {});
+			for(var k in props) {
+				if(k==val) return props[k];
+			}
+			return props["default"];
 		};
 	}
 });
