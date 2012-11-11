@@ -31,12 +31,14 @@ dlagua.x.parser.dispatch.flux = function(val,options) {
 	var text;
 	var targetId = options.targetId;
 	var contextInfo = options.contextInfo;
+	var values = options.values;
 	return dlagua.x.parser.dispatch.button(val,{
 		onClick:function(){
+			console.log(values)
 			if(!fluxProcessor) return;
-			if(options.values) {
+			if(values) {
 				for(var k in options.values) {
-					fluxProcessor.setControlValue(k,options.values[k]);
+					fluxProcessor.setControlValue(k,values[k]);
 				}
 				fluxProcessor.dispatchEventType(targetId,contextInfo)
 			}
