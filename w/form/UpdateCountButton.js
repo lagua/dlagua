@@ -1,6 +1,7 @@
 dojo.provide("dlagua.w.form.UpdateCountButton");
 dojo.require("dijit.form.Button");
-dojo.declare("dlagua.w.form.UpdateCountButton",[dijit.form.Button],{
+dojo.require("dlagua.c.Subscribable");
+dojo.declare("dlagua.w.form.UpdateCountButton",[dijit.form.Button,dlagua.c.Subscribable],{
 	// TODO: localize
 	count:0,
 	currentItem:null,
