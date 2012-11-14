@@ -6,7 +6,7 @@ dojo.require("dojox.uuid.generateRandomUuid");
 dojo.getObject("c.x.parser.dispatch", true, dlagua);
 
 dlagua.x.parser.dispatch.button = function(val,options) {
-	var id = dojox.uuid.generateRandomUuid();
+	var id = options.id || dojox.uuid.generateRandomUuid();
 	options.label = val || options.label;
 	setTimeout(function(){
 		var bt = new dijit.form.Button(options,id);

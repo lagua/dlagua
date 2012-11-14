@@ -1,16 +1,18 @@
 dojo.provide("dlagua.w.layout.TemplaMixin");
 
 dojo.require("dojo.Stateful");
-dojo.require("dlagua.c.templa.Mixin");
 dojo.require("dojo.html");
+
+dojo.require("dlagua.c.templa.Mixin");
+dojo.require("dlagua.x.Mustache");
 
 dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 	resolveProperties:null,
 	schema:null,
 	data:null,
 	mixeddata:null,
-	applyTemplate: function(tpl){
-		this.set("content",this.mixeddata.render(tpl));
+	applyTemplate: function(tpl,partials){
+		this.set("content",dlagua.x.Mustache.to_html(tpl,this.mixeddata,partials));
 	},
 	_load:function(){
 		var d = new dojo.Deferred();

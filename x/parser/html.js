@@ -105,7 +105,7 @@ dlagua.x.parser.html.overlay = function(val,options) {
 	dojo.connect(button.domNode, "onclick", function(event){
 		event.stopPropagation();
 	});
-    var id = dojox.uuid.generateRandomUuid();
+    var id = options.id || dojox.uuid.generateRandomUuid();
 	setTimeout(function(){
 		var s = dojo.byId(id);
 		if(!s) throw new Error("Overlay not rendered.");

@@ -239,26 +239,24 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				callbackParamName:resolver.callbackParamName,
 				load:function(res){
 					var tpl = resolver.transformer(res);
-					// FIXME: not so nice check...
-					this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
+					var tplo = self.parseTemplate(tpl);
 					if(child){
-						child.applyTemplate(tpl);
+						child.applyTemplate(tplo.tpl,tplo.partials);
 					} else {
 						dojo.forEach(self.listitems,function(li){
-							li.applyTemplate(tpl);
+							li.applyTemplate(tplo.tpl,tplo.partials);
 						});
 					}
 				}
 			});
 		} else {
 			var tpl = dojo.cache(this.templateModule,template);
-			// FIXME: not so nice check...
-			this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
+			var tplo = this.parseTemplate(tpl);
 			if(child && child!="childTemplate"){
-				child.applyTemplate(tpl);
+				child.applyTemplate(tplo.tpl,tplo.partials);
 			} else {
 				dojo.forEach(this.listitems,function(li){
-					li.applyTemplate(tpl);
+					li.applyTemplate(tplo.tpl,tplo.partials);
 				});
 			}
 		}
@@ -522,7 +520,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.selectedItem = this.listitems[index];
 		console.log("selectedItem",this.selectedItem);
-		if(this.id) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
+		if(this.id && this.listitems && this.listitems.length) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
 
 		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
 			// try to get more stuff from the store...
@@ -649,6 +647,67 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	getModel:function(){
 		return this.model || this.currentItem.model;
 	},
+	parseTemplate(tpl) {
+		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
+		var div = dojo.create("div",{
+			innerHTML:tpl
+		});
+		dojo.query("span.templaField",div).forEach(function(node){
+			var p = node.parentNode;
+			var inner = node.firstChild;
+			p.insertBefore(inner, node);
+			p.removeChild(node);
+		});
+		var types = [];
+		// look for nesting
+		var partials = {};
+		var partialcount = 0;
+		var getNode = function(node){
+			var type = dojo.attr(node,"data-templa-type");
+			types.push(type);
+			var props = dojo.attr(node,"data-templa-props");
+			var pre = document.createTextNode("{{#_mod}}"+type+"|"+(props || "")+"|");
+			var post = document.createTextNode("{{/_mod}}");
+			dojo.place(pre,node,"first");
+			dojo.place(post,node);
+			return node;
+		}
+		dojo.query("span[data-templa-type] span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+			var partname = "_mod"+partialcount;
+			partials[partname] = p.innerHTML;
+			p.innerHTML = "{{>"+partname+"}}";
+			partialcount++;
+		});
+		dojo.query("span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+		});
+		var dj = dojo;
+		dojo.forEach(types,function(type){
+			if(type.indexOf("::")) {
+				var ar = type.split("::");
+				type = ar[0];
+			}
+			dj.require(type);
+		});
+		tpl = div.innerHTML.toString();
+		tpl = tpl.replace(/{{&gt;/g,"{{>");
+		return {tpl:tpl,partials:partials};
+	},
 	getTemplate:function(templateDir){
 		var xtemplate = "";
 		var item = this.currentItem;
@@ -694,18 +753,20 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					load:function(res){
 						if(self._beingDestroyed) return;
 						var tpl = resolver.transformer(res);
-						listItem.applyTemplate(tpl);
+						var tplo = self.parseTemplate(tpl);
+						listItem.applyTemplate(tplo.tpl,tplo.partials);
 						dojo.fadeIn({node:listItem.containerNode}).play();
 						self.childrenReady++;
-						if(self.childrenReady == self.listitems.length) self.onReady();
+						if(self.childrenReady == items.length) self.onReady();
 					}
 				});
 			} else {
 				var tpl = dojo.cache(this.templateModule,this.template);
-				listItem.applyTemplate(tpl);
+				var tplo = this.parseTemplate(tpl);
+				listItem.applyTemplate(tplo.tpl,tplo.partials);
 				dojo.fadeIn({node:listItem.containerNode}).play();
 				this.childrenReady++;
-				if(this.childrenReady == this.listitems.length) this.onReady();
+				if(this.childrenReady == items.length) this.onReady();
 			}
 			this.itemnodesmap[item[this.idProperty]] = listItem;
 		});
@@ -744,6 +805,10 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this._loading = false;
 		this.resetScrollBar();
 		// select currentId for #anchor simulation
-		if(this.currentId) this.selectItemByCurrentId();
+		if(this.currentId) {
+			this.selectItemByCurrentId();
+		} else {
+			this.setSelectedItem(0);
+		}
 	}
 });

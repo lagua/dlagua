@@ -1,0 +1,7 @@
+.mblScrollBarWrapper {
+    background: url("images/scrollrail.png") repeat-y scroll center top transparent;
+}
+
+.dlaguaScrollableServicedPaneItem {
+	margin-right:15px;
+}

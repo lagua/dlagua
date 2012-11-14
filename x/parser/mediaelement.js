@@ -29,8 +29,8 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 	}
 	// whenever the content must be deferred, we need an uuid
 	// BUT we also may need one for pub/sub
-    var id = dojox.uuid.generateRandomUuid();
-	var mime = "audio/mp3";
+    var id = options.id || dojox.uuid.generateRandomUuid();
+    var mime = "audio/mpeg";
 	// declare audio player with jQuery
 	var parse = function(){
 		// check if the div AND mediaelement are available
