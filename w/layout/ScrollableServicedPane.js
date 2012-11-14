@@ -647,7 +647,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	getModel:function(){
 		return this.model || this.currentItem.model;
 	},
-	parseTemplate(tpl) {
+	parseTemplate: function(tpl){
 		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
 		var div = dojo.create("div",{
 			innerHTML:tpl
