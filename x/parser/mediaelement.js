@@ -30,7 +30,7 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 	// whenever the content must be deferred, we need an uuid
 	// BUT we also may need one for pub/sub
     var id = options.id || dojox.uuid.generateRandomUuid();
-    var mime = "audio/mpeg";
+    var types = options.types || ["mp3"];
 	// declare audio player with jQuery
 	var parse = function(){
 		// check if the div AND mediaelement are available
@@ -55,7 +55,17 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 		}
 	}
 	d.then(parse);
-	var text = '<audio id="audio_'+id+'" controls="controls"><source type="'+mime+'" src="'+val+'"/></audio>';
+	var text = '<audio id="audio_'+id+'" controls="controls">';
+	var exts = {
+		"mp3":"audio/mpeg",
+		"ogg":"audio/ogg"
+	};
+	dojo.forEach(types,function(type){
+		var mime = exts[type];
+		var src = val.replace("."+types[0],"");
+		text += '<source type="'+mime+'" src="'+src+'.'+type+'"/>';
+	});
+	text += '</audio>';
 	if(dojo.isIE && dojo.isIE<9) text = '<span style="display:none;">&nbsp;</span><audio id="audio_'+id+'" controls type="'+mime+'" src="'+val+'">&nbsp;</audio>';	
 	return text;
 };
