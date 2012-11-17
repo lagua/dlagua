@@ -311,7 +311,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		if(!cancel) return;
 		switch(o.type || this.servicetype) {
 			case "persvr":
-				if(this.results.fired==-1) {
+				if(this.results && this.results.fired==-1) {
 					this.results.cancel();
 				}
 			break;

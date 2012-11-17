@@ -14,7 +14,7 @@ dlagua.x.parser.facebook.like = function(val,options) {
 	var div = dojo.create("div");
 	dojo.create("a",{
 		"data-href":options.href,
-		"class":options["class"] || "fb-like",
+		"class": "fb-like",
 		"data-send": options.send || "false",
 		"data-layout": options.layout || "button_count",
 		"data-width": options.width || 450,

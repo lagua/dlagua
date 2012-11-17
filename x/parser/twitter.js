@@ -14,7 +14,7 @@ dlagua.x.parser.twitter.like = function(val,options) {
 	var div = dojo.create("div");
 	dojo.create("a",{
 		href:options.href,
-		"class":options["class"] || "twitter-follow-button",
+		"class": "twitter-follow-button",
 		"data-show-count": options.showCount || "false",
 		"data-lang": options.lang || "nl",
 		"data-show-screen-name": options.showScreenName || "false",
