@@ -66,6 +66,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	headerLabel:"",
 	footerLabel:"",
 	pageButtons:true,
+	loadingAnimation:true,
 	loadOnCreation:true,
 	currentService:"",
 	resolveProperties:"",
@@ -411,13 +412,15 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		dojo.style(this.containerNode,{
 			top:0
 		});
-		var lh = dojo.connect(this,"onReady",this,function(){
-			dojo.disconnect(lh);
+		//var lh = dojo.connect(this,"onReady",this,function(){
+		//	dojo.disconnect(lh);
 			if(this.useScrollBar) {
-				this.showScrollBar();
 				this.scrollToInitPos();
 			}
-		});
+		//});
+		if(this.loadingAnimation && this.footer) {
+			dojo.addClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
 		this.selectedIndex = 0;
 		this.selectedItem = null;
 		this.listitems = [];
@@ -499,10 +502,42 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.slideTo({x:0,y:-y},0.3,"ease-out");
 	},
+	pageStore:function(py){
+		if(this._loading) return;
+		if(!py) py = this.getPos().y;
+		var dim = this._dim;
+		if(!dim) dim = this._dim = this.getDim();
+		var len = this.listitems.length;
+		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
+			// try to get more stuff from the store...
+			this._loading = true;
+			this.childrenReady = 0;
+			if(this.loadingAnimation && this.footer) {
+				dojo.addClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+			}
+			var count = (this.pageSize || this.count);
+			if(this.start+count>this.maxCount) return;
+			if(this.start+count>=this.total) count = this.total-this.start;
+			var start = this.start;
+			this.start += count;
+			var q = this.createQuery();
+			var results = this.results = this.store.query(q,{
+				start:start,
+				count:count,
+				useXDomain:this.useXDomain
+			});
+			results.total.then(dojo.hitch(this,function(total){
+				this.total = total;
+			}));
+			results.forEach(dojo.hitch(this,this.addItem));
+		}
+	},
 	setSelectedItem: function(index) {
+		if(this.selectedIndex==index) return;
 		this.selectedIndex = index;
 		var py = this.getPos().y;
-		var dim = this.getDim();
+		var dim = this._dim;
+		if(!dim) dim = this._dim = this.getDim();
 		var len = this.listitems.length;
 		if(this.snap) {
 			var y = 0;
@@ -521,25 +556,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.selectedItem = this.listitems[index];
 		console.log("selectedItem",this.selectedItem);
 		if(this.id && this.listitems && this.listitems.length) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
-
-		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
-			// try to get more stuff from the store...
-			var count = (this.pageSize || this.count);
-			if(this.start+count>this.maxCount) return;
-			if(this.start+count>=this.total) count = this.total-this.start;
-			var start = this.start;
-			this.start += count;
-			var q = this.createQuery();
-			var results = this.results = this.store.query(q,{
-				start:start,
-				count:count,
-				useXDomain:this.useXDomain
-			});
-			results.total.then(dojo.hitch(this,function(total){
-				this.total = total;
-			}));
-			results.forEach(dojo.hitch(this,this.addItem));
-		}
+		this.pageStore(py);
 	},
 	createQuery:function(){
 		if(!persvr.rql) return;
@@ -636,12 +653,18 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			if(!_this || _this._beingDestroyed) {
 				return;
 			}
+			// recalc dim
+			_this._dim = _this.getDim();
 			if(_this.useScrollBar) {
-				_this.showScrollBar();
-				_this.scrollToInitPos();
+				if(!_this._scrollBarV && !_this.scrollBarH) {
+					_this.showScrollBar();
+				} else {
+					_this.resetScrollBar();
+				}
 			} else {
 				_this.resetScrollBar();
 			}
+			_this.pageStore();
 		}, 100);
 	},
 	getModel:function(){
@@ -803,7 +826,22 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	onReady: function(){
 		console.log("done loading "+this.id);
 		this._loading = false;
-		this.resetScrollBar();
+		if(this.loadingAnimation && this.footer) {
+			dojo.removeClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
+		// recalc dim: items where added
+		this._dim = this.getDim();
+		// if needed, get more stuff from the store
+		if(this.currentService == "persvr") this.pageStore();
+		if(this.useScrollBar) {
+			if(!this._scrollBarV && !this.scrollBarH) {
+				this.showScrollBar();
+			} else {
+				this.resetScrollBar();
+			}
+		} else {
+			this.resetScrollBar();
+		}
 		// select currentId for #anchor simulation
 		if(this.currentId) {
 			this.selectItemByCurrentId();
