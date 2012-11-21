@@ -654,6 +654,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				return;
 			}
 			// recalc dim
+			var pos = _this.getPos();
 			_this._dim = _this.getDim();
 			if(_this.useScrollBar) {
 				if(!_this._scrollBarV && !_this.scrollBarH) {
@@ -661,10 +662,11 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				} else {
 					_this.resetScrollBar();
 				}
+				_this.slideScrollBarTo(pos, 0.3, "ease-out");
 			} else {
 				_this.resetScrollBar();
 			}
-			_this.pageStore();
+			_this.pageStore(pos.y);
 		}, 100);
 	},
 	getModel:function(){
@@ -839,6 +841,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			} else {
 				this.resetScrollBar();
 			}
+			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
 		} else {
 			this.resetScrollBar();
 		}
