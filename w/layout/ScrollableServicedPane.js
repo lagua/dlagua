@@ -845,8 +845,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		// select currentId for #anchor simulation
 		if(this.currentId) {
 			this.selectItemByCurrentId();
-		} else {
-			this.setSelectedItem(0);
 		}
 	}
 });
