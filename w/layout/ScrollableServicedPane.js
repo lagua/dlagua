@@ -832,7 +832,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		// recalc dim: items where added
 		this._dim = this.getDim();
 		// if needed, get more stuff from the store
-		if(this.currentService == "persvr") this.pageStore();
+		if(this.servicetype == "persvr") this.pageStore();
 		if(this.useScrollBar) {
 			if(!this._scrollBarV && !this.scrollBarH) {
 				this.showScrollBar();
