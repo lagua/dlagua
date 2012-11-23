@@ -401,7 +401,11 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	selectItemByCurrentId: function(){
 		if(this._beingDestroyed) return;
 		var item = this.itemnodesmap[this.currentId];
-		if(!item) return;
+		if(!item) {
+			// force more stuff from the store
+			this.pageStore(-Infinity);
+			return;
+		}
 		this.currentId = null;
 		var index = item.getIndexInParent();
 		this.scrollToItem(index);
@@ -782,7 +786,11 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 						listItem.applyTemplate(tplo.tpl,tplo.partials);
 						dojo.fadeIn({node:listItem.containerNode}).play();
 						self.childrenReady++;
-						if(self.childrenReady == items.length) self.onReady();
+						if(self.childrenReady == items.length) {
+							setTimeout(function(){
+								self.onReady();
+							},2);
+						}
 					}
 				});
 			} else {
@@ -791,7 +799,12 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				listItem.applyTemplate(tplo.tpl,tplo.partials);
 				dojo.fadeIn({node:listItem.containerNode}).play();
 				this.childrenReady++;
-				if(this.childrenReady == items.length) this.onReady();
+				if(this.childrenReady == items.length) {
+					// wait for the margin boxes to be set
+					setTimeout(dojo.hitch(this,function(){
+						this.onReady();
+					}),2);
+				}
 			}
 			this.itemnodesmap[item[this.idProperty]] = listItem;
 		});
