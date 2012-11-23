@@ -40,6 +40,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		return d;
 	},
 	hashToItem: function(hash) {
+		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
 		var locale,path;
 		var hashar = hash.split("/");
 		if(this.useLocale) locale = hashar.shift();
