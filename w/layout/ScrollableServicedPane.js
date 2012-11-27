@@ -510,7 +510,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		if(this._loading) return;
 		if(!py) py = this.getPos().y;
 		var dim = this._dim;
-		if(!dim) dim = this._dim = this.getDim();
 		var len = this.listitems.length;
 		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
 			// try to get more stuff from the store...
@@ -541,7 +540,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.selectedIndex = index;
 		var py = this.getPos().y;
 		var dim = this._dim;
-		if(!dim) dim = this._dim = this.getDim();
 		var len = this.listitems.length;
 		if(this.snap) {
 			var y = 0;
@@ -622,7 +620,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			dojo.stopEvent(e);
 		}
 		this.stopAnimation();
-		this.checkSelectedItem();
 		if(this._bounce){
 			var _this = this;
 			var bounce = _this._bounce;
@@ -634,6 +631,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			this.hideScrollBar();
 			this.removeCover();
 			this.startTime = 0;
+			// this really is dim reset
+			this._dim = this.getDim();
+			this.checkSelectedItem();
 		}
 	},
 	layout:function(){
@@ -659,7 +659,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			}
 			// recalc dim
 			var pos = _this.getPos();
-			_this._dim = _this.getDim();
 			if(_this.useScrollBar) {
 				if(!_this._scrollBarV && !_this.scrollBarH) {
 					_this.showScrollBar();
@@ -844,20 +843,19 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		if(this.loadingAnimation && this.footer) {
 			dojo.removeClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
-		// recalc dim: items where added
-		this._dim = this.getDim();
-		// if needed, get more stuff from the store
-		if(this.servicetype == "persvr") this.pageStore();
+		var pos = this.getPos();
 		if(this.useScrollBar) {
 			if(!this._scrollBarV && !this.scrollBarH) {
 				this.showScrollBar();
 			} else {
 				this.resetScrollBar();
 			}
-			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
+			this.slideScrollBarTo(pos, 0.3, "ease-out");
 		} else {
 			this.resetScrollBar();
 		}
+		// if needed, get more stuff from the store
+		if(this.servicetype == "persvr") this.pageStore(pos.y);
 		// select currentId for #anchor simulation
 		if(this.currentId) {
 			this.selectItemByCurrentId();
