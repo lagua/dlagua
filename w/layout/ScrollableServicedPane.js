@@ -416,12 +416,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		dojo.style(this.containerNode,{
 			top:0
 		});
-		//var lh = dojo.connect(this,"onReady",this,function(){
-		//	dojo.disconnect(lh);
-			if(this.useScrollBar) {
-				this.scrollToInitPos();
-			}
-		//});
+		if(this.useScrollBar) {
+			this.scrollToInitPos();
+		}
 		if(this.loadingAnimation && this.footer) {
 			dojo.addClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
@@ -659,15 +656,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			}
 			// recalc dim
 			var pos = _this.getPos();
+			_this.showScrollBar();
 			if(_this.useScrollBar) {
-				if(!_this._scrollBarV && !_this.scrollBarH) {
-					_this.showScrollBar();
-				} else {
-					_this.resetScrollBar();
-				}
 				_this.slideScrollBarTo(pos, 0.3, "ease-out");
-			} else {
-				_this.resetScrollBar();
 			}
 			_this.pageStore(pos.y);
 		}, 100);
@@ -844,15 +835,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			dojo.removeClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
 		var pos = this.getPos();
+		this.showScrollBar();
 		if(this.useScrollBar) {
-			if(!this._scrollBarV && !this.scrollBarH) {
-				this.showScrollBar();
-			} else {
-				this.resetScrollBar();
-			}
 			this.slideScrollBarTo(pos, 0.3, "ease-out");
-		} else {
-			this.resetScrollBar();
 		}
 		// if needed, get more stuff from the store
 		if(this.servicetype == "persvr") this.pageStore(pos.y);
