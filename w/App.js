@@ -7,6 +7,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	state:"initial",
 	path:"",
 	defaultHash:"",
+	indexable:false,
 	locale:"",
 	servicetype:"",
 	useLocale:true,
@@ -182,7 +183,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
 				dojo.publish("/app/pagechange",[item]);
-				var hash = "!"+locale+"/"+path;
+				var hash = (this.indexable ? "!" : "")+locale+"/"+path;
 				dojo.hash(hash);
 				this.set("path",path);
 				d.callback(true);
