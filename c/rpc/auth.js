@@ -38,7 +38,7 @@ dlagua.c.rpc.auth = function(url,params){
 			error:function(res,io){
 				// return here! first process auth then reload
 				token = io.xhr.getResponseHeader("phrase");
-				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+res.message;
+				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
 				d.errback(err);
 			}
 		});
