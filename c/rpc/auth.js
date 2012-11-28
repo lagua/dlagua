@@ -5,6 +5,7 @@ dojo.require("dijit.form.Form");
 dojo.require("dijit.form.ValidationTextBox");
 dojo.require("dijit.form.Button");
 dojo.require("dforma.Label");
+dojo.require("dlagua.x.Aes");
 
 dlagua.c.rpc.auth = function(url,params){
 	var d = new dojo.Deferred();
@@ -30,13 +31,13 @@ dlagua.c.rpc.auth = function(url,params){
 				if(io.xhr.getResponseHeader(sessionParam) || (res && res.user)) {
 					d.callback(res);
 				} else {
-					token = io.xhr.getResponseHeader("token");
+					token = io.xhr.getResponseHeader("phrase");
 					d.errback();
 				}
 			},
 			error:function(res,io){
 				// return here! first process auth then reload
-				token = io.xhr.getResponseHeader("token");
+				token = io.xhr.getResponseHeader("phrase");
 				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+res.message;
 				d.errback(err);
 			}
@@ -47,7 +48,7 @@ dlagua.c.rpc.auth = function(url,params){
 		if(!form.validate() || !token) return;
 		authMsg.innerHTML = "";
 		var data = form.get("value");
-		var passwd = CryptoJS.AES.encrypt(data.passwd, token).toString();
+		var passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd,token,256);//CryptoJS.AES.encrypt(data.passwd, token).toString();
 		var req = {
 			"id":"call-id",
 			"method":"authenticate",

@@ -299,8 +299,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		// should we cancel oldItem and let currentItem take over?
 		var props = this.reloadTriggerProperties.split(",");
 		// if any of the keys below are different, cancel
-		var cancel = false;
-		if(o) {
+		var cancel = this._beingDestroyed;
+		if(!cancel && o) {
 			for(var i=0;i<props.length;i++) {
 				var p = props[i];
 				if(p in n && p in o && n[p]!=o[p]) {
@@ -465,6 +465,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	destroyRecursive: function(/*Boolean*/ preserveDom){
 		// summary:
 		//		Destroy the ContentPane and its contents
+		if(this._loading) this.cancel();
 		this.unwatchAll();
 		this.inherited(arguments);
 	},
@@ -749,6 +750,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	},
 	addItem:function(item,index,items,insertIndex) {
+		if(this._beingDestroyed) return;
 		var content = "";
 		var id = item[this.idProperty];
 		var listItem = new dlagua.w.layout.ScrollableServicedPaneItem({

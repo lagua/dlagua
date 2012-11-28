@@ -42,12 +42,20 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	},
 	hashToItem: function(hash) {
 		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
-		var locale,path;
-		var hashar = hash.split("/");
-		if(this.useLocale) locale = hashar.shift();
-		path = hashar.join("/");
+		var hashar = hash.split(":");
+		var state,rest,locale,path;
+		if(hashar.length>1) {
+		state = hashar[0];
+			rest = hashar[1];
+		} else {
+			state = "initial";
+			rest = hashar[0];
+		}
+		var restar = rest.split("/");
+		if(this.useLocale) locale = restar.shift();
+		path = restar.join("/");
 		var item = {
-			state:"initial",
+			state:state,
 			locale:locale,
 			path:path
 		};
@@ -183,7 +191,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
 				dojo.publish("/app/pagechange",[item]);
-				var hash = (this.indexable ? "!" : "")+locale+"/"+path;
+				var hash = (this.indexable ? "!" : "")+(state!="initial" ? state+":" : "")+locale+"/"+path;
 				dojo.hash(hash);
 				this.set("path",path);
 				d.callback(true);
