@@ -13,6 +13,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	useLocale:true,
 	depth:0,
 	meta:{},
+	hideState:false,
 	replaced:[],
 	fromHash:false,
 	infer:function(path,servicetype,depth,fromHash,truncated){
@@ -45,11 +46,18 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		var hashar = hash.split(":");
 		var state,rest,locale,path;
 		if(hashar.length>1) {
-		state = hashar[0];
+			state = hashar[0];
 			rest = hashar[1];
 		} else {
 			state = "initial";
 			rest = hashar[0];
+		}
+		// try stateMap
+		if(state=="initial" && this.stateMap) {
+			for(var k in this.stateMap) {
+				var patt = new RegExp(this.stateMap[k],"ig");
+				if(patt.test(rest)) state = k;
+			}
 		}
 		var restar = rest.split("/");
 		if(this.useLocale) locale = restar.shift();
@@ -191,7 +199,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
 				dojo.publish("/app/pagechange",[item]);
-				var hash = (this.indexable ? "!" : "")+(state!="initial" ? state+":" : "")+locale+"/"+path;
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.hideState ? state+":" : "")+locale+"/"+path;
 				dojo.hash(hash);
 				this.set("path",path);
 				d.callback(true);
