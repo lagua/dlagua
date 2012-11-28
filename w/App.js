@@ -13,7 +13,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 	useLocale:true,
 	depth:0,
 	meta:{},
-	hideState:false,
+	stateMap:null,
 	replaced:[],
 	fromHash:false,
 	infer:function(path,servicetype,depth,fromHash,truncated){
@@ -56,7 +56,10 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		if(state=="initial" && this.stateMap) {
 			for(var k in this.stateMap) {
 				var patt = new RegExp(this.stateMap[k],"ig");
-				if(patt.test(rest)) state = k;
+				if(patt.test(rest)) {
+					state = k;
+					break;
+				}
 			}
 		}
 		var restar = rest.split("/");
@@ -199,7 +202,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			if(pathchanged) {
 				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
 				dojo.publish("/app/pagechange",[item]);
-				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.hideState ? state+":" : "")+locale+"/"+path;
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+"/"+path;
 				dojo.hash(hash);
 				this.set("path",path);
 				d.callback(true);
