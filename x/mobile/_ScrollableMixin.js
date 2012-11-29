@@ -571,7 +571,9 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		} else {
 			this._time.push((new Date()).getTime());
 		}
-		
+		if(e.target.nodeType != 1 || (e.target.tagName != "SELECT" && e.target.tagName != "INPUT" && e.target.tagName != "TEXTAREA")){
+			dojo.stopEvent(e);
+		}
 	},
 	showScrollBar: function(){
 		if(!this.scrollBar){ return; }

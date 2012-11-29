@@ -35,7 +35,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 		}));
 		return d;
 	},
-	_mixinRecursive: function(item,schema,resolveProps,mu_mixin,d) {
+	_mixinRecursive: function(item,schema,resolveProps,mu_mixin,d,skipX) {
 		if(!d) d = new dojo.Deferred();
 		var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 		item.__onChildDone = function(){
@@ -49,7 +49,7 @@ dojo.declare("dlagua.w.layout.TemplaMixin", [], {
 				d.callback(this);
 			}
 		};
-		this.resolveLinks(item,schema,resolveProps).then(dojo.hitch(this,function(resolved){
+		this.resolveLinks(item,schema,resolveProps,skipX).then(dojo.hitch(this,function(resolved){
 			resolved.__resolved = true;
 			var children;
 			for(var k in resolved) {
