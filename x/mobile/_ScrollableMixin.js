@@ -227,7 +227,6 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		this._time = [0];
 		this._posX = [this.invert ? -this.touchStartX : this.touchStartX];
 		this._posY = [this.invert ? -this.touchStartY : this.touchStartY];
-
 		if(e.target.nodeType != 1 || (e.target.tagName != "SELECT" && e.target.tagName != "INPUT" && e.target.tagName != "TEXTAREA")){
 			dojo.stopEvent(e);
 		}
