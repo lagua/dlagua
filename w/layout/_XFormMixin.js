@@ -51,10 +51,30 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		this.inherited(arguments);
 	},
 	startup:function(){
+		var self = this;
+		var reset = function(){
+			self._dim = self.getDim();
+			self.showScrollBar();
+			if(self.useScrollBar) {
+				var pos = self.getPos();
+				self.slideScrollBarTo(pos, 0.3, "ease-out");
+			}
+		}
 		dojo.subscribe("/xf/ready",this,function(data){
-			console.log(data);
 			this.xformLoaded();
-		})
+			self.scrollToItem(0);
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"dispatchEvent",function(xmlEvent){
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"dispatchEventType",function(xmlEvent){
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
+			self.scrollToItem(0);
+			setTimeout(reset,100);
+		});
 		this.inherited(arguments);
 	}
 });
