@@ -19,8 +19,9 @@ dojo.require("dlagua.w.layout.ScrollableServicedPaneItem");
 dojo.require("dojo.store.Memory");
 dojo.require("dojo.store.Cache");
 dojo.require("dlagua.c.rpc.FeedReader");
+dojo.require("dlagua.w.layout._XFormMixin");
 
-dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.c.Subscribable],{
+dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.w.layout._XFormMixin,dlagua.c.Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
