@@ -6,6 +6,7 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		var xfc = dojo.byId("xformContainer");
 		var dest = this.xformTarget;
 		if(!xfc || !dest) return;
+		this.xformTarget = null;
 		dest.set("content","");
 		dojo.query(">",xfc).forEach(function(node){
 	    	dest.domNode.appendChild(node);
@@ -47,6 +48,13 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 	},
 	rebuild:function(){
 		if(this.servicetype=="xform") this.unloadXform();
+		this.inherited(arguments);
+	},
+	startup:function(){
+		dojo.subscribe("/xf/ready",this,function(data){
+			console.log(data);
+			this.xformLoaded();
+		})
 		this.inherited(arguments);
 	}
 });
