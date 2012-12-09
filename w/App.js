@@ -64,6 +64,7 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 		}
 		var restar = rest.split("/");
 		if(this.useLocale) locale = restar.shift();
+		if(restar[0]!="content") restar.unshift("content");
 		path = restar.join("/");
 		var item = {
 			state:state,
@@ -199,10 +200,13 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			dojo.forEach(reset,function(r){
 				r.dojoo.set(r.key,r.value);
 			});
-			if(pathchanged) {
-				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
+			if(pathchanged || localechanged) {
 				dojo.publish("/app/pagechange",[item]);
-				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+"/"+path;
+				var par = path.split("/");
+				if(par[0]=="content") par.shift();
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+"/"+par.join("/");
+				var chash = dojo.hash();
+				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				dojo.hash(hash);
 				this.set("path",path);
 				d.callback(true);

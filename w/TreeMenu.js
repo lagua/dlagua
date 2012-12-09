@@ -19,36 +19,37 @@ dojo.declare("dlagua.w.TreeMenu",[dlagua.c.Subscribable,dlagua.w.Tree],{
 	reloadTriggerProperties:"path,locale,type,model",
 	startup: function(){
 		var self = this;
-		this.addWatch("currentItem",function(){
-			console.log("TreeMenu loading currentItem ",this.currentItem)
-			var reload;
-			var n = this.currentItem;
-			var o = this.model.root;
-			for(var k in this.currentItem) {
-				//if(k=="__truncated" || k=="__loaded") continue;
-				var props = this.reloadTriggerProperties.split(",");
-				if(o) {
-					var reload = false;
-					for(var i=0;i<props.length;i++) {
-						var p = props[i];
-						if(p in n && p in o && n[p]!=o[p]) {
-							reload = true;
-							break;
-						}
-					}
-					if(!reload) return;
-				}
-			}
-			console.log("TreeMenu rebuilding currentItem ",this.currentItem)
-			this.model.root = this.currentItem;
-			this.rebuild();
-		});
+		this.addWatch("currentItem",this._loadFromItem);
 		this.addWatch("currentId",this._loadFromId);
 		this.connect(this,"onLoad",function(){
 			// always try to load currentId when the tree loads
 			this._loadFromId();
 		});
 		this.inherited(arguments);
+	},
+	_loadFromItem:function(prop,oldValue,newValue){
+		console.log("TreeMenu loading currentItem ",this.currentItem)
+		var reload;
+		var n = this.currentItem;
+		var o = this.model.root;
+		for(var k in this.currentItem) {
+			//if(k=="__truncated" || k=="__loaded") continue;
+			var props = this.reloadTriggerProperties.split(",");
+			if(o) {
+				var reload = false;
+				for(var i=0;i<props.length;i++) {
+					var p = props[i];
+					if(p in n && p in o && n[p]!=o[p]) {
+						reload = true;
+						break;
+					}
+				}
+				if(!reload) return;
+			}
+		}
+		console.log("TreeMenu rebuilding currentItem ",this.currentItem)
+		this.model.root = dojo.clone(this.currentItem);
+		this.rebuild();
 	},
 	destroyRecursive:function(){
 		this.unwatchAll();

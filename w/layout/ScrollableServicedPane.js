@@ -19,9 +19,8 @@ dojo.require("dlagua.w.layout.ScrollableServicedPaneItem");
 dojo.require("dojo.store.Memory");
 dojo.require("dojo.store.Cache");
 dojo.require("dlagua.c.rpc.FeedReader");
-dojo.require("dlagua.w.layout._XFormMixin");
 
-dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.w.layout._XFormMixin,dlagua.c.Subscribable],{
+dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidget, dijit._Templated, dlagua.x.mobile._ScrollableMixin,dlagua.c.Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
@@ -81,6 +80,14 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	baseClass:"dlaguaScrollableServicedPane",
 	templateString: dojo.cache("dlagua.w.layout", "templates/ScrollableServicedPane.html"),
 	useScrollBar:true,
+	postscript:function(params, srcNodeRef){
+		if(window.fluxProcessor) {
+			var dj = dojo;
+			dj.require("dlagua.w.layout._XFormMixin");
+			dojo.safeMixin(this,new dlagua.w.layout._XFormMixin());
+		}
+		this.inherited(arguments);
+	},
 	startup: function(){
 		if(this._started){ return; }
 		this._timer = new dojox.timing.Timer(this.autoSkipInterval);
@@ -782,7 +789,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 						if(self.childrenReady == items.length) {
 							setTimeout(function(){
 								self.onReady();
-							},2);
+							},10);
 						}
 					}
 				});
@@ -796,7 +803,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					// wait for the margin boxes to be set
 					setTimeout(dojo.hitch(this,function(){
 						this.onReady();
-					}),2);
+					}),10);
 				}
 			}
 			this.itemnodesmap[item[this.idProperty]] = listItem;

@@ -53,6 +53,7 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 	startup:function(){
 		var self = this;
 		var reset = function(){
+			if(!self.containerNode) return;
 			self._dim = self.getDim();
 			self.showScrollBar();
 			if(self.useScrollBar) {
@@ -61,6 +62,7 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 			}
 		}
 		dojo.subscribe("/xf/ready",this,function(data){
+			if(!self.containerNode) return;
 			this.xformLoaded();
 			self.scrollToItem(0);
 			setTimeout(reset,100);
@@ -72,6 +74,7 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 			setTimeout(reset,100);
 		});
 		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
+			if(!self.containerNode) return;
 			self.scrollToItem(0);
 			setTimeout(reset,100);
 		});

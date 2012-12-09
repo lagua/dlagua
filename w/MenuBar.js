@@ -72,7 +72,15 @@ dojo.declare("dlagua.w.MenuBar",[dijit.MenuBar,dlagua.c.Subscribable],{
 			this.set("currentId",newId);
 		}
 	},
-	_loadFromId:function(){
+	_checkTruncated:function(val){
+		if(!val) return {};
+		var ar = val.split("/");
+		var nar = ar.slice(0,this.maxDepth);
+		var truncated = (nar.length!=ar.length ? val : "");
+		var currentId = truncated ? nar.join("/") : val;
+		return {truncated:truncated,currentId:currentId};
+	},
+	_loadFromId:function(prop,oldValue,newValue){
 		if(this.loading) {
 			console.log("not loaded, deferring loadFromId")
 			if(!this._lh) this._lh = dojo.connect(this,"onLoaded",this,this._loadFromId);
@@ -81,13 +89,16 @@ dojo.declare("dlagua.w.MenuBar",[dijit.MenuBar,dlagua.c.Subscribable],{
 		if(this._lh) dojo.disconnect(this._lh);
 		this._lh = null;
 		if(!this.currentId) return;
-		var ar = this.currentId.split("/");
-		var nar = ar.slice(0,this.maxDepth);
-		var truncated = (nar.length!=ar.length ? this.currentId : "");
-		this.currentId = nar.join("/");
-		if(this.selected && this.selected.item[this.idProperty]==this.currentId) return; //same
-		console.log("MenuBar loading currentID ",this.currentId, truncated);
-		this.selectNode(this._itemNodesMap[this.currentId],truncated);
+		// preserve original currentId for reload top level on history.back
+		// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
+		// don't republish when truncated again
+		var checkOld = this._checkTruncated(oldValue);
+		var check = this._checkTruncated(this.currentId);
+		var currentId = check.currentId;
+		var truncated = check.truncated;
+		if(this.selected && this.selected.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
+		console.log("MenuBar loading currentID ",currentId, truncated);
+		this.selectNode(this._itemNodesMap[currentId],truncated);
 	},
 	startup: function(){
 		this.watch("currentId",this._loadFromId);
