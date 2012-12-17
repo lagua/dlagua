@@ -28,34 +28,19 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 			return object[this.idProperty];
 		},
 		get: function(id, options){
-			//	summary:
-			//		Retrieves an object by its identity. This will trigger a GET request to the server using
-			//		the url `this.target + id`.
-			//	id: Number
-			//		The identity to use to lookup the object
-			//	returns: Object
-			//		The object in the store that matches the given id.
 			var headers = options || {};
 			headers.Accept = "text/xml";
 			var content = {};
 			if(this._query) content = dojo.queryToObject(this._query);
 			return dojo.xhrGet({
 				url:this.target + id,
+				headers:headers,
 				content:content,
 				handleAs: "xml",
 				failOk:true
 			});
 		},
 		put: function(id, data, options){
-			// summary:
-			//		Stores an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo.store.api.Store.PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
-			//	returns: Number
 			options = options || {};
 			return dojo.xhr("PUT", {
 				url: this.target + id,
@@ -69,32 +54,20 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 				}
 			});
 		},
-		move: function(oldId, newId, options){
-			// summary:
-			//		Stores an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo.store.api.Store.PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
-			//	returns: Number
+		post: function(id, data, options){
 			options = options || {};
+			var headers = {
+				accept:"application/xml",
+				"content-type":"application/xml"
+			};
 			return dojo.xhr("POST", {
-				url: this.target + oldId,
-				postData: "move:"+newId+".xml",
-				handleAs: "text"
+				url: this.target + id,
+				headers:headers,
+				postData: data,
+				handleAs: "xml"
 			});
 		},
 		add: function(id, data, options){
-			// summary:
-			//		Adds an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo.store.api.Store.PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
 			options = options || {};
 			options.overwrite = false;
 			return this.put(id, data, options);
