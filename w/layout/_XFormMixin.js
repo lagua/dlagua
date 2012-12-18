@@ -1,21 +1,22 @@
 dojo.provide("dlagua.w.layout._XFormMixin");
 dojo.declare("dlagua.w.layout._XFormMixin",[],{
-	xformTarget:null,
-	xformLoaded: function() {
+	xformTarget:"",
+	xformLoaded: function(uri) {
+		if(uri != this.xformTarget) return; 
 		// make sure the DOM is moved
 		var xfc = dojo.byId("xformContainer");
-		var dest = this.xformTarget;
+		var dest = this.listitems[0];
 		if(!xfc || !dest) return;
-		this.xformTarget = null;
 		dest.set("content","");
 		dojo.query(">",xfc).forEach(function(node){
 	    	dest.domNode.appendChild(node);
-		});
+		})
 		xfc.innerHTML = "";
 		dojo.style(xfc,"display","none");
 	},
-	setXFormTarget:function(target,href){
-		this.xformTarget = target;
+	setXFormTarget:function(href){
+		if(this.xformTarget == href) return;
+		this.xformTarget = href;
 		if(fluxProcessor) {
 			fluxProcessor.setControlValue("xform-url",href);
 			fluxProcessor.dispatchEventType("main","load-xform");
@@ -62,9 +63,8 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 			}
 		}
 		dojo.subscribe("/xf/ready",this,function(data){
-			if(!self.containerNode) return;
-			this.xformLoaded();
-			self.scrollToItem(0);
+			if(!this.containerNode) return;
+			this.scrollToItem(0);
 			setTimeout(reset,100);
 		});
 		dojo.connect(fluxProcessor,"dispatchEvent",function(xmlEvent){
@@ -74,7 +74,10 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 			setTimeout(reset,100);
 		});
 		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
-			if(!self.containerNode) return;
+			if(!self.containerNode || self.listitems.length===0 || !self.xformTarget) return;
+			var uri = xmlEvent.contextInfo.uri;
+			if(uri) uri = uri.replace(location.protocol+"//"+location.host,"");
+			self.xformLoaded(uri);
 			self.scrollToItem(0);
 			setTimeout(reset,100);
 		});

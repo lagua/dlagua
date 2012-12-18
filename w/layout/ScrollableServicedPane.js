@@ -818,7 +818,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
 		if(item.type=="xform") {
-			this.setXFormTarget(listItem,href);
+			this.setXFormTarget(href);
 			setTimeout(function(){
 				self.onReady();
 			},100);
