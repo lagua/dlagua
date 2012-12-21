@@ -15,7 +15,6 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		dojo.style(xfc,"display","none");
 	},
 	setXFormTarget:function(href){
-		if(this.xformTarget == href) return;
 		this.xformTarget = href;
 		if(fluxProcessor) {
 			fluxProcessor.setControlValue("xform-url",href);

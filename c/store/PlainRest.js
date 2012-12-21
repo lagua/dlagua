@@ -1,6 +1,6 @@
-define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], function(dojo) {
+define("dlagua/c/store/PlainRest", ["dojo", "dojo/store/util/QueryResults"], function(dojo) {
 
-	dojo.declare("dlagua.c.store.XMLRest", null, {
+	dojo.declare("dlagua.c.store.PlainRest", null, {
 		constructor: function(/*dojo.store.JsonRest*/ options){
 			// summary:
 			//		This is a basic store for RESTful communicating with a server through JSON
@@ -28,27 +28,25 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 			return object[this.idProperty];
 		},
 		get: function(id, options){
-			var headers = options || {};
-			headers.Accept = "text/xml";
+			options = options || {};
+			var headers = options.headers || {}
 			var content = {};
 			if(this._query) content = dojo.queryToObject(this._query);
 			return dojo.xhrGet({
 				url:this.target + id,
 				headers:headers,
 				content:content,
-				handleAs: "xml",
 				failOk:true
 			});
 		},
 		put: function(id, data, options){
 			options = options || {};
+			var headers = options.headers || {}
 			return dojo.xhr("PUT", {
 				url: this.target + id,
 				postData: data,
-				handleAs: "xml",
+				headers:headers,
 				headers:{
-					"Content-Type": "text/xml",
-					"Accept" : "text/xml",
 					"If-Match": options.overwrite === true ? "*" : null,
 					"If-None-Match": options.overwrite === false ? "*" : null
 				}
@@ -56,15 +54,11 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 		},
 		post: function(id, data, options){
 			options = options || {};
-			var headers = {
-				accept:"application/xml",
-				"content-type":"application/xml"
-			};
+			var headers = options.headers || {}
 			return dojo.xhr("POST", {
 				url: this.target + id,
 				headers:headers,
-				postData: data,
-				handleAs: "xml"
+				postData: data
 			});
 		},
 		add: function(id, data, options){
@@ -91,9 +85,8 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 			//		The optional arguments to apply to the resultset.
 			//	returns: dojo.store.api.Store.QueryResults
 			//		The results of the query, extended with iterative methods.
-			var headers = {Accept: "text/xml"};
 			options = options || {};
-
+			var headers = options.headers || {};
 			if(options.start >= 0 || options.count >= 0){
 				headers.Range = "items=" + (options.start || '0') + '-' +
 					(("count" in options && options.count != Infinity) ?
@@ -113,7 +106,6 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 			}
 			var results = dojo.xhrGet({
 				url: this.target + (query || ""),
-				handleAs: "xml",
 				headers: headers
 			});
 			results.total = results.then(function(){
@@ -125,5 +117,5 @@ define("dlagua/c/store/XMLRest", ["dojo", "dojo/store/util/QueryResults"], funct
 	});
 
 
-	return dlagua.c.store.XMLRest;
+	return dlagua.c.store.PlainRest;
 });

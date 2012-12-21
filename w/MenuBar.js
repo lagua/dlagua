@@ -137,20 +137,14 @@ dojo.declare("dlagua.w.MenuBar",[dijit.MenuBar,dlagua.c.Subscribable],{
 				var ref = item["_ref"];
 				self.items[ref] = {};
 				self.store.get(ref).then(function(res){
-					if(!res.hidden) {
-						self.items[res.id] = res;
-					} else {
-						delete self.items[res.id];
-					}
+					self.items[res.id] = res;
 					cnt++;
 					if(cnt==itemcount) {
 						self.onLoaded();
 					}
 				});
 			} else {
-				if(!item.hidden) {
-					self.items[item["id"]] = item;
-				}
+				self.items[item["id"]] = item;
 				cnt++;
 				if(cnt==itemcount) {
 					self.onLoaded();

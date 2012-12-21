@@ -82,7 +82,7 @@ dojo.declare("dlagua.w.TreeMenu",[dlagua.c.Subscribable,dlagua.w.Tree],{
 					// if root is not visible, move tree role to the invisible
 					// root node's containerNode, see #12135
 					dijit.setWaiRole(this.domNode, 'presentation');
-					console.log(rn)
+					
 					dijit.setWaiRole(rn.labelNode, 'presentation');
 					dijit.setWaiRole(rn.containerNode, 'tree');
 				}
@@ -106,6 +106,11 @@ dojo.declare("dlagua.w.TreeMenu",[dlagua.c.Subscribable,dlagua.w.Tree],{
 				console.error(this, ": error loading root: ", err);
 			}
 		);
+	},
+	getIconClass:function(){
+	},
+	getRowClass:function(item,opened){
+		if(item.hidden) return "dijitTreeRowHidden";
 	},
 	_pubItem:function(pubitem){
 		var item = {};

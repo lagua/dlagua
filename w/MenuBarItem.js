@@ -3,6 +3,10 @@ dojo.require("dijit.MenuBarItem");
 dojo.declare("dlagua.w.MenuBarItem",[dijit.MenuBarItem],{
 	selected:false,
 	item:null,
+	postCreate:function(){
+		if(this.item.hidden) this.domNode.style.display = "none";
+		this.inherited(arguments);
+	},
 	select: function(selected){
 		this.selected = selected;
 		// summary:

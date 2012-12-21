@@ -1,6 +1,6 @@
 dojo.provide("dlagua.c.rpc.ExistRest");
 dojo.require("dlagua.c.Subscribable");
-dojo.require("dlagua.c.store.XMLRest");
+dojo.require("dlagua.c.store.PlainRest");
 dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 	target:"", // the target for the rest service
 	// FIXME: current item should be corresponding item
@@ -101,8 +101,7 @@ dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 		if(mixin){
 			dojo.mixin(this, mixin);
 		}
-		// TODO change service to dlagua.c.store.XMLRest
-		this.store = new dlagua.c.store.XMLRest({target:this.target});
+		this.store = new dlagua.c.store.PlainRest({target:this.target});
 		console.log("existrest postscript")
 		this._watchhandles.push(this.watch("currentItem", function(){
 			console.log("existrest currentItem update")
