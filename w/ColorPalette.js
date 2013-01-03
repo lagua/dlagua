@@ -45,6 +45,10 @@ dojo.declare("dlagua.w.ColorPalette",
 		// Pass in "customized" dijit._Color constructor for specified palette and high-contrast vs. normal mode
 		if(this.palette != "custom" && this.palette != "variants") return;
 		if(this.palette == "variants") this._prepareVariants();
+		if(!this.customColors.length) {
+			this.customColors = [["red"]];
+			this.customTitles = dojo.i18n.getLocalization("dojo", "colors", this.lang);
+		}
 		this.palette = this.customColors.length+"x"+this.customColors[0].length;
 		this._preparePalette(
 			this.customColors,
