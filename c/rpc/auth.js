@@ -1,11 +1,11 @@
 dojo.provide("dlagua.c.rpc.auth");
 
-dojo.require("dlagua.x.Aes");
 dojo.require("dijit.Dialog");
 dojo.require("dijit.form.Form");
 dojo.require("dijit.form.ValidationTextBox");
 dojo.require("dijit.form.Button");
 dojo.require("dforma.Label");
+dojo.require("dlagua.x.Aes");
 
 dlagua.c.rpc.auth = function(url,params){
 	var d = new dojo.Deferred();
@@ -28,29 +28,32 @@ dlagua.c.rpc.auth = function(url,params){
 				"Content-Type":"application/json"
 			},
 			load:function(res,io){
-				if(io.xhr.getResponseHeader(sessionParam)) {
+				if(io.xhr.getResponseHeader(sessionParam) || (res && res.user)) {
 					d.callback(res);
+				} else {
+					token = io.xhr.getResponseHeader("phrase");
+					d.errback();
 				}
 			},
-			error:function(res,io) {
+			error:function(res,io){
 				// return here! first process auth then reload
-				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+res.message;
-				if(res.token) token = res.token;
+				token = io.xhr.getResponseHeader("phrase");
+				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
 				d.errback(err);
 			}
 		});
 		return d;
 	}
 	var doAuth = function() {
-		if(!form.validate()) return;
+		if(!form.validate() || !token) return;
 		authMsg.innerHTML = "";
 		var data = form.get("value");
-		if(token!="") data.passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd, token, 256);
+		var passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd,token,256);//CryptoJS.AES.encrypt(data.passwd, token).toString();
 		var req = {
 			"id":"call-id",
 			"method":"authenticate",
 			"user":data.user,
-			"password":data.passwd
+			"password":passwd
 		};
 		doReq(req).then(function(auth){
 			authDialog.hide();

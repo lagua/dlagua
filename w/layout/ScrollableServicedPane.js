@@ -66,6 +66,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	headerLabel:"",
 	footerLabel:"",
 	pageButtons:true,
+	loadingAnimation:true,
 	loadOnCreation:true,
 	currentService:"",
 	resolveProperties:"",
@@ -79,6 +80,14 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	baseClass:"dlaguaScrollableServicedPane",
 	templateString: dojo.cache("dlagua.w.layout", "templates/ScrollableServicedPane.html"),
 	useScrollBar:true,
+	postscript:function(params, srcNodeRef){
+		if(window.fluxProcessor) {
+			var dj = dojo;
+			dj.require("dlagua.w.layout._XFormMixin");
+			dojo.safeMixin(this,new dlagua.w.layout._XFormMixin());
+		}
+		this.inherited(arguments);
+	},
 	startup: function(){
 		if(this._started){ return; }
 		this._timer = new dojox.timing.Timer(this.autoSkipInterval);
@@ -239,26 +248,24 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				callbackParamName:resolver.callbackParamName,
 				load:function(res){
 					var tpl = resolver.transformer(res);
-					// FIXME: not so nice check...
-					this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
+					var tplo = self.parseTemplate(tpl);
 					if(child){
-						child.applyTemplate(tpl);
+						child.applyTemplate(tplo.tpl,tplo.partials);
 					} else {
 						dojo.forEach(self.listitems,function(li){
-							li.applyTemplate(tpl);
+							li.applyTemplate(tplo.tpl,tplo.partials);
 						});
 					}
 				}
 			});
 		} else {
 			var tpl = dojo.cache(this.templateModule,template);
-			// FIXME: not so nice check...
-			this.hasDeferredContent = (tpl.indexOf("{{#_fn_exist}}") >-1);
+			var tplo = this.parseTemplate(tpl);
 			if(child && child!="childTemplate"){
-				child.applyTemplate(tpl);
+				child.applyTemplate(tplo.tpl,tplo.partials);
 			} else {
 				dojo.forEach(this.listitems,function(li){
-					li.applyTemplate(tpl);
+					li.applyTemplate(tplo.tpl,tplo.partials);
 				});
 			}
 		}
@@ -300,8 +307,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		// should we cancel oldItem and let currentItem take over?
 		var props = this.reloadTriggerProperties.split(",");
 		// if any of the keys below are different, cancel
-		var cancel = false;
-		if(o) {
+		var cancel = this._beingDestroyed;
+		if(!cancel && o) {
 			for(var i=0;i<props.length;i++) {
 				var p = props[i];
 				if(p in n && p in o && n[p]!=o[p]) {
@@ -313,7 +320,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		if(!cancel) return;
 		switch(o.type || this.servicetype) {
 			case "persvr":
-				if(this.results.fired==-1) {
+				if(this.results && this.results.fired==-1) {
 					this.results.cancel();
 				}
 			break;
@@ -402,7 +409,11 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	selectItemByCurrentId: function(){
 		if(this._beingDestroyed) return;
 		var item = this.itemnodesmap[this.currentId];
-		if(!item) return;
+		if(!item) {
+			// force more stuff from the store
+			this.pageStore(-Infinity);
+			return;
+		}
 		this.currentId = null;
 		var index = item.getIndexInParent();
 		this.scrollToItem(index);
@@ -413,13 +424,12 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		dojo.style(this.containerNode,{
 			top:0
 		});
-		var lh = dojo.connect(this,"onReady",this,function(){
-			dojo.disconnect(lh);
-			if(this.useScrollBar) {
-				this.showScrollBar();
-				this.scrollToInitPos();
-			}
-		});
+		if(this.useScrollBar) {
+			this.scrollToInitPos();
+		}
+		if(this.loadingAnimation && this.footer) {
+			dojo.addClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
 		this.selectedIndex = 0;
 		this.selectedItem = null;
 		this.listitems = [];
@@ -463,6 +473,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	destroyRecursive: function(/*Boolean*/ preserveDom){
 		// summary:
 		//		Destroy the ContentPane and its contents
+		if(this._loading) this.cancel();
 		this.unwatchAll();
 		this.inherited(arguments);
 	},
@@ -501,10 +512,40 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.slideTo({x:0,y:-y},0.3,"ease-out");
 	},
+	pageStore:function(py){
+		if(this._loading) return;
+		if(!py) py = this.getPos().y;
+		var dim = this._dim;
+		var len = this.listitems.length;
+		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
+			// try to get more stuff from the store...
+			this._loading = true;
+			this.childrenReady = 0;
+			if(this.loadingAnimation && this.footer) {
+				dojo.addClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+			}
+			var count = (this.pageSize || this.count);
+			if(this.start+count>this.maxCount) return;
+			if(this.start+count>=this.total) count = this.total-this.start;
+			var start = this.start;
+			this.start += count;
+			var q = this.createQuery();
+			var results = this.results = this.store.query(q,{
+				start:start,
+				count:count,
+				useXDomain:this.useXDomain
+			});
+			results.total.then(dojo.hitch(this,function(total){
+				this.total = total;
+			}));
+			results.forEach(dojo.hitch(this,this.addItem));
+		}
+	},
 	setSelectedItem: function(index) {
+		if(this.selectedIndex==index) return;
 		this.selectedIndex = index;
 		var py = this.getPos().y;
-		var dim = this.getDim();
+		var dim = this._dim;
 		var len = this.listitems.length;
 		if(this.snap) {
 			var y = 0;
@@ -522,26 +563,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.selectedItem = this.listitems[index];
 		console.log("selectedItem",this.selectedItem);
-		if(this.id) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
-
-		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
-			// try to get more stuff from the store...
-			var count = (this.pageSize || this.count);
-			if(this.start+count>this.maxCount) return;
-			if(this.start+count>=this.total) count = this.total-this.start;
-			var start = this.start;
-			this.start += count;
-			var q = this.createQuery();
-			var results = this.results = this.store.query(q,{
-				start:start,
-				count:count,
-				useXDomain:this.useXDomain
-			});
-			results.total.then(dojo.hitch(this,function(total){
-				this.total = total;
-			}));
-			results.forEach(dojo.hitch(this,this.addItem));
-		}
+		if(this.id && this.listitems && this.listitems.length) dojo.publish("/components/"+this.id,[this.listitems[index].data]);
+		this.pageStore(py);
 	},
 	createQuery:function(){
 		if(!persvr.rql) return;
@@ -603,7 +626,6 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			dojo.stopEvent(e);
 		}
 		this.stopAnimation();
-		this.checkSelectedItem();
 		if(this._bounce){
 			var _this = this;
 			var bounce = _this._bounce;
@@ -615,6 +637,9 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			this.hideScrollBar();
 			this.removeCover();
 			this.startTime = 0;
+			// this really is dim reset
+			this._dim = this.getDim();
+			this.checkSelectedItem();
 		}
 	},
 	layout:function(){
@@ -638,16 +663,78 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			if(!_this || _this._beingDestroyed) {
 				return;
 			}
+			// recalc dim
+			var pos = _this.getPos();
+			_this.showScrollBar();
 			if(_this.useScrollBar) {
-				_this.showScrollBar();
-				_this.scrollToInitPos();
-			} else {
-				_this.resetScrollBar();
+				_this.slideScrollBarTo(pos, 0.3, "ease-out");
 			}
+			_this.pageStore(pos.y);
 		}, 100);
 	},
 	getModel:function(){
 		return this.model || this.currentItem.model;
+	},
+	parseTemplate: function(tpl){
+		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
+		var div = dojo.create("div",{
+			innerHTML:tpl
+		});
+		dojo.query("span.templaField",div).forEach(function(node){
+			var p = node.parentNode;
+			var inner = node.firstChild;
+			p.insertBefore(inner, node);
+			p.removeChild(node);
+		});
+		var types = [];
+		// look for nesting
+		var partials = {};
+		var partialcount = 0;
+		var getNode = function(node){
+			var type = dojo.attr(node,"data-templa-type");
+			types.push(type);
+			var props = dojo.attr(node,"data-templa-props");
+			var pre = document.createTextNode("{{#_mod}}"+type+"|"+(props || "")+"|");
+			var post = document.createTextNode("{{/_mod}}");
+			dojo.place(pre,node,"first");
+			dojo.place(post,node);
+			return node;
+		}
+		dojo.query("span[data-templa-type] span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+			var partname = "_mod"+partialcount;
+			partials[partname] = p.innerHTML;
+			p.innerHTML = "{{>"+partname+"}}";
+			partialcount++;
+		});
+		dojo.query("span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+		});
+		var dj = dojo;
+		dojo.forEach(types,function(type){
+			if(type.indexOf("::")) {
+				var ar = type.split("::");
+				type = ar[0];
+			}
+			dj.require(type);
+		});
+		tpl = div.innerHTML.toString();
+		tpl = tpl.replace(/{{&gt;/g,"{{>");
+		return {tpl:tpl,partials:partials};
 	},
 	getTemplate:function(templateDir){
 		var xtemplate = "";
@@ -671,6 +758,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	},
 	addItem:function(item,index,items,insertIndex) {
+		if(this._beingDestroyed) return;
 		var content = "";
 		var id = item[this.idProperty];
 		var listItem = new dlagua.w.layout.ScrollableServicedPaneItem({
@@ -680,7 +768,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		});
 		this.listitems.push(listItem);
 		this.connect(listItem,"onLoad",function(){
-			if(this._beingDestroyed) return;
+			// as this can take a while, listItem may be destroyed in the meantime
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			if(this.xDomainResolver) {
 				var self = this;
 				var resolver = this.xDomainResolver;
@@ -693,18 +782,29 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					load:function(res){
 						if(self._beingDestroyed) return;
 						var tpl = resolver.transformer(res);
-						listItem.applyTemplate(tpl);
+						var tplo = self.parseTemplate(tpl);
+						listItem.applyTemplate(tplo.tpl,tplo.partials);
 						dojo.fadeIn({node:listItem.containerNode}).play();
 						self.childrenReady++;
-						if(self.childrenReady == self.listitems.length) self.onReady();
+						if(self.childrenReady == items.length) {
+							setTimeout(function(){
+								self.onReady();
+							},10);
+						}
 					}
 				});
 			} else {
 				var tpl = dojo.cache(this.templateModule,this.template);
-				listItem.applyTemplate(tpl);
+				var tplo = this.parseTemplate(tpl);
+				listItem.applyTemplate(tplo.tpl,tplo.partials);
 				dojo.fadeIn({node:listItem.containerNode}).play();
 				this.childrenReady++;
-				if(this.childrenReady == this.listitems.length) this.onReady();
+				if(this.childrenReady == items.length) {
+					// wait for the margin boxes to be set
+					setTimeout(dojo.hitch(this,function(){
+						this.onReady();
+					}),10);
+				}
 			}
 			this.itemnodesmap[item[this.idProperty]] = listItem;
 		});
@@ -718,7 +818,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
 		if(item.type=="xform") {
-			this.setXFormTarget(listItem,href);
+			this.setXFormTarget(href);
 			setTimeout(function(){
 				self.onReady();
 			},100);
@@ -741,8 +841,19 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	onReady: function(){
 		console.log("done loading "+this.id);
 		this._loading = false;
-		this.resetScrollBar();
+		if(this.loadingAnimation && this.footer) {
+			dojo.removeClass(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
+		var pos = this.getPos();
+		this.showScrollBar();
+		if(this.useScrollBar) {
+			this.slideScrollBarTo(pos, 0.3, "ease-out");
+		}
+		// if needed, get more stuff from the store
+		if(this.servicetype == "persvr") this.pageStore(pos.y);
 		// select currentId for #anchor simulation
-		if(this.currentId) this.selectItemByCurrentId();
+		if(this.currentId) {
+			this.selectItemByCurrentId();
+		}
 	}
 });

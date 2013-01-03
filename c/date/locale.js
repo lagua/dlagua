@@ -1,6 +1,8 @@
 dojo.provide("dlagua.c.date.locale");
+
 dojo.require("dojo.date.locale");
 dojo.require("dojo.date.stamp");
+dojo.requireLocalization("dlagua.c.date", "interval", null, "ROOT,en,nl");
 
 dojo.getObject("c.date.locale", true, dlagua);
 
@@ -36,14 +38,17 @@ dlagua.c.date.locale.format = function(val,options) {
 		var thresholds = (options.updateThresholds || [60*1000,60*60*1000,24*60*60*1000,7*24*60*60*1000,30*24*60*60*1000]);
 		// TODO: from locale
 		var locale = dojo.i18n.normalizeLocale(options.locale);
-		var lb = dojo.i18n.getLocalization("lagua.date", "interval", locale);
+		var lb = dojo.i18n.getLocalization("dlagua.c.date", "interval", locale);
 		var markers = (options.updateMarkers || ["{moments} {ago}","{value} {minute} {ago}","{value} {hour} {ago}","{value} {day} {ago}","{value} {week} {ago}"]);
 		if(diff<limit) {
-			var i=0;
-			for(;i<thresholds.length;i++) {
-				if(diff<thresholds[i]) break;
+			var x = 0;
+			for(var i=0;i<thresholds.length;i++) {
+				if(diff<thresholds[i]) {
+					x = i;
+					break;
+				}
 			}
-			var val = Math.round(diff/thresholds[i-1]);
+			var val = Math.round(diff/thresholds[x-1]);
 			var repl = dojo.mixin(lb,{
 				value:val,
 				second:(val==1 ? lb.second : lb.seconds),
@@ -52,18 +57,21 @@ dlagua.c.date.locale.format = function(val,options) {
 				day:(val==1 ? lb.day : lb.days),
 				week:(val==1 ? lb.week : lb.weeks)
 			});
-			txt = '<span id="'+id+'">'+dojo.replace(markers[i],repl)+'</span>';
+			txt = '<span id="'+id+'">'+dojo.replace(markers[x],repl)+'</span>';
 			var timer = new dojox.timing.Timer(interval);
 			timer.start();
 			var tc = dojo.connect(timer,"onTick",this,function(){
 				var now = new Date();
 				var diff = dojo.date.difference(date,now,"millisecond");
-				var i=0;
 				if(diff<limit) {
-					for(;i<thresholds.length;i++) {
-						if(diff<thresholds[i]) break;
+					var x = 0;
+					for(var i=0;i<thresholds.length;i++) {
+						if(diff<thresholds[i]) {
+							x = i;
+							break;
+						}
 					}
-					var val = Math.round(diff/thresholds[i-1]);
+					var val = Math.round(diff/thresholds[x-1]);
 					var repl = dojo.mixin(lb,{
 						value:val,
 						second:(val==1 ? lb.second : lb.seconds),
@@ -72,7 +80,7 @@ dlagua.c.date.locale.format = function(val,options) {
 						day:(val==1 ? lb.day : lb.days),
 						week:(val==1 ? lb.week : lb.weeks)
 					});
-					txt = dojo.replace(markers[i],repl);
+					txt = dojo.replace(markers[x],repl);
 				} else {
 					txt = oritxt;
 					dojo.disconnect(tc);

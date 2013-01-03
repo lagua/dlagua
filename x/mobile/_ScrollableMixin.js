@@ -217,7 +217,8 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		}
 		this.touchStartX = e.touches ? e.touches[0].pageX : e.clientX;
 		this.touchStartY = e.touches ? e.touches[0].pageY : e.clientY;
-		this._dim = this.getDim();
+		// dim is already set on many occasions
+		if(!this._dim) this._dim = this.getDim();
 		this.startTime = (new Date()).getTime();
 		this.startPos = this.getPos();
 		if(this.invert) {
@@ -226,7 +227,6 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		this._time = [0];
 		this._posX = [this.invert ? -this.touchStartX : this.touchStartX];
 		this._posY = [this.invert ? -this.touchStartY : this.touchStartY];
-
 		if(e.target.nodeType != 1 || (e.target.tagName != "SELECT" && e.target.tagName != "INPUT" && e.target.tagName != "TEXTAREA")){
 			dojo.stopEvent(e);
 		}
@@ -445,7 +445,8 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		var dy = scroll*15;
 		var pos = this.getPos();
 		var to = {x:pos.x + dx, y:pos.y + dy};
-		var dim = this.getDim();
+		var dim = this._dim;
+		if(!dim) dim = this_dim = this.getDim();
 		var weight = this.weight;
 		if(this._v){
 			if(to.y > 0){ // content is below the screen area
@@ -569,7 +570,9 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		} else {
 			this._time.push((new Date()).getTime());
 		}
-		
+		if(e.target.nodeType != 1 || (e.target.tagName != "SELECT" && e.target.tagName != "INPUT" && e.target.tagName != "TEXTAREA")){
+			dojo.stopEvent(e);
+		}
 	},
 	showScrollBar: function(){
 		if(!this.scrollBar){ return; }

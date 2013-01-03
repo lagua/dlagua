@@ -5,7 +5,7 @@ dojo.require("dijit.form.Select");
 dojo.require("dijit.form.CheckBox");
 dojo.require("dforma.Group");
 dojo.require("dforma.Label");
-dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
+dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 	baseClass:"dlaguaOptionDropDownButton",
 	options:null,
 	href:null,

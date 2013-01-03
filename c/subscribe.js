@@ -9,10 +9,10 @@ dlagua.c.subscribe = function(/*String*/ topic, context, params){
 			var ar = [item];
 			var res = persvr.rql.Array.executeQuery(filter,{},ar);
 			if(!res.length) {
-				console.log("filtered:",params.filter,item);
+				console.log("filtered:",this.id,params.filter,item);
 				return;
 			} else {
-				console.log("passed:",params.filter,item);
+				console.log("passed:",this.id,params.filter,item);
 			}
 		}
 		if(dojo.isObject(item)) {

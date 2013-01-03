@@ -1,20 +1,21 @@
 dojo.provide("dlagua.w.layout._XFormMixin");
 dojo.declare("dlagua.w.layout._XFormMixin",[],{
-	xformTarget:null,
-	xformLoaded: function() {
+	xformTarget:"",
+	xformLoaded: function(uri) {
+		if(uri != this.xformTarget) return; 
 		// make sure the DOM is moved
 		var xfc = dojo.byId("xformContainer");
-		var dest = this.xformTarget;
+		var dest = this.listitems[0];
 		if(!xfc || !dest) return;
 		dest.set("content","");
 		dojo.query(">",xfc).forEach(function(node){
 	    	dest.domNode.appendChild(node);
-		});
+		})
 		xfc.innerHTML = "";
 		dojo.style(xfc,"display","none");
 	},
-	setXFormTarget:function(target,href){
-		this.xformTarget = target;
+	setXFormTarget:function(href){
+		this.xformTarget = href;
 		if(fluxProcessor) {
 			fluxProcessor.setControlValue("xform-url",href);
 			fluxProcessor.dispatchEventType("main","load-xform");
@@ -47,6 +48,38 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 	},
 	rebuild:function(){
 		if(this.servicetype=="xform") this.unloadXform();
+		this.inherited(arguments);
+	},
+	startup:function(){
+		var self = this;
+		var reset = function(){
+			if(!self.containerNode) return;
+			self._dim = self.getDim();
+			self.showScrollBar();
+			if(self.useScrollBar) {
+				var pos = self.getPos();
+				self.slideScrollBarTo(pos, 0.3, "ease-out");
+			}
+		}
+		dojo.subscribe("/xf/ready",this,function(data){
+			if(!this.containerNode) return;
+			this.scrollToItem(0);
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"dispatchEvent",function(xmlEvent){
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"dispatchEventType",function(xmlEvent){
+			setTimeout(reset,100);
+		});
+		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
+			if(!self.containerNode || self.listitems.length===0 || !self.xformTarget) return;
+			var uri = xmlEvent.contextInfo.uri;
+			if(uri) uri = uri.replace(location.protocol+"//"+location.host,"");
+			self.xformLoaded(uri);
+			self.scrollToItem(0);
+			setTimeout(reset,100);
+		});
 		this.inherited(arguments);
 	}
 });

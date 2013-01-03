@@ -1,6 +1,6 @@
 dojo.provide("dlagua.c.rpc.ExistRest");
 dojo.require("dlagua.c.Subscribable");
-dojo.require("dlagua.c.store.XMLRest");
+dojo.require("dlagua.c.store.PlainRest");
 dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 	target:"", // the target for the rest service
 	// FIXME: current item should be corresponding item
@@ -62,7 +62,7 @@ dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 				if(item.__deleted) {
 					this.deleteItem(item);
 				} else if(newItem) {
-					dojo.when(this.moveItem(item,newItem),dojo.hitch(this,function(){
+					dojo.when(this.moveItem(item,newItem,postfix),dojo.hitch(this,function(){
 						this.ref.set(this.refProperty,this.target+newItem.uri+postfix);
 					}));
 				} else {
@@ -101,8 +101,7 @@ dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 		if(mixin){
 			dojo.mixin(this, mixin);
 		}
-		// TODO change service to dlagua.c.store.XMLRest
-		this.store = new dlagua.c.store.XMLRest({target:this.target});
+		this.store = new dlagua.c.store.PlainRest({target:this.target});
 		console.log("existrest postscript")
 		this._watchhandles.push(this.watch("currentItem", function(){
 			console.log("existrest currentItem update")
@@ -174,13 +173,25 @@ dojo.declare("dlagua.c.rpc.ExistRest",[dlagua.c.Subscribable],{
 		}
 		return this.store.remove(item.uri);
 	},
-	moveItem:function(oldItem,newItem) {
+	moveItem:function(oldItem,newItem,postfix) {
 		var dd = new dojo.Deferred();
 		var item = this.mappedItem;
 		if(!item) {
 			dd.errback({id:undefined,response:"No item in service"});
 			return dd;
 		}
-		return this.store.move(oldItem.uri,newItem.uri);
+		var sur = oldItem.uri.split("/");
+		var tur = newItem.uri.split("/");
+		var sdoc = sur.pop();
+		var tdoc = tur.pop();
+		var origin = sur.join("/");
+		var destination = tur.join("/");
+		var xml = "<move>";
+		xml += "<origin>"+origin+"</origin>";
+		xml += "<destination>"+destination+"</destination>";
+		xml += "<resource>"+sdoc+postfix+"</resource>";
+		if(sdoc != tdoc) xml += "<name>"+tdoc+postfix+"</name>";
+		xml += "</move>";
+		return this.store.post("move",xml);
 	}
 });

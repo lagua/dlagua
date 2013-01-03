@@ -55,8 +55,6 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 		item.onChildDone = function(child){
 			if(dojo.indexOf(this.childrenDone,child.id)>-1) {
 				console.error("child ",child.name, " already loaded");
-			} else if(child.hidden) {
-				console.log("child ",child.name," is hidden")
 			} else {
 				this.childrenDone.push(child.id);
 			}
@@ -87,10 +85,7 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 							break;
 						}
 					}
-					if(child.hidden) {
-						item.children.splice(j,1);
-						if(item.onChildDone) item.onChildDone(child);
-					} else if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
+					if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
 						self.getChildrenRecursive(child);
 					} else {
 						if(item.onChildDone) item.onChildDone(child);
@@ -100,9 +95,7 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 			} else {
 				var child = children[i];
 				child.__parent = item;
-				if(child.hidden) {
-					item.children.splice(i,1);
-				} else if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
+				if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
 					self.getChildrenRecursive(child);
 				} else {
 					item.onChildDone(child);
