@@ -33,14 +33,17 @@ define([
 					"Content-Type":"application/json"
 				}
 			}).then(function(res,io){
-				if(io.xhr.getResponseHeader(sessionParam)) {
+				if(io.xhr.getResponseHeader(sessionParam) || (res && res.user)) {
 					d.resolve(res);
+				} else {
+					token = io.xhr.getResponseHeader("phrase");
+					d.reject();
 				}
 			},
 			function(res,io) {
 				// return here! first process auth then reload
-				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+res.message;
-				if(res.token) token = res.token;
+				token = io.xhr.getResponseHeader("phrase");
+				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
 				d.reject(err);
 			});
 			return d;
@@ -49,16 +52,16 @@ define([
 			if(!form.validate()) return;
 			authMsg.innerHTML = "";
 			var data = form.get("value");
-			if(token!="") data.passwd = dlagua.x.Aes.Ctr.encrypt(data.passwd, token, 256);
+			var passwd = Aes.Ctr.encrypt(data.passwd, token, 256);
 			var req = {
 				"id":"call-id",
 				"method":"authenticate",
 				"user":data.user,
-				"password":data.passwd
+				"password":passwd
 			};
 			doReq(req).then(function(auth){
 				authDialog.hide();
-				d.callback(auth);
+				d.resolve(auth);
 			},function(err){
 				authMsg.innerHTML = err;
 			});
@@ -128,7 +131,7 @@ define([
 		};
 		
 		doReq(req).then(function(auth){
-			d.callback(auth);
+			d.resolve(auth);
 		},function(err){
 			createForm();
 		});

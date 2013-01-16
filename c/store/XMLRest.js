@@ -28,70 +28,37 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 			return object[this.idProperty];
 		},
 		get: function(id, options){
-			//	summary:
-			//		Retrieves an object by its identity. This will trigger a GET request to the server using
-			//		the url `this.target + id`.
-			//	id: Number
-			//		The identity to use to lookup the object
-			//	returns: Object
-			//		The object in the store that matches the given id.
-			var headers = options || {};
-			headers.Accept = "text/xml";
+			options = options || {};
+			var headers = options.headers || {}
 			var content = {};
 			if(this._query) content = ioQuery.queryToObject(this._query);
 			return request(this.target + id,{
+				headers:headers,
 				content:content,
-				handleAs: "xml",
 				failOk:true
 			});
 		},
 		put: function(id, data, options){
-			// summary:
-			//		Stores an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo/store/api/Store/PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
-			//	returns: Number
 			options = options || {};
+			var headers = options.headers || {}
 			return request.put(this.target + id,{
 				data: data,
-				handleAs: "xml",
+				headers:headers,
 				headers:{
-					"Content-Type": "text/xml",
-					"Accept" : "text/xml",
 					"If-Match": options.overwrite === true ? "*" : null,
 					"If-None-Match": options.overwrite === false ? "*" : null
 				}
 			});
 		},
-		move: function(oldId, newId, options){
-			// summary:
-			//		Stores an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo/store/api/Store/PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
-			//	returns: Number
+		post: function(id, data, options){
 			options = options || {};
-			return request.post(this.target + oldId, {
-				data: "move:"+newId+".xml",
-				handleAs: "text"
+			var headers = options.headers || {}
+			return request.post( this.target + id, {
+				headers:headers,
+				data: data
 			});
 		},
 		add: function(id, data, options){
-			// summary:
-			//		Adds an object. This will trigger a PUT request to the server
-			//		if the object has an id, otherwise it will trigger a POST request.
-			// object: Object
-			//		The object to store.
-			// options: dojo/store/api/Store/PutDirectives?
-			//		Additional metadata for storing the data.  Includes an "id"
-			//		property if a specific id is to be used.
 			options = options || {};
 			options.overwrite = false;
 			return this.put(id, data, options);
@@ -113,9 +80,8 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 			//		The optional arguments to apply to the resultset.
 			//	returns: dojo/store/api/Store/QueryResults
 			//		The results of the query, extended with iterative methods.
-			var headers = {Accept: "text/xml"};
 			options = options || {};
-
+			var headers = options.headers || {};
 			if(options.start >= 0 || options.count >= 0){
 				headers.Range = "items=" + (options.start || '0') + '-' +
 					(("count" in options && options.count != Infinity) ?
@@ -134,7 +100,6 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 				query += ")";
 			}
 			var results = request(this.target + (query || ""),{
-				handleAs: "xml",
 				headers: headers
 			});
 			results.total = results.then(function(){

@@ -1,4 +1,4 @@
-define("dlagua/c/string/cleanWhitespace", ["dojo"], function(dojo) {
+define("dlagua/c/string/cleanWhitespace", ["dojo/dom-construct"], function(domConstruct) {
 
 dlagua.c.string._cleanWhitespaceRecursive = function(node) {
 	for (var i=0; i<node.childNodes.length; i++) {
@@ -15,7 +15,7 @@ dlagua.c.string._cleanWhitespaceRecursive = function(node) {
 };
 
 dlagua.c.string.cleanWhitespace = function(/*String*/ value){
-	var div = dojo.create("div",{
+	var div = domConstruct.create("div",{
 		innerHTML:value
 	});
 	return dlagua.c.string._cleanWhitespaceRecursive(div).innerHTML;

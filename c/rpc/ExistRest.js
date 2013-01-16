@@ -6,14 +6,13 @@ define([
 	"dojo/when",
 	"dojo/io-query",
 	"dojo/topic",
-	"dojo/Stateful",
-	"dijit/Destroyable",
-	"dlagua/c/store/XMLRest"
-], function(declare, lang, request, Deferred, when, ioQuery, topic, Stateful, Destroyable, XMLRest){
+	"dlagua/c/Subscribable",
+	"dlagua/c/store/PlainRest"
+], function(declare, lang, request, Deferred, when, ioQuery, topic, Subscribable, PlainRest){
 	// module:
 	//   lagua/c/rpc/ExistRest
 	// NOTE: extends from Destroyable for flujo faux destroyer
-	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Stateful,Destroyable],{
+	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Subscribable,Destroyable],{
 		// FIXME: current item should be corresponding item
 		// TODO: but this is a dirty thing anyway...
 		// this is a function to set some veeery specific properties
@@ -32,8 +31,8 @@ define([
 		_query:null,
 		destroyRecursive:function(x){
 			console.log("destroying existrest");
-			// faux destroyer for flujo
-			// FIXME: move to flujo
+			// faux destroyer for conecta
+			// FIXME: move to conecta
 			this.destroy();
 		},
 		itemMapper:function(item) {
@@ -67,7 +66,7 @@ define([
 					if(item.__deleted) {
 						this.deleteItem(item);
 					} else if(newItem) {
-						when(this.moveItem(item,newItem),lang.hitch(this,function(){
+						when(this.moveItem(item,newItem,postfix),lang.hitch(this,function(){
 							this.ref.set(this.refProperty,this.target+newItem.uri+postfix);
 						}));
 					} else {
@@ -106,8 +105,7 @@ define([
 			if(mixin){
 				lang.mixin(this, mixin);
 			}
-			this.store = new XMLRest({target:this.target});
-			console.log("existrest postscript");
+			this.store = new PlainRest({target:this.target});
 			// call this.own func /w parameterized array for destroy()
 			this.own(
 				this.watch("currentItem", function(){
@@ -121,8 +119,8 @@ define([
 		newPage: function(data) {
 			// start with a timestamp
 			var item = this.mappedItem;
-			var dd = new Deferred();
 			var d = new Deferred();
+			var dd = new Deferred();
 			if(!item) {
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
@@ -173,14 +171,26 @@ define([
 			}
 			return this.store.remove(item.uri);
 		},
-		moveItem:function(oldItem,newItem) {
+		moveItem:function(oldItem,newItem,postfix) {
 			var dd = new Deferred();
 			var item = this.mappedItem;
 			if(!item) {
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
-			return this.store.move(oldItem.uri,newItem.uri);
+			var sur = oldItem.uri.split("/");
+			var tur = newItem.uri.split("/");
+			var sdoc = sur.pop();
+			var tdoc = tur.pop();
+			var origin = sur.join("/");
+			var destination = tur.join("/");
+			var xml = "<move>";
+			xml += "<origin>"+origin+"</origin>";
+			xml += "<destination>"+destination+"</destination>";
+			xml += "<resource>"+sdoc+postfix+"</resource>";
+			if(sdoc != tdoc) xml += "<name>"+tdoc+postfix+"</name>";
+			xml += "</move>";
+			return this.store.post("move",xml);
 		}
 	});
 	return ExistRest;

@@ -1,7 +1,7 @@
-define("dlagua/c/string/stripTags", ["dojo"], function(dojo) {
+define("dlagua/c/string/stripTags", ["dojo/dom-construct"], function(domConstruct) {
 
 dlagua.c.string.stripTags = function(/*String*/ text){
-    var div = dojo.create("div",{
+    var div = domConstruct.create("div",{
     	innerHTML:text
     });
     if(document.all) {

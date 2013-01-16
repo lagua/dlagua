@@ -1,27 +1,45 @@
-define(["dojo/_base/declare", "dojo/Stateful","dojo/topic", "dlagua/c/subscribe"], function(declare, Stateful, dtopic, dsubscribe) {
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/Stateful",
+	"dojo/topic",
+	"persvr/rql/parser",
+	"persvr/rql/js-array",
+	"dijit/Destroyable"], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 
 return declare("dlagua.c.Subscribable", [Stateful], {
-	_subscribes:null, // subscription to update the id
-	subscribe: function(
-			/*String*/ topic,
-			/*String*/ params){
-		var handle = dsubscribe(topic, this, params);
-		if(!this._subscribes) this._subscribes = [];
-		// return handles for Any widget that may need them
-		this._subscribes.push(handle);
-		return handle;
+	subscribe: function(t, params){
+		if(!params) params = {};
+		var filter=(params.filter ? rqlParser.parseQuery(params.filter) : null);
+		var refProperty = params.refProperty;
+		var method = function(item,olditem) {
+			if(filter) {
+				var ar = [item];
+				var res = rqlArray.executeQuery(filter,{},ar);
+				if(!res.length) {
+					console.log("filtered:",params.filter,item);
+					return;
+				} else {
+					console.log("passed:",params.filter,item);
+				}
+			}
+			if(lang.isObject(item)) {
+				if(lang.isObject(olditem)) {
+					refProperty = (refProperty || "changeSet");
+					this.set(refProperty,[item,olditem]);
+				} else {
+					refProperty = (refProperty || "currentItem");
+					this.set(refProperty,item);
+				}
+			} else {
+				refProperty = (refProperty || "currentId");
+				this.set(refProperty,item);
+			}
+		};
+		return this.own(subscribe(t, lang.hitch(this, method)))[0];	// handle
 	},
 	unsubscribe: function(/*Object*/ handle){
-		// summary:
-		//		Unsubscribes handle created by this.subscribe.
-		//		Also removes handle from this widget's list of subscriptions
-		for(var i=0; i<this._subscribes.length; i++){
-			if(this._subscribes[i] == handle){
-				dtopic.unsubscribe(handle);
-				this._subscribes.splice(i, 1);
-				return;
-			}
-		}
+		handle.remove();
 	}
 });
 

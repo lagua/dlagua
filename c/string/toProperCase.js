@@ -1,7 +1,7 @@
-define("dlagua/c/string/toProperCase", ["dojo"], function(dojo) {
+define("dlagua/c/string/toProperCase", [], function() {
 
 dlagua.c.string.toProperCase = function(/*String*/ value){
-	return value.charAt(0).toUpperCase() + value.substring(1,value.length).toLowerCase();
+	return value.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
 
 String.prototype.toProperCase = function() {
