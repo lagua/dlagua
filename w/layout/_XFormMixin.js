@@ -54,6 +54,8 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		var self = this;
 		var reset = function(){
 			if(!self.containerNode) return;
+			// BF BUG update locale every time
+			fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 			self._dim = self.getDim();
 			self.showScrollBar();
 			if(self.useScrollBar) {
