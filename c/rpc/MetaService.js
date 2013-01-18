@@ -1,9 +1,7 @@
-define("dlagua/c/rpc/MetaService", ["dojo"], function(dojo) {
-
-dlagua.c.rpc.MetaService = function(data) {
+define(["dojo/_base/lang","dojo/request"], function(lang,request) {
+var MetaService = function(data) {
 	var result = {};
-	dojo.xhrGet({
-		url:data.target,
+	request(data.target,{
 		sync:true,
 		handleAs:"json",
 		header:{
@@ -22,6 +20,6 @@ dlagua.c.rpc.MetaService = function(data) {
 	});
 }
 
-return dlagua.c.rpc.MetaService;
+return MetaService;
 
 });

@@ -34,15 +34,13 @@ return declare("dlagua.c.templa.Mixin",[Stateful],{
 			// last may have to depend on the input from the Templa editor plugin
 			// make argument list
 			var pstr = ar.shift();
-			pstr = "{"+render(pstr)+"}";
-			var props = djson.fromJson(pstr);
+			var props = djson.fromJson("{"+render(pstr)+"}");
 			props._ref = this;
 			var val = ar.join("|");
 			var fn;
 			if(fstr.indexOf("::")) {
 				ar = fstr.split("::");
-				var o = lang.getObject(ar[0]);
-				fn = o[ar[1]];
+				fn = lang.getObject(ar[0])[ar[1]];
 			} else {
 				fn = lang.getObject(fstr);
 			}

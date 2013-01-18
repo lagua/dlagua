@@ -1,6 +1,6 @@
 define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/util/QueryResults", "dojo/io-query"], function(declare,lang,request,QueryResults, ioQuery) {
 
-	return declare("dlagua/store/XMLRest", null, {
+	return declare("dlagua/store/PlainRest", null, {
 		constructor: function(options){
 			// summary:
 			//		This is a basic store for RESTful communicating with a server through JSON
