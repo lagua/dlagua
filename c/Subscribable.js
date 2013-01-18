@@ -8,6 +8,9 @@ define([
 	"dijit/Destroyable"], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 
 return declare("dlagua.c.Subscribable", [Stateful], {
+	destroyRecursive:function(){
+		this.destroy();
+	},
 	subscribe: function(t, params){
 		if(!params) params = {};
 		var filter=(params.filter ? rqlParser.parseQuery(params.filter) : null);

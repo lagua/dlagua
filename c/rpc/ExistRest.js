@@ -11,8 +11,7 @@ define([
 ], function(declare, lang, request, Deferred, when, ioQuery, topic, Subscribable, PlainRest){
 	// module:
 	//   lagua/c/rpc/ExistRest
-	// NOTE: extends from Destroyable for flujo faux destroyer
-	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Subscribable,Destroyable],{
+	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Subscribable],{
 		// FIXME: current item should be corresponding item
 		// TODO: but this is a dirty thing anyway...
 		// this is a function to set some veeery specific properties
@@ -29,12 +28,6 @@ define([
 		postfix:"", // will be temp for editor, none for published version, xml for legacy
 		// here follow all exist rest query params
 		_query:null,
-		destroyRecursive:function(x){
-			console.log("destroying existrest");
-			// faux destroyer for conecta
-			// FIXME: move to conecta
-			this.destroy();
-		},
 		itemMapper:function(item) {
 			// TODO: add mappedIdProperty
 			var mappedItem = {

@@ -16,8 +16,12 @@ define([
 	"dojo/_base/fx",
 	"dojo/on",
 	"dojo/request",
+	"dojo/query",
+	"dojo/dom-construct",
 	"dojo/dom-geometry",
+	"dojo/dom-class",
 	"dojo/dom-style",
+	"dojo/dom-attr",
 	"dojo/topic",
 	"dojo/aspect",
 	"dojo/Deferred",
@@ -39,7 +43,7 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,domGeom,domStyle,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,Button,timing,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,rqlQuery,rqlParser,Subscribable,templateString){
+],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeom,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,Button,timing,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,rqlQuery,rqlParser,Subscribable,templateString){
 return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
 	store:null,
 	stores:{},
@@ -86,6 +90,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	headerLabel:"",
 	footerLabel:"",
 	pageButtons:true,
+	loadingAnimation:true,
 	loadOnCreation:true,
 	currentService:"",
 	resolveProperties:"",
@@ -99,11 +104,19 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	baseClass:"dlaguaScrollableServicedPane",
 	templateString:templateString,
 	useScrollBar:true,
+	postscript:function(params, srcNodeRef){
+		var args = arguments;
+		if(window.fluxProcessor) {
+			require(["dlagua/w/layout/_XFormMixin"],lang.hitch(this,function(_XFormMixin){
+				declare.safeMixin(this,new _XFormMixin());
+				this.inherited(args);
+			}));
+			return;
+		}
+		this.inherited(args);
+	},
 	startup: function(){
 		if(this._started){ return; }
-		if(!has('touch')){
-			this.connect(this.containerNode, (!has('mozilla') ? "onmousewheel" : "DOMMouseScroll"), this.onScroll);
-		}
 		this._timer = new timing.Timer(this.autoSkipInterval);
 		var params={};
 		this.listitems = [];
@@ -258,11 +271,12 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
 		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
+			var tplo = this.parseTemplate(tpl);
 			if(child && child!="childTemplate"){
-				child.applyTemplate(tpl);
+				child.applyTemplate(tplo.tpl,tplo.partials);
 			} else {
-				dojo.forEach(this.listitems,function(li){
-					li.applyTemplate(tpl);
+				array.forEach(this.listitems,function(li){
+					li.applyTemplate(tplo.tpl,tplo.partials);
 				});
 			}
 		}));
@@ -283,7 +297,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		}
 		if(!this.schemaUri || this.schemaUri!=this.store.schemaUri) {
 			this.schemaUri = this.store.schemaUri;
-			this.store.getSchema(this.store.schemaUri).then(lang.hitch(this,function(schema){
+			this.store.getSchema(this.store.schemaUri,{useXDomain:(this.useXDomain)}).then(lang.hitch(this,function(schema){
 				this.schema = schema;
 				this.schemata[this.schemaUri] = schema;
 				for(var k in schema.properties) {
@@ -304,8 +318,8 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		// should we cancel oldItem and let currentItem take over?
 		var props = this.reloadTriggerProperties.split(",");
 		// if any of the keys below are different, cancel
-		var cancel = false;
-		if(o) {
+		var cancel = this._beingDestroyed;
+		if(!cancel && o) {
 			for(var i=0;i<props.length;i++) {
 				var p = props[i];
 				if(p in n && p in o && n[p]!=o[p]) {
@@ -317,7 +331,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		if(!cancel) return;
 		switch(o.type || this.servicetype) {
 			case "persvr":
-				if(this.results.fired==-1) {
+				if(this.results && this.results.fired==-1) {
 					this.results.cancel();
 				}
 			break;
@@ -406,45 +420,46 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	selectItemByCurrentId: function(){
 		if(this._beingDestroyed) return;
 		var item = this.itemnodesmap[this.currentId];
-		if(!item) return;
+		if(!item) {
+			// force more stuff from the store
+			this.pageStore(-Infinity);
+			return;
+		}
 		this.currentId = null;
 		var index = item.getIndexInParent();
 		this.scrollToItem(index);
 	},
 	rebuild:function(item) {
-		this.currentService = item.service; 
+		this.currentService = item.service;
 		this.destroyDescendants();
 		domStyle.set(this.containerNode,{
 			top:0
 		});
-		var lh = aspect.after(this,"onReady",function(){
-			lh.remove();
-			if(this.useScrollBar) {
-				this.showScrollBar();
-				this.scrollToInitPos();
-			}
-		});
+		if(this.useScrollBar) {
+			this.scrollToInitPos();
+		}
+		if(this.loadingAnimation && this.footer) {
+			domClass.add(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
 		this.selectedIndex = 0;
 		this.selectedItem = null;
 		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
-			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-				this.tpl = tpl;
-				this.getSchema().then(lang.hitch(this,function(){
-					var q = this.createQuery();
-					var start = this.start;
-					this.start += this.count;
-					var results = this.results = this.store.query(q,{
-						start:start,
-						count:this.count
-					});
-					results.total.then(lang.hitch(this,function(total){
-						this.total = total;
-						if(total===0 || isNaN(total)) this.onReady();
-					}));
-					results.forEach(lang.hitch(this,this.addItem));
+			this.getSchema().then(lang.hitch(this,function(){
+				var q = this.createQuery();
+				var start = this.start;
+				this.start += this.count;
+				var results = this.results = this.store.query(q,{
+					start:start,
+					count:this.count,
+					useXDomain:this.useXDomain
+				});
+				results.total.then(lang.hitch(this,function(total){
+					this.total = total;
+					if(total===0 || isNaN(total)) this.onReady();
 				}));
+				results.forEach(lang.hitch(this,this.addItem));
 			}));
 		} else if(this.servicetype=="atom") {
         	var fr = new FeedReader();
@@ -469,6 +484,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	destroyRecursive: function(/*Boolean*/ preserveDom){
 		// summary:
 		//		Destroy the ContentPane and its contents
+		if(this._loading) this.cancel();
 		this.inherited(arguments);
 	},
 	skip:function(dir) {
@@ -506,10 +522,40 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		}
 		this.slideTo({x:0,y:-y},0.3,"ease-out");
 	},
+	pageStore:function(py){
+		if(this._loading) return;
+		if(!py) py = this.getPos().y;
+		var dim = this._dim;
+		var len = this.listitems.length;
+		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
+			// try to get more stuff from the store...
+			this._loading = true;
+			this.childrenReady = 0;
+			if(this.loadingAnimation && this.footer) {
+				domClass.add(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+			}
+			var count = (this.pageSize || this.count);
+			if(this.start+count>this.maxCount) return;
+			if(this.start+count>=this.total) count = this.total-this.start;
+			var start = this.start;
+			this.start += count;
+			var q = this.createQuery();
+			var results = this.results = this.store.query(q,{
+				start:start,
+				count:count,
+				useXDomain:this.useXDomain
+			});
+			results.total.then(lang.hitch(this,function(total){
+				this.total = total;
+			}));
+			results.forEach(lang.hitch(this,this.addItem));
+		}
+	},
 	setSelectedItem: function(index) {
+		if(this.selectedIndex==index) return;
 		this.selectedIndex = index;
 		var py = this.getPos().y;
-		var dim = this.getDim();
+		var dim = this._dim;
 		var len = this.listitems.length;
 		if(this.snap) {
 			var y = 0;
@@ -527,25 +573,8 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		}
 		this.selectedItem = this.listitems[index];
 		console.log("selectedItem",this.selectedItem);
-		if(this.id) topic.publish("/components/"+this.id,this.listitems[index].data);
-
-		if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
-			// try to get more stuff from the store...
-			var count = (this.pageSize || this.count);
-			if(this.start+count>this.maxCount) return;
-			if(this.start+count>=this.total) count = this.total-this.start;
-			var start = this.start;
-			this.start += count;
-			var q = this.createQuery();
-			var results = this.results = this.store.query(q,{
-				start:start,
-				count:count
-			});
-			results.total.then(lang.hitch(this,function(total){
-				this.total = total;
-			}));
-			results.forEach(lang.hitch(this,this.addItem));
-		}
+		if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].data);
+		this.pageStore(py);
 	},
 	createQuery:function(){
 		var qo = this.query ? rqlParser.parseQuery(this.query) : new rqlQuery.Query();
@@ -601,16 +630,120 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		if(i>=len) i=0;
 		this.setSelectedItem(i);
 	},
-	onFlickAnimationEnd: function(e){
-		this.checkSelectedItem();
-		this.inherited(arguments);
+	onFlickAnimationEnd:function(e){
+		if(e && e.srcElement){
+			event.stopEvent(e);
+		}
+		this.stopAnimation();
+		if(this._bounce){
+			var _this = this;
+			var bounce = _this._bounce;
+			setTimeout(function(){
+				_this.slideTo(bounce, 0.3, "ease-out");
+			}, 0);
+			_this._bounce = undefined;
+		}else{
+			this.hideScrollBar();
+			this.removeCover();
+			this.startTime = 0;
+			// this really is dim reset
+			this._dim = this.getDim();
+			this.checkSelectedItem();
+		}
 	},
-	resize: function(changeSize, resultSize) {
-		_LayoutWidget.prototype.resize.apply(this,arguments);
-		this.inherited(arguments);
+	layout:function(){
+		this.resizeView();
+	},
+	resizeView: function(e){
+		// moved from init() to support dynamically added fixed bars
+		if(this.footer) {
+			this.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
+		}
+		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
+		if(this.header) {
+			this.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
+			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
+		}
+
+		// has to wait a little for completion of hideAddressBar()
+		var c = 0;
+		var _this = this;
+		setTimeout(function(){
+			if(!_this || _this._beingDestroyed) {
+				return;
+			}
+			// recalc dim
+			var pos = _this.getPos();
+			_this.showScrollBar();
+			if(_this.useScrollBar) {
+				_this.slideScrollBarTo(pos, 0.3, "ease-out");
+			}
+			_this.pageStore(pos.y);
+		}, 100);
 	},
 	getModel:function(){
 		return this.model || this.currentItem.model;
+	},
+	parseTemplate: function(tpl){
+		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
+		var div = domConstruct.create("div",{
+			innerHTML:tpl
+		});
+		query("span.templaField",div).forEach(function(node){
+			var p = node.parentNode;
+			var inner = node.firstChild;
+			p.insertBefore(inner, node);
+			p.removeChild(node);
+		});
+		var types = [];
+		// look for nesting
+		var partials = {};
+		var partialcount = 0;
+		var getNode = function(node){
+			var type = domAttr.get(node,"data-templa-type");
+			types.push(type);
+			var props = domAttr.get(node,"data-templa-props");
+			var pre = document.createTextNode("{{#_mod}}"+type+"|"+(props || "")+"|");
+			var post = document.createTextNode("{{/_mod}}");
+			domConstruct.place(pre,node,"first");
+			domConstruct.place(post,node);
+			return node;
+		}
+		query("span[data-templa-type] span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+			var partname = "_mod"+partialcount;
+			partials[partname] = p.innerHTML;
+			p.innerHTML = "{{>"+partname+"}}";
+			partialcount++;
+		});
+		query("span[data-templa-type]",div).forEach(function(node){
+			node = getNode(node);
+			var p = node.parentNode;
+			var inner;
+			while(inner = node.firstChild){
+				// insert all our children before ourselves.
+				p.insertBefore(inner, node);
+			}
+			p.removeChild(node);
+		});
+		var dj = dojo;
+		array.forEach(types,function(type){
+			if(type.indexOf("::")) {
+				var ar = type.split("::");
+				type = ar[0];
+			}
+			dj.require(type);
+		});
+		tpl = div.innerHTML.toString();
+		tpl = tpl.replace(/{{&gt;/g,"{{>");
+		return {tpl:tpl,partials:partials};
 	},
 	getTemplate:function(templateDir){
 		var xtemplate = "";
@@ -634,6 +767,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	},
 	addItem:function(item,index,items,insertIndex) {
+		if(this._beingDestroyed) return;
 		var content = "";
 		var id = item[this.idProperty];
 		var listItem = new ScrollableServicedPaneItem({
@@ -643,12 +777,21 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		});
 		this.listitems.push(listItem);
 		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
-			if(this._beingDestroyed) return;
-			listItem.applyTemplate(this.tpl);
-			fx.fadeIn({node:listItem.containerNode}).play();
-			this.childrenReady++;
-			if(this.childrenReady == this.listitems.length) this.onReady();
-			this.itemnodesmap[item[this.idProperty]] = listItem;
+			// as this can take a while, listItem may be destroyed in the meantime
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+				var tplo = this.parseTemplate(tpl);
+				listItem.applyTemplate(tplo.tpl,tplo.partials);
+				fx.fadeIn({node:listItem.containerNode}).play();
+				this.childrenReady++;
+				if(this.childrenReady == items.length) {
+					// wait for the margin boxes to be set
+					setTimeout(lang.hitch(this,function(){
+						this.onReady();
+					}),10);
+				}
+				this.itemnodesmap[item[this.idProperty]] = listItem;
+			}));
 		}));
 		this.addChild(listItem,insertIndex);
 	},
@@ -660,17 +803,16 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
 		if(item.type=="xform") {
-			this.setXFormTarget(listItem,href);
+			this.setXFormTarget(href);
 			setTimeout(function(){
 				self.onReady();
 			},100);
 		} else {
-			request(href,{
-			}).then(function(res){
+			request(href).then(function(res){
 				listItem.set("content",res);
 				setTimeout(function(){
 					self.onReady();
-				},1);
+				},10);
 			});
 		}
 		this.listitems.push(listItem);
@@ -681,9 +823,20 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	onReady: function(){
 		console.log("done loading "+this.id);
 		this._loading = false;
-		this.resetScrollBar();
+		if(this.loadingAnimation && this.footer) {
+			domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
+		var pos = this.getPos();
+		this.showScrollBar();
+		if(this.useScrollBar) {
+			this.slideScrollBarTo(pos, 0.3, "ease-out");
+		}
+		// if needed, get more stuff from the store
+		if(this.servicetype == "persvr") this.pageStore(pos.y);
 		// select currentId for #anchor simulation
-		if(this.currentId) this.selectItemByCurrentId();
+		if(this.currentId) {
+			this.selectItemByCurrentId();
+		}
 	}
 });
 
