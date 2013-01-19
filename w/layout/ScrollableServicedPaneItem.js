@@ -15,7 +15,7 @@ return declare("lagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated
 	marginBox:null,
 	parseOnLoad:true,
 	baseClass:"dlaguaScrollableServicedPaneItem",
-	templateString: '<div style="height:${itemHeight};opacity:0;" dojoAttachPoint="containerNode"></div>',
+	templateString: '<div style="height:${itemHeight};opacity:0;" data-dojo-attach-point="containerNode"></div>',
 	onLoad:function(){
 		// you know what to do...
 	},

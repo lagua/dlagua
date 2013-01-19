@@ -1,54 +1,47 @@
-dojo.provide("dlagua.w.layout.TemplaPane");
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/deferred",
+	"dijit/layout/ContentPane",
+	"dlagua/w/layout/_PersvrMixin",
+	"dlagua/w/layout/TemplaMixin",
+	"dlagua/c/store/JsonRest",
+	"dlagua/c/templa/Mixin"
+],function(declare,lang,Deferred,ContentPane,_PersvrMixin,TemplaMixim,JsonRest,Mixin) {
 
-dojo.require("dijit.layout.ContentPane");
-dojo.require("dlagua.w.layout.TemplaMixin");
-dojo.require("dlagua.c.store.JsonRest");
-
-dojo.declare("dlagua.w.layout.TemplaPane",[dijit.layout.ContentPane,dlagua.w.layout.TemplaMixin],{
-	template:"",
-	templateModule:"",
-	service:"",
-	model:"",
-	idProperty:"",
-	schema:null,
-	data:null,
-	store:null,
-	_getSchema:function(){
-		var d = new dojo.Deferred();
-		if(!this.store) {
-			d.callback();
-			return d;
-		}
-		this.store.getSchema(this.store.schemaUri).then(dojo.hitch(this,function(schema){
-			this.schema = schema;
-			for(var k in schema.properties) {
-				if(schema.properties[k].primary) this.idProperty = k;
+	return declare("dlagua.w.layout.TemplaPane",[ContentPane,_PersvrMixin,TemplaMixin],{
+		template:"",
+		templateModule:"",
+		service:"",
+		model:"",
+		idProperty:"",
+		schema:null,
+		data:null,
+		store:null,
+		startup: function(){
+			this.inherited(arguments);
+			if(this.service && this.model) {
+				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+					var tplo = this.parseTemplate(tpl);
+					this.store = new JsonRest({
+						target:this.service+"/"+this.model+"/",
+						schemaUri:this.service+"/Class/"+this.model
+					});
+					this._getSchema().then(lang.hitch(this,function(sxs){
+						if(sxs) {
+							this.store.query().then(lang.hitch(this,function(res){
+								this.data = {items:res};
+								this._load().then(lang.hitch(this,function(sxs){
+									if(sxs) {
+										this.applyTemplate(tpl);
+									}
+								}))
+							}));
+						}
+					}))
+				}));
 			}
-			this.store.idProperty = this.idProperty;
-			d.callback(true);
-		}));
-		return d;
-	},
-	startup: function(){
-		this.inherited(arguments);
-		var tpl = dojo.cache(this.templateModule,this.template);
-		if(this.service && this.model) {
-			this.store = new dlagua.c.store.JsonRest({
-				target:this.service+"/"+this.model+"/",
-				schemaUri:this.service+"/Class/"+this.model
-			});
-			this._getSchema().then(dojo.hitch(this,function(sxs){
-				if(sxs) {
-					this.store.query().then(dojo.hitch(this,function(res){
-						this.data = {items:res};
-						this._load().then(dojo.hitch(this,function(sxs){
-							if(sxs) {
-								this.applyTemplate(tpl);
-							}
-						}))
-					}));
-				}
-			}))
 		}
-	}
+	});
+	
 });

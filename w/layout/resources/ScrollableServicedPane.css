@@ -1,0 +1,27 @@
+.dlaguaScrollableServicedPaneFooterLabel {
+	display:inline-block;
+}
+
+.dlaguaScrollableServicedPaneHeader {
+	position:absolute;
+	z-index:2;
+}
+.dlaguaScrollableServicedPaneContainer {
+	position:absolute;
+	z-index:1;
+	cursor:move;
+	unselectable:true;
+	overflow:hidden;
+}
+.dlaguaScrollableServicedPaneFooter {
+	text-align:right;
+	position:absolute;
+	z-index:3;
+}
+.dlaguaScrollableServicedPaneItem {
+	margin-right:13px;
+}
+
+.mblScrollBarWrapper { 
+	background: url("images/scrollrail.png") repeat-y scroll center top transparent;
+}

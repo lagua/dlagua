@@ -1,9 +1,0 @@
-@import url("commonIcons.css");
-
-.claro .laguaFormLabel {
-    text-align: left;
-    width: 100px;
-}
-.claro .laguaFormLabel:hover {
-    background-color: gold;
-}

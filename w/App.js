@@ -16,17 +16,19 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	state:"initial",
 	path:"",
 	defaultHash:"",
+	indexable:false,
 	locale:"",
 	servicetype:"",
 	useLocale:true,
 	depth:0,
 	meta:{},
+	stateMap:null,
 	replaced:[],
 	fromHash:false,
 	infer:function(path,servicetype,depth,fromHash,truncated){
 		var d = new Deferred();
 		var inferred = {};
-		inferred.__view = "";
+		inferred.__view = false;
 		if(!this.localechanged && ((this.servicetype=="persvr" && fromHash) || servicetype=="persvr")) {
 			if(depth==this.depth+1 || truncated) {
 				var par = path.split("/");
@@ -49,6 +51,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		return d;
 	},
 	hashToItem: function(hash) {
+		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
 		var hashar = hash.split(":");
 		var state,rest,locale,path;
 		if(hashar.length>1) {
@@ -58,8 +61,19 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			state = "initial";
 			rest = hashar[0];
 		}
+		// try stateMap
+		if(state=="initial" && this.stateMap) {
+			for(var k in this.stateMap) {
+				var patt = new RegExp(this.stateMap[k],"ig");
+				if(patt.test(rest)) {
+					state = k;
+					break;
+				}
+			}
+		}
 		var restar = rest.split("/");
 		if(this.useLocale) locale = restar.shift();
+		if(restar[0]!="content") restar.unshift("content");
 		path = restar.join("/");
 		var item = {
 			state:state,
@@ -91,8 +105,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				if(node.dojoo) {
 					for(k in this.replaced["inferred"][id]) {
 						v = this.replaced["inferred"][id][k];
-						if(lang.isString(v)) {
-							var newv = lang.replace(v,meta).replace("undefined","");
+						if(typeof v == "string") {
+							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -103,7 +117,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				//console.log("reset inferred: ",id,k,v);
 				for(k in this.replaced["inferred"][id]) {
 					v = this.replaced["inferred"][id][k];
-					if(lang.isString(v)) node.data[k] = v;
+					if(typeof v == "string") node.data[k] = v;
 				}
 			}
 		}
@@ -119,8 +133,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				if(node.dojoo) {
 					for(k in this.replaced["i18n"][id]) {
 						v = this.replaced["i18n"][id][k];
-						if(lang.isString(v)) {
-							var newv = lang.replace(v,meta).replace("undefined","");
+						if(typeof v == "string") {
+							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
 							reset.push({dojoo:node.dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
@@ -131,7 +145,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				//console.log("reset i18n: ",id,k,v);
 				for(k in this.replaced["i18n"][id]) {
 					v = this.replaced["i18n"][id][k];
-					if(lang.isString(v)) node.data[k] = v;
+					if(typeof v == "string") node.data[k] = v;
 				}
 				//delete this.replaced["i18n"][id];
 			}
@@ -147,9 +161,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
 		var d = new Deferred();
-		if(!item.__fromHash) {
-			item.__fromHash = false;
-		}
+		if(!item.__fromHash) item.__fromHash = false;
+		if(!item.__view) item.__view = false;
 		if(item.__truncated) {
 			this.path = path;
 			path = item.__truncated;
@@ -181,6 +194,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		this.infer(path,servicetype,depth,fromHash,item.__truncated).then(lang.hitch(this,function(){
 			var reset = [];
 			if(localechanged) {
+				this.set("locale",locale);
 				if(this.meta.inferred) this.meta.inferred.locale = locale;
 				reset = this.replaceI18n();
 			}
@@ -195,10 +209,13 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			array.forEach(reset,function(r){
 				r.dojoo.set(r.key,r.value);
 			});
-			if(pathchanged) {
-				if(!fromHash && !item.__truncated) this.set("changeFromApp", true);
+			if(pathchanged || localechanged) {
 				topic.publish("/app/pagechange",item);
-				var hash = (state!="initial" ? state+":"+locale+"/"+path : locale+"/"+path);
+				var par = path.split("/");
+				if(par[0]=="content") par.shift();
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+"/"+par.join("/");
+				var chash = dhash();
+				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				dhash(hash);
 				this.set("path",path);
 				d.resolve(true);
@@ -216,7 +233,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			var item = this.hashToItem(hash);
 			this.infer(item.path);
 		}
-		topic.subscribe("/dojo/hashchange", lang.hitch(this, function(hash){
+		topic.subscribe("/dojo/hashchange", lang.hitch(this,function(hash){
 			if(this.changeFromApp) {
 				this.changeFromApp = false;
 				return;
@@ -229,6 +246,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			topic.publish("/app/statechange",this.state);
 		});
 		this.watch("locale",function(){
+			dojo.locale = this.locale.replace("_","-");
+			if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 			this.localechanged = true;
 			topic.publish("/app/localechange",this.locale);
 		});
