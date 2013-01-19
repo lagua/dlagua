@@ -9,8 +9,9 @@ define([
 	"dojo/dom-style",
 	"dojo/dom-geometry",
 	"dojox/mobile/sniff",
+	"dojox/mobile/_css3",
 	"dojox/mobile/scrollable"
-], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, domGeom, has, Scrollable){
+], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, domGeom, has, css3, Scrollable){
 	
 	var dm = lang.getObject("dojox.mobile", true);
 	
@@ -48,28 +49,13 @@ define([
 			// prevent inherited, cause it will resize the widget
 		},
 		
-		getSpeed: function(){
-			// summary:
-			//		Returns an object that indicates the scrolling speed.
-			// description:
-			//		From the position and elapsed time information, calculates the
-			//		scrolling speed, and returns an object with x and y.
-			var x = 0, y = 0, n = this._time.length;
-			// if the user holds the mouse or finger more than 0.5 sec, do not move.
-			// WSH: 0.2 sec
-			if(n >= 2 && (new Date()).getTime() - this.startTime - this._time[n - 1] < 200){
-				var dy = this._posY[n - (n > 3 ? 2 : 1)] - this._posY[(n - 6) >= 0 ? n - 6 : 0];
-				var dx = this._posX[n - (n > 3 ? 2 : 1)] - this._posX[(n - 6) >= 0 ? n - 6 : 0];
-				var dt = this._time[n - (n > 3 ? 2 : 1)] - this._time[(n - 6) >= 0 ? n - 6 : 0];
-				y = this.calcSpeed(dy, dt);
-				x = this.calcSpeed(dx, dt);
-			}
-			return {x:x, y:y};
-		},
-		
 		onTouchStart: function(e){
 			// summary:
 			//		User-defined function to handle touchStart events.
+			
+			// WSH: escape on form inputs
+			if(this.isFormElement(e.target) || dojo.hasClass(e.target,"dlaguaPreventScroll")) return;
+			
 			if(this.disableTouchScroll){ return; }
 			if(this._conn && (new Date()).getTime() - this.startTime < 500){
 				return; // ignore successive onTouchStart calls
@@ -97,8 +83,10 @@ define([
 			} else {
 				this.startPos = this.getPos();
 			}
-			this._dim = this.getDim();
+			// WSH: dim is already set on many occasions
+			if(!this._dim) this._dim = this.getDim();
 			this._time = [0];
+			// WSH: set posx/y to scrollbar on invert
 			this._posX = [this.invert ? -this.touchStartX : this.touchStartX];
 			this._posY = [this.invert ? -this.touchStartY : this.touchStartY];
 			this._locked = false;
@@ -118,6 +106,8 @@ define([
 			var dy = y - this.touchStartY;
 			var to = {x:this.startPos.x + dx, y:this.startPos.y + dy};
 			var dim = this._dim;
+			// WSH: extra check
+			if(!dim) dim = this_dim = this.getDim();
 
 			dx = Math.abs(dx);
 			dy = Math.abs(dy);
@@ -140,9 +130,16 @@ define([
 						return;
 					}
 				}
-				if(this._v && Math.abs(dy) < this.threshold ||
-					(this._h || this._f) && Math.abs(dx) < this.threshold){
-					return;
+				if(this._v && this._h){ // scrollDir="hv"
+					if(dy < this.threshold &&
+					   dx < this.threshold){
+						return;
+					}
+				}else{
+					if(this._v && dy < this.threshold ||
+					   (this._h || this._f) && dx < this.threshold){
+						return;
+					}
 				}
 				this.addCover();
 				this.showScrollBar();
@@ -205,7 +202,7 @@ define([
 			this._posY.push(this.invert ? -y : y);
 		},
 		
-		onTouchEnd: function(e){
+		onTouchEnd: function(/*Event*/e){
 			// summary:
 			//		User-defined function to handle touchEnd events.
 			if(this._locked){ return; }
@@ -345,6 +342,25 @@ define([
 			this.slideTo(to, duration, easing);
 		},
 		
+		getSpeed: function(){
+			// summary:
+			//		Returns an object that indicates the scrolling speed.
+			// description:
+			//		From the position and elapsed time information, calculates the
+			//		scrolling speed, and returns an object with x and y.
+			var x = 0, y = 0, n = this._time.length;
+			// if the user holds the mouse or finger more than 0.5 sec, do not move.
+			// WSH: 0.2 sec
+			if(n >= 2 && (new Date()).getTime() - this.startTime - this._time[n - 1] < 200){
+				var dy = this._posY[n - (n > 3 ? 2 : 1)] - this._posY[(n - 6) >= 0 ? n - 6 : 0];
+				var dx = this._posX[n - (n > 3 ? 2 : 1)] - this._posX[(n - 6) >= 0 ? n - 6 : 0];
+				var dt = this._time[n - (n > 3 ? 2 : 1)] - this._time[(n - 6) >= 0 ? n - 6 : 0];
+				y = this.calcSpeed(dy, dt);
+				x = this.calcSpeed(dx, dt);
+			}
+			return {x:x, y:y};
+		},
+		
 		showScrollBar: function(){
 			// summary:
 			//		Shows the scroll bar.
@@ -354,9 +370,11 @@ define([
 			//		position.
 
 			if(!this.scrollBar){ return; }
-			
+
+			// WSH: recalc dimensions
 			if(!this._dim) this._dim = this.getDim();
 			var dim = this._dim;
+
 			// WSH: update extra scrollbar features
 			var skip = (this.scrollDir == "v" && dim.c.h <= dim.d.h) || 
 				(this.scrollDir == "h" && dim.c.w <= dim.d.w) || 
@@ -374,31 +392,29 @@ define([
 					var wrapper = domConstruct.create("div", null, self.domNode);
 					var props = { position: "absolute", overflow: "hidden" };
 					if(dir == "V"){
-						props.right = "0px";// "2px";
-						props.width = "13px";// "5px";
+						props.right = "0px";
+						props.width = "13px";
 					}else{
-						props.bottom = (self.isLocalFooter ? self.fixedFooterHeight : 0) + 0 + "px"; // 2 + "px";
-						props.height = "13px";// "5px";
+						props.bottom = (self.isLocalFooter ? self.fixedFooterHeight : 0) + 0 + "px";
+						props.height = "13px";
 					}
 					domStyle.set(wrapper, props);
 					wrapper.className = "mblScrollBarWrapper";
 					self["_scrollBarWrapper"+dir] = wrapper;
 
 					bar = domConstruct.create("div", null, wrapper);
-					domStyle.set(bar, {
+					domStyle.set(bar, css3.add({
 						opacity: 0.6,
-						filter:"alpha(opacity=60)",
 						position: "absolute",
 						backgroundColor: "#606060",
 						fontSize: "1px",
-						webkitBorderRadius: "4px",// "2px",
-						MozBorderRadius: "4px",// "2px",
-						borderRadius: "4px",
-						webkitTransformOrigin: "0 0",
+						MozBorderRadius: "4px",
 						zIndex: 2147483647 // max of signed 32-bit integer
-					});
+					}, {
+						borderRadius: "4px",
+						transformOrigin: "0 0"
+					}));
 					domStyle.set(bar, dir == "V" ? {width: "8px", marginLeft:"3px"} : {height: "8px", marginTop:"3px"});
-					//domStyle.set(bar, dir == "V" ? {width: "5px"} : {height: "5px"});
 					self["_scrollBarNode" + dir] = bar;
 				}
 				return bar;
@@ -420,17 +436,18 @@ define([
 			// description:
 			//		If the fadeScrollBar property is true, hides the scroll bar with
 			//		the fade animation.
+			// WSH: scrollbar resetters
 			if(this.useScrollBar && !this.clearScrollBar) return;
 			if(this.clearScrollBar) this.clearScrollBar = false;
 			
-			if(this.fadeScrollBar && has("webkit")){
+			if(this.fadeScrollBar && has("css3-animations")){
 				if(!dm._fadeRule){
 					var node = domConstruct.create("style", null, win.doc.getElementsByTagName("head")[0]);
 					node.textContent =
 						".mblScrollableFadeScrollBar{"+
-						"  -webkit-animation-duration: 1s;"+
-						"  -webkit-animation-name: scrollableViewFadeScrollBar;}"+
-						"@-webkit-keyframes scrollableViewFadeScrollBar{"+
+						"  " + css3.name("animation-duration", true) + ": 1s;"+
+						"  " + css3.name("animation-name", true) + ": scrollableViewFadeScrollBar;}"+
+						"@" + css3.name("keyframes", true) + " scrollableViewFadeScrollBar{"+
 						"  from { opacity: 0.6; }"+
 						"  to { opacity: 0; }}";
 					dm._fadeRule = node.sheet.cssRules[1];
@@ -438,11 +455,11 @@ define([
 			}
 			if(!this.scrollBar){ return; }
 			var f = function(bar, self){
-				domStyle.set(bar, {
-					opacity: 0,
-					filter: "alpha(opacity=0)", // WSH: for desktop IE
-					webkitAnimationDuration: ""
-				});
+				domStyle.set(bar, css3.add({
+					opacity: 0
+				}, {
+					animationDuration: ""
+				}));
 				// do not use fade animation in case of using top/left on Android
 				// since it causes screen flicker during adress bar's fading out
 				if(!(self._useTopLeft && has('android'))){
@@ -483,48 +500,13 @@ define([
 				var l = Math.round(d * d / c); // scroll bar length
 				l = Math.min(Math.max(l - 8, 5), t); // -8 is for margin for both ends
 				bar.style[v ? "height" : "width"] = l + "px";
-				domStyle.set(bar,  {"opacity": 0.6,filter:"alpha(opacity=60)"});
+				domStyle.set(bar, {"opacity": 0.6});
 			};
-			// set this._dim to recalc globally (e.g. new content)
+			// WSH: set this._dim to recalc globally (e.g. new content)
 			var dim = this._dim = this.getDim();
 			f(this._scrollBarWrapperV, this._scrollBarV, dim.d.h, dim.c.h, this.fixedHeaderHeight, true);
 			f(this._scrollBarWrapperH, this._scrollBarH, dim.d.w, dim.c.w, 0);
 			this.createMask();
-		},
-		
-		addCover: function(){
-			// summary:
-			//		Adds the transparent DIV cover.
-			// description:
-			//		The cover is to prevent DOM events from affecting the child
-			//		widgets such as a list widget. Without the cover, for example,
-			//		child widgets may receive a click event and respond to it
-			//		unexpectedly when the user flicks the screen to scroll.
-			//		Note that only the desktop browsers need the cover.
-
-			if(!has('touch') && !this.noCover){
-				if(!dm._cover){
-					dm._cover = domConstruct.create("div", null, win.doc.body);
-					dm._cover.className = "mblScrollableCover";
-					domStyle.set(dm._cover, {
-						backgroundColor: "#ffff00",
-						opacity: 0,
-						filter:"alpha(opacity=0)",
-						position: "absolute",
-						top: "0px",
-						left: "0px",
-						width: "100%",
-						height: "100%",
-						zIndex: 2147483647 // max of signed 32-bit integer
-					});
-					this._ch.push(connect.connect(dm._cover,
-						has('touch') ? "ontouchstart" : "onmousedown", this, "onTouchEnd"));
-				}else{
-					dm._cover.style.display = "";
-				}
-				this.setSelectable(dm._cover, false);
-				this.setSelectable(this.domNode, false);
-			}
 		},
 		
 		getPosInv: function(to){ // to: {x, y}
@@ -548,6 +530,8 @@ define([
 			}
 			return pos;
 		},
+		
+		// WSH: custom additions
 		getScrollBarPos: function(bar){
 			if(!bar) return {x:0,y:0};
 			if(has("webkit")){

@@ -5,10 +5,11 @@ define([
 	"dojo/Deferred",
 	"dojo/Stateful",
 	"dojo/topic",
+	"dojo/on",
 	"dojo/hash",
 	"dijit/layout/BorderContainer",
 	"dlagua/c/Subscribable"
-],function(declare,lang,array,Deferred,Stateful,topic,dhash,BorderContainer,Subscribable){
+],function(declare,lang,array,Deferred,Stateful,topic,on,dhash,BorderContainer,Subscribable){
 
 return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	gutters:false,
@@ -242,34 +243,35 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			item.__fromHash = true;
 			this.set("currentItem",item);
 		}));
-		this.watch("state",function(){
-			topic.publish("/app/statechange",this.state);
-		});
-		this.watch("locale",function(){
-			dojo.locale = this.locale.replace("_","-");
-			if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
-			this.localechanged = true;
-			topic.publish("/app/localechange",this.locale);
-		});
-		// use this to force locale for locale-unaware navigation or no nav
-		this.watch("newlocale",function(){
-			this.currentItem.locale = this.newlocale;
-			this.onItem();
-		});
-		this.watch("path",function(){
-			topic.publish("/app/pathchange",this.path);
-		});
-		this.watch("servicetype",function(){
-			topic.publish("/app/servicetypechange",this.servicetype);
-		});
-		this.connect(window,"onresize",function(){
-			this.resize();
-		});
-		// all navigation components:
-		this.watch("currentItem",lang.hitch(this,function(){
-			this.onItem()
-		}));
-		
+		this.own(
+			this.watch("state",function(){
+				topic.publish("/app/statechange",this.state);
+			}),
+			this.watch("locale",function(){
+				dojo.locale = this.locale.replace("_","-");
+				if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
+				this.localechanged = true;
+				topic.publish("/app/localechange",this.locale);
+			}),
+			// use this to force locale for locale-unaware navigation or no nav
+			this.watch("newlocale",function(){
+				this.currentItem.locale = this.newlocale;
+				this.onItem();
+			}),
+			this.watch("path",function(){
+				topic.publish("/app/pathchange",this.path);
+			}),
+			this.watch("servicetype",function(){
+				topic.publish("/app/servicetypechange",this.servicetype);
+			}),
+			on(window,"onresize",lang.hitch(this,function(){
+				this.resize();
+			})),
+			// all navigation components:
+			this.watch("currentItem",lang.hitch(this,function(){
+				this.onItem();
+			}))
+		);
 		this.inherited(arguments);
 		// set the has AFTER all children were started
 		var hash = dhash();
