@@ -10,7 +10,7 @@ define([
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained",
-	"dlagua/x/Mustache",
+	"mustache/mustache",
 	"dlagua/c/templa/Mixin"
 ],function(declare,lang,array,domGeom,request,Deferred,html,stamp,_Widget,_Templated,_Contained,Mustache,Mixin) {
 

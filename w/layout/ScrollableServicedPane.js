@@ -6,7 +6,6 @@
  * take out skip / autofire / timer and add param for plugin
  * dynamic loading of modules:
  * make JSON / ATOM / XML pluggable, require first
- * MIXIN PERSVRMIXIN, TAKE OUT PAGEDSTOREMIXIN
  */
 define([
 	"dojo/_base/declare",
@@ -30,6 +29,7 @@ define([
 	"dijit/_Templated",
 	"dlagua/x/mobile/_ScrollableMixin",
 	"dlagua/w/layout/_PersvrMixin",
+	"dlagua/w/layout/_PagedMixin",
 	"dijit/form/Button",
 	"dojox/mobile/sniff",
 	"dlagua/c/store/JsonRest",
@@ -42,7 +42,7 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeom,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,_PersvrMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
+],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeom,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
 return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
 	store:null,
 	stores:{},
