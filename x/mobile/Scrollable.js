@@ -9,7 +9,7 @@ define([
 	"dojo/dom-style",
 	"dojo/dom-geometry",
 	"dojox/mobile/sniff",
-	"dojox/mobile/_css3",
+	"./_css3",
 	"dojox/mobile/scrollable"
 ], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, domGeom, has, css3, Scrollable){
 	
@@ -19,34 +19,6 @@ define([
 		init: function(/*Object?*/params){
 			if(this._beingDestroyed) return;
 			this.inherited(arguments);
-		},
-		
-		resize: function(e){
-			// summary:
-			//		Adjusts the height of the widget.
-			// description:
-			//		If the height property is 'inherit', the height is inherited
-			//		from its offset parent. If 'auto', the content height, which
-			//		could be smaller than the entire screen height, is used. If an
-			//		explicit height value (ex. "300px"), it is used as the new
-			//		height. If nothing is specified as the height property, from the
-			//		current top position of the widget to the bottom of the screen
-			//		will be the new height.
-
-			// moved from init() to support dynamically added fixed bars
-			if(this.footer) {
-				this.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
-			}
-			if(this.header) {
-				this.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
-				this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
-			}
-			if(!this || this._beingDestroyed) {
-				return;
-			}
-			this.resetScrollBar();
-			this.onTouchEnd();
-			// prevent inherited, cause it will resize the widget
 		},
 		
 		onTouchStart: function(e){
@@ -372,8 +344,7 @@ define([
 			if(!this.scrollBar){ return; }
 
 			// WSH: recalc dimensions
-			if(!this._dim) this._dim = this.getDim();
-			var dim = this._dim;
+			var dim = this._dim = this.getDim();
 
 			// WSH: update extra scrollbar features
 			var skip = (this.scrollDir == "v" && dim.c.h <= dim.d.h) || 

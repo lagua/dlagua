@@ -27,7 +27,7 @@ define([
 	"dojo/Deferred",
 	"dijit/layout/_LayoutWidget",
 	"dijit/_Templated",
-	"dlagua/x/mobile/_ScrollableMixin",
+	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/_PagedMixin",
 	"dijit/form/Button",
@@ -42,8 +42,8 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeom,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,_ScrollableMixin,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
-return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templated, _ScrollableMixin, Subscribable],{
+],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeometry,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
+return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidget, _Templated, _PersvrMixin,_PagedMixin, Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
@@ -103,6 +103,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 	baseClass:"dlaguaScrollableServicedPane",
 	templateString:templateString,
 	useScrollBar:true,
+	height:"inherit",
 	postscript:function(params, srcNodeRef){
 		var args = arguments;
 		if(window.fluxProcessor) {
@@ -143,7 +144,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 				});
 				this.fixedHeader.appendChild(this.prevButton.domNode);
 			}
-			params.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
+			params.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 		} else {
 			domStyle.set(this.fixedHeader,"display","none");
 			params.fixedHeaderHeight = 0;
@@ -163,7 +164,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 				});
 				this.fixedFooter.appendChild(this.nextButton.domNode);
 			}
-			params.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
+			params.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		} else {
 			domStyle.set(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
@@ -377,9 +378,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		}
 	},
 	layout:function(){
-		this.resizeView();
-	},
-	resizeView: function(e){
 		// moved from init() to support dynamically added fixed bars
 		if(this.footer) {
 			this.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
@@ -389,9 +387,8 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 			this.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
 			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
 		}
-
-		// has to wait a little for completion of hideAddressBar()
-		var c = 0;
+		this.resetScrollBar();
+		this.onTouchEnd();
 		var _this = this;
 		setTimeout(function(){
 			if(!_this || _this._beingDestroyed) {
@@ -399,10 +396,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 			}
 			// recalc dim
 			var pos = _this.getPos();
-			_this.showScrollBar();
-			if(_this.useScrollBar) {
-				_this.slideScrollBarTo(pos, 0.3, "ease-out");
-			}
 			_this.pageStore(pos.y);
 		}, 100);
 	},
@@ -410,7 +403,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[_LayoutWidget, _Templat
 		// setcontent = false will not set the content here
 		var self = this;
 		var listItem = new ScrollableServicedPaneItem({
-			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
+			itemHeight:"auto"
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
 		if(item.type=="xform") {

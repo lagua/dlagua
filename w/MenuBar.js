@@ -76,22 +76,38 @@ define([
 				this.set("currentId",newId);
 			}
 		},
-		_loadFromId:function(){
+		_checkTruncated:function(val){
+			if(!val) return {};
+			var ar = [];
+			try {
+				ar = val.split("/");
+			} catch(e) {
+				return {};
+			}
+			var nar = ar.slice(0,this.maxDepth);
+			var truncated = (nar.length!=ar.length ? val : "");
+			var currentId = truncated ? nar.join("/") : val;
+			return {truncated:truncated,currentId:currentId};
+		},
+		_loadFromId:function(prop,oldValue,newValue){
 			if(this.loading) {
 				console.log("not loaded, deferring loadFromId")
-				if(!this._lh) this._lh = aspect.after(this,"onLoaded",this._loadFromId);
+				if(!this._lh) this._lh = aspect.after(this,"onLoaded",lang.hitch(this,this._loadFromId));
 				return;
 			}
 			if(this._lh) this._lh.remove();
 			this._lh = null;
 			if(!this.currentId) return;
-			var ar = this.currentId.split("/");
-			var nar = ar.slice(0,this.maxDepth);
-			var truncated = (nar.length!=ar.length ? this.currentId : "");
-			this.currentId = nar.join("/");
-			if(this.selected && this.selected.item[this.idProperty]==this.currentId) return; //same
-			console.log("MenuBar loading currentID ",this.currentId, truncated);
-			this.selectNode(this._itemNodesMap[this.currentId],truncated);
+			// preserve original currentId for reload top level on history.back
+			// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
+			// don't republish when truncated again
+			var checkOld = this._checkTruncated(oldValue);
+			var check = this._checkTruncated(this.currentId);
+			var currentId = check.currentId;
+			var truncated = check.truncated;
+			if(this.selected && this.selected.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
+			console.log("MenuBar loading currentID ",currentId, truncated);
+			this.selectNode(this._itemNodesMap[currentId],truncated);
 		},
 		startup: function(){
 			this.watch("currentId",this._loadFromId);
@@ -130,20 +146,14 @@ define([
 					var ref = item["_ref"];
 					self.items[ref] = {};
 					self.store.get(ref).then(function(res){
-						if(!res.hidden) {
-							self.items[res.id] = res;
-						} else {
-							delete self.items[res.id];
-						}
+						self.items[res.id] = res;
 						cnt++;
 						if(cnt==itemcount) {
 							self.onLoaded();
 						}
 					});
 				} else {
-					if(!item.hidden) {
-						self.items[item["id"]] = item;
-					}
+					self.items[item["id"]] = item;
 					cnt++;
 					if(cnt==itemcount) {
 						self.onLoaded();

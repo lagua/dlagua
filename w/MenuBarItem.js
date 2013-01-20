@@ -1,12 +1,14 @@
 define([
 	"dojo/_base/declare",
 	"dijit/MenuBarItem",
-	"dojo/text!dlagua/w/templates/MenuBarItem.html"
-],function(declare,MenuBarItem,template) {
+],function(declare,MenuBarItem) {
 	return declare("dlagua.w.MenuBarItem",[MenuBarItem],{
-		templateString:template,
 		selected:false,
 		item:null,
+		postCreate:function(){
+			if(this.item && this.item.hidden) this.domNode.style.display = "none";
+			this.inherited(arguments);
+		},
 		_setSelected: function(selected){
 			// override to prevent selecting hovered+focused nodes
 		}

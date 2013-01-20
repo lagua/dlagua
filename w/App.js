@@ -264,15 +264,17 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			this.watch("servicetype",function(){
 				topic.publish("/app/servicetypechange",this.servicetype);
 			}),
+			// all navigation components:
+			this.watch("currentItem",function(prop,oldValue,newValue){
+				console.log(oldValue,newValue)
+				this.onItem();
+			}),
 			on(window,"onresize",lang.hitch(this,function(){
 				this.resize();
-			})),
-			// all navigation components:
-			this.watch("currentItem",lang.hitch(this,function(){
-				this.onItem();
 			}))
 		);
 		this.inherited(arguments);
+		this.resize();
 		// set the has AFTER all children were started
 		var hash = dhash();
 		if(!hash) {
