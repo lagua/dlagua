@@ -110,53 +110,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		});
 		this.addWatch("reload",this.loadFromItem);
 		this.orifilter = this.filter;
-		this.addWatch("filters",function(){
-			if(!persvr.rql) return;
-			if(!this.orifilters) {
-				this.orifilters = this.filters;
-			} else {
-				this.orifilters = dojo.mixin(this.orifilters,this.filters);
-			}
-			this.filters = null;
-			var fa = new persvr.rql.Query.Query();
-			var keys = {};
-			for(var k in this.orifilters){
-				if(this.orifilters[k].checked) {
-					var fo = persvr.rql.Parser.parseQuery(this.orifilters[k].filter);
-					fo.walk(function(name,terms){
-						var k = terms[0];
-						var v;
-						if(terms.length>1) v = terms[1];
-						if(keys[k]) {
-							fa = fa.or();
-						}
-						if(v) {
-							fa = fa[name](k,v);
-						} else {
-							fa = fa[name](k);
-						}
-					});
-				}
-			}
-			if(this.orifilter) {
-				var oo = persvr.rql.Parser.parseQuery(this.orifilter);
-				oo.walk(function(name,terms){
-					var k = terms[0];
-					var v;
-					if(terms.length>1) v = terms[1];
-					if(keys[k]) {
-						fa = fa.or();
-					}
-					if(v) {
-						fa = fa[name](k,v);
-					} else {
-						fa = fa[name](k);
-					}
-				});
-			}
-			this.filter = fa.toString();
-			this.forcedLoad();
-		});
+		this.addWatch("filters",this.onFilters);
 		this.addWatch("sort",function(){
 			this.newsort = true;
 			this.forcedLoad();
@@ -220,6 +174,53 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.inherited(arguments);
 	},
+	onFilters:function(){
+		if(!persvr.rql) return;
+		if(!this.orifilters) {
+			this.orifilters = this.filters;
+		} else {
+			this.orifilters = dojo.mixin(this.orifilters,this.filters);
+		}
+		this.filters = null;
+		var fa = new persvr.rql.Query.Query();
+		var keys = {};
+		for(var k in this.orifilters){
+			if(this.orifilters[k].checked) {
+				var fo = persvr.rql.Parser.parseQuery(this.orifilters[k].filter);
+				fo.walk(function(name,terms){
+					var k = terms[0];
+					var v;
+					if(terms.length>1) v = terms[1];
+					if(keys[k]) {
+						fa = fa.or();
+					}
+					if(v) {
+						fa = fa[name](k,v);
+					} else {
+						fa = fa[name](k);
+					}
+				});
+			}
+		}
+		if(this.orifilter) {
+			var oo = persvr.rql.Parser.parseQuery(this.orifilter);
+			oo.walk(function(name,terms){
+				var k = terms[0];
+				var v;
+				if(terms.length>1) v = terms[1];
+				if(keys[k]) {
+					fa = fa.or();
+				}
+				if(v) {
+					fa = fa[name](k,v);
+				} else {
+					fa = fa[name](k);
+				}
+			});
+		}
+		this.filter = fa.toString();
+		this.forcedLoad();
+	},
 	forcedLoad: function(){
 		this.reload = true;
 		if(this.model || this.path) {
@@ -234,32 +235,14 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		}
 		this.loadFromItem();
 	},
+	_fetchTpl: function(template) {
+		// TODO add xdomain fetch
+		return dojo.xhrGet({url:dojo.moduleUrl(this.templateModule,template)});
+	},
 	replaceChildTemplate: function(child,templateDir) {
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
-		if(this.xDomainResolver) {
-			var resolver = this.xDomainResolver;
-			var self = this;
-			var content = resolver.params || {};
-			content[resolver.fileParamName] = dojo.moduleUrl(this.templateModule).path+"/"+template;
-			dojo.io.script.get({
-				url:resolver.path,
-				content:content,
-				callbackParamName:resolver.callbackParamName,
-				load:function(res){
-					var tpl = resolver.transformer(res);
-					var tplo = self.parseTemplate(tpl);
-					if(child){
-						child.applyTemplate(tplo.tpl,tplo.partials);
-					} else {
-						dojo.forEach(self.listitems,function(li){
-							li.applyTemplate(tplo.tpl,tplo.partials);
-						});
-					}
-				}
-			});
-		} else {
-			var tpl = dojo.cache(this.templateModule,template);
+		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
 			var tplo = this.parseTemplate(tpl);
 			if(child && child!="childTemplate"){
 				child.applyTemplate(tplo.tpl,tplo.partials);
@@ -268,7 +251,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 					li.applyTemplate(tplo.tpl,tplo.partials);
 				});
 			}
-		}
+		}));
 	},
 	getSchema:function(){
 		var d = new dojo.Deferred;
@@ -578,7 +561,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 				var v;
 				if(terms.length>1) v = terms[1];
 				if(v) {
-					if(dojo.isString(v)) v = v.replace("undefined","*");
+					if(typeof v == "string") v = v.replace("undefined","*");
 					qo = qo[name](k,v);
 				} else {
 					qo = qo[name](k);
@@ -770,31 +753,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.connect(listItem,"onLoad",function(){
 			// as this can take a while, listItem may be destroyed in the meantime
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
-			if(this.xDomainResolver) {
-				var self = this;
-				var resolver = this.xDomainResolver;
-				var content = resolver.params || {};
-				content[resolver.fileParamName] = dojo.moduleUrl(this.templateModule).path+"/"+this.template;
-				dojo.io.script.get({
-					url:resolver.path,
-					content:content,
-					callbackParamName:resolver.callbackParamName,
-					load:function(res){
-						if(self._beingDestroyed) return;
-						var tpl = resolver.transformer(res);
-						var tplo = self.parseTemplate(tpl);
-						listItem.applyTemplate(tplo.tpl,tplo.partials);
-						dojo.fadeIn({node:listItem.containerNode}).play();
-						self.childrenReady++;
-						if(self.childrenReady == items.length) {
-							setTimeout(function(){
-								self.onReady();
-							},10);
-						}
-					}
-				});
-			} else {
-				var tpl = dojo.cache(this.templateModule,this.template);
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 				var tplo = this.parseTemplate(tpl);
 				listItem.applyTemplate(tplo.tpl,tplo.partials);
 				dojo.fadeIn({node:listItem.containerNode}).play();
@@ -805,8 +764,8 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 						this.onReady();
 					}),10);
 				}
-			}
-			this.itemnodesmap[item[this.idProperty]] = listItem;
+				this.itemnodesmap[item[this.idProperty]] = listItem;
+			}));
 		});
 		this.addChild(listItem,insertIndex);
 	},
