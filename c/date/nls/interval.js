@@ -1,4 +1,4 @@
-define(
+define({root:
 //begin v1.x content
 {
 	second:"second",
@@ -16,4 +16,4 @@ define(
 	some:"some"
 }
 //end v1.x content
-);
+});

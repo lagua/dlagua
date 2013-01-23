@@ -30,11 +30,9 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 		get: function(id, options){
 			options = options || {};
 			var headers = options.headers || {}
-			var content = {};
-			if(this._query) content = ioQuery.queryToObject(this._query);
 			return request(this.target + id,{
 				headers:headers,
-				content:content,
+				query:this._query,
 				failOk:true
 			});
 		},

@@ -2,15 +2,10 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
-	"dojo/query",
-	"dojo/request",
-	"dojo/dom-construct",
-	"dojo/dom-attr",
-	"dojo/Deferred",
 	"dojox/timing",
 	"persvr/rql/query",
 	"persvr/rql/parser"
-],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred,timing,rqlQuery,rqlParser) {
+],function(declare,lang,array,timing,rqlQuery,rqlParser) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		startup:function(){
 			this.inherited(arguments);

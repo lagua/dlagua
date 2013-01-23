@@ -27,7 +27,7 @@ define([
 			request.post(url,{
 				failOk:true,
 				handleAs:"json",
-				rawBody: JSON.stringify(req),
+				data: JSON.stringify(req),
 				headers: {
 					"Accept":"application/json",
 					"Content-Type":"application/json"
