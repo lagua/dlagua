@@ -37,7 +37,8 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 			case "filters":
 				var filters = dojo.clone(ops);
 				this.filtergroup = new dforma.Group({
-					"class":"dlaguaOptionDropDownFilters"
+					"class":"dlaguaOptionDropDownFilters",
+					label:"Filters:"
 				});
 				this.contentgroup.addChild(this.filtergroup);
 				for(j in filters) {
@@ -59,7 +60,8 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 			case "sorting":
 				var sorting = dojo.clone(ops);
 				this.sortgroup = new dforma.Group({
-					"class":"dlaguaOptionDropDownSorting"
+					"class":"dlaguaOptionDropDownSorting",
+					label:"Sorting:"
 				});
 				this.contentgroup.addChild(this.sortgroup);
 				var s = new dijit.form.Select({
@@ -75,10 +77,28 @@ dojo.declare("dlagua.w.form.OptionDropDownButton",[dijit.form.DropDownButton],{
 				}
 				// TODO: localize
 				l = new dforma.Label({
-					label:"Sorteren:",
+					label:"Order by",
 					child:s
 				});
 				this.sortgroup.addChild(l);
+				break;
+			case "events":
+				var events = dojo.clone(ops);
+				this.eventgroup = new dforma.Group({
+					"class":"dlaguaOptionDropDownEvents",
+					label:"Events:"
+				});
+				this.contentgroup.addChild(this.eventgroup);
+				for(j in events) {
+					l = new dijit.form.Button({
+						label:events[j].label,
+						event:events[j].event,
+						onClick:function(){
+							dojo.publish("/components/"+widgetid+"/events",[this.event]);
+						}
+					});
+					this.eventgroup.addChild(l);
+				}
 				break;
 			default:
 				break;

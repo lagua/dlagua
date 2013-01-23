@@ -237,7 +237,8 @@ dojo.declare("dlagua.w.App", [dijit.layout.BorderContainer,dlagua.c.Subscribable
 			dojo.publish("/app/statechange",[this.state]);
 		});
 		this.watch("locale",function(){
-			dojo.locale = this.locale;
+			dojo.locale = this.locale.replace("_","-");
+			if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 			this.localechanged = true;
 			dojo.publish("/app/localechange",[this.locale]);
 		});

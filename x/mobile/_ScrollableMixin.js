@@ -201,6 +201,8 @@ dojo.declare("dlagua.x.mobile._ScrollableMixin",[dojox.mobile._ScrollableMixin],
 		}
 	},
 	onTouchStart: function(e){
+		// escape on form inputs
+		if(e.target.tagName == "SELECT" || e.target.tagName == "INPUT" || e.target.tagName == "TEXTAREA" || dojo.hasClass(e.target,"dlaguaPreventScroll")) return;
 		this.invert = (e.target==this._scrollBarV || e.target==this._scrollBarH);
 		if(this._conn && (new Date()).getTime() - this.startTime < 500){
 			return; // ignore successive onTouchStart calls
