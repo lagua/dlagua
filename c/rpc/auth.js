@@ -13,7 +13,9 @@ define([
 	"dlagua/form/Label",
 	"dlagua/x/Aes"
 ], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Form, ValidationTextBox, Button, Label, Aes){
-	dlagua.c.rpc.auth = function(url,params){
+	lang.getObject("dlagua.c.rpc", true);
+
+	var auth = function(url,params){
 		var d = new Deferred();
 		var sessionParam = params.sessionParam;
 		var json = true;
@@ -138,5 +140,6 @@ define([
 		
 		return d;
 	};
-	return dlagua.c.rpc.auth;
+	dlagua.c.rpc.auth = auth;
+	return auth;
 });

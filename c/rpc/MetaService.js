@@ -1,4 +1,10 @@
-define(["dojo/_base/lang","dojo/request"], function(lang,request) {
+define([
+	"dojo/_base/lang",
+	"dojo/request"
+], function(lang,request) {
+
+lang.getObject("dlagua.c.rpc", true);
+
 var MetaService = function(data) {
 	var result = {};
 	request(data.target,{
@@ -19,6 +25,7 @@ var MetaService = function(data) {
 	});
 }
 
+dlagua.c.rpc.MetaService = MetaService;
 return MetaService;
 
 });

@@ -5,7 +5,8 @@ define([
 	"dojo/topic",
 	"persvr/rql/parser",
 	"persvr/rql/js-array",
-	"dijit/Destroyable"], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
+	"dijit/Destroyable"
+], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 
 return declare("dlagua.c.Subscribable", [Stateful], {
 	destroyRecursive:function(){
