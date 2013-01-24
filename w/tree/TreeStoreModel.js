@@ -1,8 +1,13 @@
-dojo.provide("dlagua.w.tree.TreeStoreModel");
-dojo.require("dojo.store.Memory");
-dojo.require("dojo.store.Cache");
-//dojo.require("dojo.store.Observable");
-dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/when",
+	"dojo/io-query",
+	"dojo/store/Memory",
+	"dojo/store/Cache"
+],function(declare,lang,array,when,ioQuery,Memory,Cache){
+return declare("dlagua.w.tree.TreeStoreModel", null, {
 	root : null,
 	store: null,
 	storeMemory: null,
@@ -20,20 +25,20 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 	oriStore:null,
 	deferItemLoadingUntilExpand:true,
 	constructor : function(args) {
-		dojo.mixin(this, args);
+		lang.mixin(this, args);
 		this.oriStore = args.store;
 	},
 	getRoot : function(onItem,onError) {
 		var self = this;
 		this._loading = true;
-		this.storeMemory = new dojo.store.Memory({idProperty:"id"});
-		this.store = new dojo.store.Cache(this.oriStore, this.storeMemory);
+		this.storeMemory = new Memory({idProperty:"id"});
+		this.store = new Cache(this.oriStore, this.storeMemory);
 		if(this.locale && !this.rootId) {
 			var qo = {
 				type:this.rootType,
 				locale:this.locale
 			};
-			dojo.when(this.store.query("?"+dojo.objectToQuery(qo),{start:0,count:1}), function(items) {
+			when(this.store.query("?"+ioQuery.objectToQuery(qo),{start:0,count:1}), function(items) {
 				if(items && items.length && !self.cancelLoading) {
 					self.root = items[0];
 					onItem(self.root);
@@ -49,7 +54,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 				}
 			});
 		} else if(this.rootId) {
-			dojo.when(this.store.get(this.rootId), function(item) {
+			when(this.store.get(this.rootId), function(item) {
 				self.root = item;
 				onItem(self.root);
 			});
@@ -68,7 +73,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 	
 	_requeryTop: function(){
 		var self = this;
-		var oldroot = dojo.mixin({},this.root);
+		var oldroot = lang.mixin({},this.root);
 		this._loading = true;
 		this.getRoot(function(item) {
 			if(!item.children) {
@@ -99,7 +104,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		if(!item.__loaded) {
 			if(!children) {
 				deferredComplete(children);
-			} else if(!dojo.isArray(children) && dojo.isObject(children) && children["$ref"]) {
+			} else if(!lang.isArray(children) && lang.isObject(children) && children["$ref"]) {
 				// lazy from persvr2
 				item.__loaded = true;
 				this.resolveChildren(item, deferredComplete, onError);
@@ -121,8 +126,8 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 	resolveChildren: function(item, onComplete, onError) {
 		var children = this.getValue(item,this.childrenAttr,[]);
 		var self = this;
-		dojo.when(this.store.query(children["$ref"]), function(children){
-			dojo.forEach(children,function(child,i){
+		when(this.store.query(children["$ref"]), function(children){
+			array.forEach(children,function(child,i){
 				children[i].__parent = item;
 			});
 			item.children = children;
@@ -145,7 +150,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		var obj = {};
 		var id = item[this.idProperty];
 		//console.log("getting children for "+item.name)
-		//var dfd = new dojo.Deferred();
+		//var dfd = new Deferred();
 		var children = this.getValue(item,this.childrenAttr,[]);
 		var len = children.length;
 		// FIXME the following is highly unlikely
@@ -160,7 +165,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		var cnt = 0;
 		item.childrenDone = [];
 		item.onChildDone = function(child){
-			if(dojo.indexOf(this.childrenDone,child.id)>-1) {
+			if(array.indexOf(this.childrenDone,child.id)>-1) {
 				console.error("child ",child.name, " already loaded");
 			} else {
 				this.childrenDone.push(child.id);
@@ -178,16 +183,16 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 				}
 			}
 		}
-		dojo.forEach(children,dojo.hitch(this,function(child,i){
+		array.forEach(children,lang.hitch(this,function(child,i){
 			if(child._ref) {
 				var id = child._ref;
-				dojo.when(this.store.get(id), function(child) {
+				when(this.store.get(id), function(child) {
 					child.__parent = item;
 					for(var j=0;j<children.length;j++) {
 						id = (children[j]._ref || children[j][self.idProperty]);
 						if(child[self.idProperty]==id) {
 							if(children[j]["_ref"]) {
-								item.children[j] = dojo.mixin(children[j],child);
+								item.children[j] = lang.mixin(children[j],child);
 								delete item.children[j]["_ref"];
 							}
 							break;
@@ -251,8 +256,8 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		if(!item) item = this.root;
 		var self = this;
 		if(!item["id"] && item["_ref"]) {
-			dojo.when(this.store.get(id), function(child) {
-				item = dojo.mixin(item,child);
+			when(this.store.get(id), function(child) {
+				item = lang.mixin(item,child);
 				delete item["_ref"];
 				self.getItemById(id, item);
 			});
@@ -274,7 +279,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 
 	getLabel: function(/* item */ item){
 		//	summary:
-		//		See dojo.data.api.Read.getLabel()
+		//		See dojo/data/api/Read/getLabel()
 		if(this.isItem(item)){
 			return this.getValue(item,this.labelAttr); //String
 		}
@@ -290,9 +295,9 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		// remove child from source item
 		if(oldParentItem){
 			if(!bCopy){
-				//this.getChildren(oldParentItem,dojo.hitch(this, function(children){
+				//this.getChildren(oldParentItem,lang.hitch(this, function(children){
 				var children = this.getValues(oldParentItem, attr);
-				var values = dojo.filter(children, function(child){
+				var values = array.filter(children, function(child){
 					return (child[self.idProperty] != childItem[self.idProperty]);
 				});
 				if(values.length>0) {
@@ -314,7 +319,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 				childItems.splice(insertIndex, 0, childItem);
 				this.setValues(newParentItem, attr, childItems);
 			}else{
-				//this.getChildren(newParentItem,dojo.hitch(this, function(children){
+				//this.getChildren(newParentItem,lang.hitch(this, function(children){
 				var children = this.getValues(newParentItem, attr);
 					console.log("newParentNoIndex")
 					this.setValues(newParentItem, attr, children.concat(childItem));
@@ -324,9 +329,9 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		// signal childItem position has changed
 		this.onChange(childItem);
 	},
-	newItem: function(/* dojo.dnd.Item */ data, /*Item*/ parent, /*int?*/ insertIndex){
+	newItem: function(/* dojo/dnd/Item */ data, /*Item*/ parent, /*int?*/ insertIndex){
 		// summary:
-		//		Creates a new item.   See `dojo.data.api.Write` for details on args.
+		//		Creates a new item.   See `dojo/data/api/.Write` for details on args.
 		//		Used in drag & drop when item from external source dropped onto tree.
 		// description:
 		//		Developers will need to override this method if new items get added
@@ -346,13 +351,13 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		});
 		return data;
 	},
-	onChildrenChange: function(/*dojo.data.Item*/ parent, /*dojo.data.Item[]*/ newChildrenList){
+	onChildrenChange: function(/*dojo/data/Item*/ parent, /*dojo/data/Item[]*/ newChildrenList){
 		// summary:
 		//		Callback to do notifications about new, updated, or deleted items.
 		// tags:
 		//		callback
 	},
-	onChange: function(/*dojo.data.Item*/ item){
+	onChange: function(/*dojo/data/Item*/ item){
 		// summary:
 		//		Callback whenever an item has changed, so that Tree
 		//		can update the label, icon, etc.   Note that changes
@@ -375,7 +380,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		// tags:
 		//		extension
 		// item's children list changed
-		this.getChildren(item, dojo.hitch(this, function(children){
+		this.getChildren(item, lang.hitch(this, function(children){
 			// See comments in onNewItem() about calling getChildren()
 			this.onChildrenChange(item, children);
 		}));
@@ -387,7 +392,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		if(!item.__parent) return;
 		var parent = item.__parent;
 		if(parent.__loaded) parent.__loaded = false;
-		this.getChildren(parent, dojo.hitch(this,function(children){
+		this.getChildren(parent, lang.hitch(this,function(children){
 			console.log(children);
 			var i=0;
 			for(;i<children.length;i++) {
@@ -416,7 +421,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		//	must be an array.
 
 
-		if(!dojo.isArray(values)){
+		if(!lang.isArray(values)){
 			throw new Error("setValues expects to be passed an Array object as its value");
 		}
 		this.setValue(item,attribute,values);
@@ -467,7 +472,7 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 	
 	save: function(kwArgs){
 		// summary:
-		//		Saves the dirty data using object store provider. See dojo.data.api.Write for API.
+		//		Saves the dirty data using object store provider. See dojo/data/api/Write for API.
 		//
 		//	kwArgs.global:
 		//		This will cause the save to commit the dirty data for all
@@ -485,71 +490,49 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		var self;
 		var dirtyObjects = this._dirtyObjects;
 		var left = dirtyObjects.length;// this is how many changes are remaining to be received from the server
-		//try{
-			/*dojo.connect(kwArgs,"onError",function(){
-				if(kwArgs.revertOnError !== false){
-					var postCommitDirtyObjects = dirtyObjects;
-					dirtyObjects = savingObjects;
-					var numDirty = 0; // make sure this does't do anything if it is called again
-					self.revert(); // revert if there was an error
-					self._dirtyObjects = postCommitDirtyObjects;
-				}
-				else{
-					self._dirtyObjects = dirtyObject.concat(savingObjects);
-				}
-			});*/
-			//if(this.store.transaction){
-			//	var transaction = this.store.transaction();
-			//}
-			for(var i = 0; i < dirtyObjects.length; i++){
-				var dirty = dirtyObjects[i];
-				var object;
-				var children;
-				if(dirty.object){
-					object = {};
-					for(var j in dirty.object){
-						if(j.substring(0,2) != "__") {
-							object[j] = dirty.object[j];
-						}
+		for(var i = 0; i < dirtyObjects.length; i++){
+			var dirty = dirtyObjects[i];
+			var object;
+			var children;
+			if(dirty.object){
+				object = {};
+				for(var j in dirty.object){
+					if(j.substring(0,2) != "__") {
+						object[j] = dirty.object[j];
 					}
-					if(object.children) {
-						dojo.forEach(object.children,function(child,i){
-							if(child.id) object.children[i] = {"_ref":child.id};
-						});
-					}
-					delete dirty.object.__isDirty;
 				}
-				var old = dirty.old;
-				if(object){
-					result = this.store.put(object, {overwrite: !!old});
-				} else {
-					result = this.store.remove(this.getIdentity(old));
+				if(object.children) {
+					array.forEach(object.children,function(child,i){
+						if(child.id) object.children[i] = {"_ref":child.id};
+					});
 				}
-				if(object) {
-					dirty.object.__loaded = false;
-					this.getChildren(dirty.object);
-				}
-				savingObjects.push(dirty);
-				dirtyObjects.splice(i--,1);
-				dojo.when(result, function(value){
-					if(!(--left)){
-						if(kwArgs.onComplete){
-							kwArgs.onComplete.call(kwArgs.scope, actions);
-						}
-					}
-				},function(value){
-					// on an error we want to revert, first we want to separate any changes that were made since the commit
-					left = -1; // first make sure that success isn't called
-					kwArgs.onError.call(kwArgs.scope, value);
-				});
-				
+				delete dirty.object.__isDirty;
 			}
-			//if(transaction){
-			//	transaction.commit();
-			//}
-		//}catch(e){
-		//	kwArgs.onError.call(kwArgs.scope, value);
-		//}
+			var old = dirty.old;
+			if(object){
+				result = this.store.put(object, {overwrite: !!old});
+			} else {
+				result = this.store.remove(this.getIdentity(old));
+			}
+			if(object) {
+				dirty.object.__loaded = false;
+				this.getChildren(dirty.object);
+			}
+			savingObjects.push(dirty);
+			dirtyObjects.splice(i--,1);
+			when(result, function(value){
+				if(!(--left)){
+					if(kwArgs.onComplete){
+						kwArgs.onComplete.call(kwArgs.scope, actions);
+					}
+				}
+			},function(value){
+				// on an error we want to revert, first we want to separate any changes that were made since the commit
+				left = -1; // first make sure that success isn't called
+				kwArgs.onError.call(kwArgs.scope, value);
+			});
+			
+		}
 	},
 
 	revert: function(kwArgs){
@@ -603,4 +586,6 @@ dojo.declare("dlagua.w.tree.TreeStoreModel", null, {
 		this._loading = false;
 		this.loaded = true;
 	}
+});
+
 });

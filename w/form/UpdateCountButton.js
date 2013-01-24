@@ -1,6 +1,10 @@
-dojo.provide("dlagua.w.form.UpdateCountButton");
-dojo.require("dijit.form.Button");
-dojo.declare("dlagua.w.form.UpdateCountButton",[dijit.form.Button],{
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/topic",
+	"dijit/form/Button"
+],function(declare,lang,topic,Button){
+return declare("dlagua.w.form.UpdateCountButton",[Button],{
 	// TODO: localize
 	count:0,
 	currentItem:null,
@@ -12,7 +16,7 @@ dojo.declare("dlagua.w.form.UpdateCountButton",[dijit.form.Button],{
 		this.watch("currentItem",function(){
 			if(this.currentItem) {
 				this.count++;
-				this.buffer.push(dojo.clone(this.currentItem));
+				this.buffer.push(lang.clone(this.currentItem));
 			} else {
 				this.count = 0;
 			}
@@ -24,7 +28,9 @@ dojo.declare("dlagua.w.form.UpdateCountButton",[dijit.form.Button],{
 	},
 	onClick:function(){
 		this.set("currentItem",null);
-		dojo.publish("/components/"+this.id,[this.buffer]);
+		topic.publish("/components/"+this.id,this.buffer);
 		this.buffer = [];
 	}
+});
+
 });

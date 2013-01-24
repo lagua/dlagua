@@ -1,7 +1,10 @@
-dojo.provide("dlagua.w.form.SearchBox");
-dojo.require("dijit.form.Button");
-dojo.require("dijit.form.TextBox");
-dojo.declare("dlagua.w.form.SearchBox",[dijit.form.TextBox],{
+define([
+	"dojo/_base/declare",
+	"dojo/topic",
+	"dijit/form/Button",
+	"dijit/form/TextBox"
+],function(declare,topic,Button,TextBox){
+return declare("dlagua.w.form.SearchBox",[TextBox],{
 	buttonLabel:"",
 	filterProperty:"",
 	filterName:"",
@@ -16,7 +19,7 @@ dojo.declare("dlagua.w.form.SearchBox",[dijit.form.TextBox],{
 	postCreate: function(){
 		var self = this;
 		self.publishFilters();
-		this.button = new dijit.form.Button({
+		this.button = new Button({
 			label:this.buttonLabel,
 			onClick:function(){
 				self.publishFilters();
@@ -32,9 +35,11 @@ dojo.declare("dlagua.w.form.SearchBox",[dijit.form.TextBox],{
 			filter:this.filterProperty+"="+val,
 			checked:(!!val)
 		};
-		dojo.publish("/components/"+this.id,[filters]);
+		topic.publish("/components/"+this.id,filters);
 	},
 	onChange:function(evt){
 		this.publishFilters();
 	}
+});
+
 });

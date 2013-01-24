@@ -3,10 +3,22 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
 	"dojo/Deferred",
+	"dojo/promise/all",
 	"dijit/Tree",
 	"dlagua/c/Subscribable"
-],function(declare,lang,array,Deferred,_Tree,Subscribable) {
+],function(declare,lang,array,Deferred,all,_Tree,Subscribable) {
 
+function shimmedPromise(/*Deferred|Promise*/ d){
+	// summary:
+	//		Return a Promise based on given Deferred or Promise, with back-compat addCallback() and addErrback() shims
+	//		added (TODO: remove those back-compat shims, and this method, for 2.0)
+
+	return lang.delegate(d.promise || d, {
+		addCallback: function(callback){ this.then(callback); },
+		addErrback: function(errback){ this.otherwise(errback); }
+	});
+}
+	
 var TreeNode = declare("dlagua.w._TreeNode",[_Tree._TreeNode],{
 	supressEvents:false,
 	_onClick: function(evt){
@@ -174,47 +186,37 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		var _this = this;
 		
 		var parentNode = (exclude ? exclude.getParent() : (_this.showRoot ? this.rootNode : null));
+		function expand(node){
+			// Expand the node
+			return _this._expandNode(node).then(function(){
+				// When node has expanded, call expand() recursively on each non-leaf child
+				var childBranches = array.filter(node.getChildren() || [], function(node){
+					return node.isExpandable &&  node!=parentNode && node!=exclude;
+				});
 
-		function collapse(node){
-			var def = new Deferred();
-			def.label = "collapseAllDeferred";
-
-			// Collapse children first
-			var childBranches = array.filter(node.getChildren() || [], function(node){
-					return node.isExpandable && node!=exclude;
-				}),
-				defs = array.map(childBranches, collapse);
-
-			// And when all those recursive calls finish, collapse myself, unless I'm the invisible root node,
-			// in which case collapseAll() is finished
-			new DeferredList(defs).then(function(){
-				if(!node.isExpanded || (node == _this.rootNode && !_this.showRoot) || node==parentNode || node==exclude){
-					def.resolve(true);
-				}else{
-					_this._collapseNode(node).then(function(){
-						// When node has collapsed, signal that call is finished
-						def.resolve(true);
-					});
-				}
+				// And when all those recursive calls finish, signal that I'm finished
+				return all(array.map(childBranches, expand));
 			});
-
-
-			return def;
 		}
 
-		return collapse(this.rootNode);
+		return shimmedPromise(expand(this.rootNode));
 	},
 	expandFirst: function(node) {
 		var me = this;
-		function expand(node) {
-			me._expandNode(node);
-			var childBranches = array.filter(node.getChildren() || [], function(node) {
-				return node.isExpandable;
+		function expand(node){
+			// Expand the node
+			return _this._expandNode(node).then(function(){
+				// When node has expanded, call expand() recursively on each non-leaf child
+				var childBranches = array.filter(node.getChildren() || [], function(node){
+					return node.isExpandable;
+				});
+
+				// And when all those recursive calls finish, signal that I'm finished
+				return all(array.map(childBranches, expand));
 			});
-			var def = new Deferred();
-			var defs = array.map(childBranches, expand);
 		}
-		return expand(node);
+
+		return shimmedPromise(expand(node));
 	},
 	rebuild:function(){
 		if(this.dndController && this.dndController["selectNone"]) this.dndController.selectNone();
@@ -228,13 +230,6 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		this._load();
 	},
 	_createTreeNode: function(/*Object*/ args){
-		// summary:
-		//		creates a TreeNode
-		// description:
-		//		Developers can override this method to define their own TreeNode class;
-		//		However it will probably be removed in a future release in favor of a way
-		//		of just specifying a widget for the label, rather than one that contains
-		//		the children too.
 		return new TreeNode(args);
 	}
 });

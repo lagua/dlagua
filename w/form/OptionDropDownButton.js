@@ -1,11 +1,20 @@
-dojo.provide("dlagua.w.form.OptionDropDownButton");
-dojo.require("dijit.form.DropDownButton");
-dojo.require("dijit.TooltipDialog");
-dojo.require("dijit.form.Select");
-dojo.require("dijit.form.CheckBox");
-dojo.require("dforma.Group");
-dojo.require("dforma.Label");
-dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/topic",
+	"dojo/request",
+	"dijit/TooltipDialog",
+	"dijit/form/DropDownButton",
+	"dijit/form/Button",
+	"dijit/form/Select",
+	"dijit/form/CheckBox",
+	"dlagua/c/Subscribable",
+	"dforma/Group",
+	"dforma/Label"
+],function(declare,lang,topic,request,TooltipDialog,DropDownButton,Button,Select,CheckBox,Subscribable,Group,Label){
+
+return declare("dlagua.w.form.OptionDropDownButton",[DropDownButton],{
 	baseClass:"dlaguaOptionDropDownButton",
 	options:null,
 	href:null,
@@ -13,10 +22,10 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 	sortgroup:null,
 	filtergroup:null,
 	_removeOptions:function(){
-		dojo.forEach(this.filtergroup.getChildren(),function(n){
+		array.forEach(this.filtergroup.getChildren(),function(n){
 			n.destroyRecursive();
 		});
-		dojo.forEach(this.sortgroup.getChildren(),function(n){
+		array.forEach(this.sortgroup.getChildren(),function(n){
 			n.destroyRecursive();
 		});
 	},
@@ -27,7 +36,7 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 	_addOptions:function(options){
 		var self = this;
 		var widgetid = this.id;
-		this.contentgroup = new dforma.Group({
+		this.contentgroup = new Group({
 			"class":"dlaguaOptionDropDownContent"
 		}).placeAt(this.dropDown.containerNode);
 		for(var k in options) {
@@ -35,21 +44,22 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 			var j,l;
 			switch(k) {
 			case "filters":
-				var filters = dojo.clone(ops);
-				this.filtergroup = new dforma.Group({
-					"class":"dlaguaOptionDropDownFilters"
+				var filters = lang.clone(ops);
+				this.filtergroup = new Group({
+					"class":"dlaguaOptionDropDownFilters",
+					label:"Filters:"
 				});
 				this.contentgroup.addChild(this.filtergroup);
 				for(j in filters) {
 					var f = filters[j];
-					l = new dforma.Label({
+					l = new Label({
 						label:f.label,
-						child:new dijit.form.CheckBox({
+						child:new CheckBox({
 							name:j,
 							checked:f.checked,
 							onChange:function(checked){
 								filters[this.name].checked = checked;
-								dojo.publish("/components/"+widgetid+"/filters",[filters]);
+								topic.publish("/components/"+widgetid+"/filters",filters);
 							}
 						})
 					});
@@ -57,14 +67,15 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 				}
 			break;
 			case "sorting":
-				var sorting = dojo.clone(ops);
-				this.sortgroup = new dforma.Group({
-					"class":"dlaguaOptionDropDownSorting"
+				var sorting = lang.clone(ops);
+				this.sortgroup = new Group({
+					"class":"dlaguaOptionDropDownSorting",
+					label:"Sorting:"
 				});
 				this.contentgroup.addChild(this.sortgroup);
-				var s = new dijit.form.Select({
+				var s = new Select({
 					onChange:function(val){
-						dojo.publish("/components/"+widgetid+"/sorting",[sorting[val].sort]);
+						topic.publish("/components/"+widgetid+"/sorting",sorting[val].sort);
 					}
 				});
 				for(j in sorting) {
@@ -74,11 +85,29 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 					});
 				}
 				// TODO: localize
-				l = new dforma.Label({
-					label:"Sorteren:",
+				l = new Label({
+					label:"Order by",
 					child:s
 				});
 				this.sortgroup.addChild(l);
+				break;
+			case "events":
+				var events = lang.clone(ops);
+				this.eventgroup = new Group({
+					"class":"dlaguaOptionDropDownEvents",
+					label:"Events:"
+				});
+				this.contentgroup.addChild(this.eventgroup);
+				for(j in events) {
+					l = new Button({
+						label:events[j].label,
+						event:events[j].event,
+						onClick:function(){
+							topic.publish("/components/"+widgetid+"/events",this.event);
+						}
+					});
+					this.eventgroup.addChild(l);
+				}
 				break;
 			default:
 				break;
@@ -86,26 +115,28 @@ dojo.declare("dforma.OptionDropDownButton",[dijit.form.DropDownButton],{
 		}
 	},
 	postCreate:function() {
-		this.dropDown = new dijit.TooltipDialog();
+		this.dropDown = new TooltipDialog();
 		var self = this;
 		if(this.href) dropdown.set("href",this.href);
 		if(this.options) {
-			if(dojo.isString(this.options)) {
-				dojo.xhrGet({
-					url:this.options,
+			if(typeof this.options === "string") {
+				request(this.options,{
 					handleAs:"json",
-					load:function(res,io){
-						if(res) self._addOptions(res);
-					}
+				}).then(function(res,io){
+					if(res) self._addOptions(res);
 				});
 			} else {
 				self._addOptions(this.options);
 			}
 		}
-		var _ch = dojo.connect(this.dropDown,"onOpen",this,function(){
-			dojo.disconnect(_ch);
-			this.contentgroup.startup();
-		});
+		var _ch = this.own(
+			aspect.after(this.dropDown,"onOpen",lang.hitch(this,function(){
+				_ch.remove();
+				this.contentgroup.startup();
+			}))
+		)[0];
 		this.inherited(arguments);
 	}
+});
+
 });

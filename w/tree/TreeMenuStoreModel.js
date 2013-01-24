@@ -1,23 +1,33 @@
-dojo.provide("dlagua.w.tree.TreeMenuStoreModel");
-dojo.require("dlagua.w.tree.TreeStoreModel");
-dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel], {
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/when",
+	"dojo/io-query",
+	"dojo/store/Memory",
+	"dojo/store/Cache",
+	"dlagua/c/store/JsonRest",
+	"dlagua/w/tree/TreeStoreModel"
+],function(declare,lang,array,when,ioQuery,Memory,Cache,JsonRest,TreeStoreModel){
+
+return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	stores:{},
 	getRoot : function(onItem) {
 		if(!this.root) {
 			onItem();
 			return;
 		}
-		this.storeMemory = new dojo.store.Memory({idProperty:"id"});
+		this.storeMemory = new Memory({idProperty:"id"});
 		if(!this.root.path) {
 			onItem();
 			return;
 		}
 		var target = "/persvr/Page/";
 		if(!this.stores[target]) {
-			var store = new dlagua.c.store.JsonRest({
+			var store = new JsonRest({
 				target:target
 			});
-			this.stores[target] = new dojo.store.Cache(store, this.storeMemory);
+			this.stores[target] = new Cache(store, this.storeMemory);
 		}
 		if(this.stores) this.store = this.stores[target];
 		this.root = this.root;
@@ -39,7 +49,7 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 		var obj = {};
 		var id = item[this.idProperty];
 		//console.log("getting children for "+item.name)
-		//var dfd = new dojo.Deferred();
+		//var dfd = new Deferred();
 		var children = this.getValue(item,this.childrenAttr,[]);
 		var len = children.length;
 		if(len===0) {
@@ -53,10 +63,8 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 		var cnt = 0;
 		item.childrenDone = [];
 		item.onChildDone = function(child){
-			if(dojo.indexOf(this.childrenDone,child.id)>-1) {
+			if(array.indexOf(this.childrenDone,child.id)>-1) {
 				console.error("child ",child.name, " already loaded");
-			} else if(child.hidden) {
-				console.log("child ",child.name," is hidden")
 			} else {
 				this.childrenDone.push(child.id);
 			}
@@ -75,22 +83,19 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 		for(var i=0;i<len;i++) {
 			if(children[i]._ref) {
 				var id = children[i]._ref;
-				dojo.when(this.store.get(id), function(child) {
+				when(this.store.get(id), function(child) {
 					child.__parent = item;
 					for(var j=0;j<children.length;j++) {
 						var id = (children[j]._ref || children[j][self.idProperty]);
 						if(child[self.idProperty]==id) {
 							if(children[j]["_ref"]) {
-								item.children[j] = dojo.mixin(children[j],child);
+								item.children[j] = lang.mixin(children[j],child);
 								delete item.children[j]["_ref"];
 							}
 							break;
 						}
 					}
-					if(child.hidden) {
-						item.children.splice(j,1);
-						if(item.onChildDone) item.onChildDone(child);
-					} else if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
+					if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
 						self.getChildrenRecursive(child);
 					} else {
 						if(item.onChildDone) item.onChildDone(child);
@@ -100,9 +105,7 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 			} else {
 				var child = children[i];
 				child.__parent = item;
-				if(child.hidden) {
-					item.children.splice(i,1);
-				} else if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
+				if(child.children && child.children.length>0 && !self.deferItemLoadingUntilExpand) {
 					self.getChildrenRecursive(child);
 				} else {
 					item.onChildDone(child);
@@ -110,4 +113,6 @@ dojo.declare("dlagua.w.tree.TreeMenuStoreModel", [dlagua.w.tree.TreeStoreModel],
 			}
 		}
 	}
+});
+
 });
