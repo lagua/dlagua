@@ -2,14 +2,26 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/topic",
+	"dojo/io-query",
+	"dojo/store/JsonRest",
 	"persvr/rql/parser",
 	"persvr/rql/query",
 	"dijit/form/FilteringSelect",
-	"dlagua/c/store/JsonRest",
 	"dlagua/c/Subscribable"
-],function(declare,lang,topic,rqlParser,rqlQuery,FilteringSelect,JsonRest,Subscribable){
-
-return declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscribable], {
+],function(declare,lang,topic,ioQuery,JsonRest,rqlParser,rqlQuery,FilteringSelect,Subscribable){
+var LocaleRest = declare("lagua.store.LocaleRest",[JsonRest],{
+	locales:null,
+	idProperty:"id",
+	target:"/persvr/Nls/",
+	query: function(query, options){
+		var qo = new RqlParser.parseQuery(ioQuery.objectToQuery(query));
+		qo = qo["in"]("id",this.locales);
+		query = "?"+qo.toString();
+		arguments[0] = query;
+		return this.inherited(arguments);
+	}
+});
+var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscribable], {
 	locale:"",
 	locale_extra:"",
 	store:null,
@@ -24,22 +36,14 @@ return declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscribable], {
 		if(!val) return;
 		topic.publish("/components/"+this.id,val);
 	},
-	startup:function(){
-		this.inherited(arguments);
-	},
 	constructor: function(args) {
 		var locstr = args.locale;
 		if(args.locale_extra) {
 			locstr+=","+args.locale_extra;
 		}
-		var locales = locstr.split(",");
-		this.store = new JsonRest({
-			idProperty:"id",
-			target:"/persvr/Nls/"
+		this.store = new LocaleRest({
+			locales: locstr.split(",")
 		});
-		var qo = new rqlQuery.Query();
-		qo = qo["in"]("id",locales);
-		args.query = "?"+qo.toString();
 		args.value = args.locale;
 		this.own(
 			this.watch("currentId",function(){
@@ -48,5 +52,7 @@ return declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscribable], {
 		);
 	}
 });
+
+return LocalePicker;
 
 });
