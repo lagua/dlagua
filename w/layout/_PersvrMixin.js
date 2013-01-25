@@ -111,7 +111,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		// TODO: wait for requires to return
 		if(reqs.length) require(reqs);
 		tpl = div.innerHTML.toString();
-		tpl = tpl.replace(/{{&gt;/g,"{{>");
+		tpl = tpl.replace(/\{\{&gt;/g,"{{>");
 		return {tpl:tpl,partials:partials};
 	}
 });

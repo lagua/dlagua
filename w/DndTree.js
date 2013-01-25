@@ -1,7 +1,7 @@
 define([
 	"dojo/_base/declare",
 	"dlagua/w/Tree",
-	"dijit/dndSource"
+	"dijit/tree/dndSource"
 ],function(declare,_Tree,dndSource){
 
 var Tree = declare("dlagua.w.DndTree",[_Tree],{

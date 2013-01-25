@@ -16,7 +16,7 @@ return declare("dlagua.c.rpc.FeedReader",[Subscribable],{
 		var d = new Deferred();
 		request(feed,{
 	        handleAs: "xml",
-	        headers:{"X-Requested-With":null},
+	        headers:{"X-Requested-With":null}
 		}).then(lang.hitch(this, function(response, ioArgs){
         	d.resolve(this.parse(response));
         }))

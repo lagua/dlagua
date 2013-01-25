@@ -5,7 +5,7 @@ define([
     "dojo/aspect",
 	"dlagua/w/Tree",
 	"dlagua/c/Subscribable",
-	"dlagua/w/templates/TreeMenuNode.html"
+	"dojo/text!dlagua/w/templates/TreeMenuNode.html"
 ],function(declare,lang,array,aspect,Tree,Subscribable,nodeTemplate) {
 
 var _TreeNode = declare("dlagua.w._TreeNode",[Tree._TreeNode],{

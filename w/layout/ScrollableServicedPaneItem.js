@@ -8,7 +8,7 @@ define([
 	"dijit/_Contained",
 	"dlagua/w/layout/TemplaMixin"
 ],function(declare,lang,domGeom,domStyle,_Widget,_Templated,_Contained,TemplaMixin) {
-return declare("lagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained, TemplaMixin], {
+return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained, TemplaMixin], {
 	parent:null, //quickref to parent widget
 	data:null,
 	itemHeight:null,

@@ -10,7 +10,7 @@ define([
 	"dijit/form/Form",
 	"dijit/form/ValidationTextBox",
 	"dijit/form/Button",
-	"dlagua/form/Label",
+	"dforma/Label",
 	"dlagua/x/Aes"
 ], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Form, ValidationTextBox, Button, Label, Aes){
 	lang.getObject("dlagua.c.rpc", true);

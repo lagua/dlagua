@@ -121,7 +121,7 @@ return declare("dlagua.w.form.OptionDropDownButton",[DropDownButton],{
 		if(this.options) {
 			if(typeof this.options === "string") {
 				request(this.options,{
-					handleAs:"json",
+					handleAs:"json"
 				}).then(function(res,io){
 					if(res) self._addOptions(res);
 				});

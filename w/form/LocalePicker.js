@@ -9,7 +9,7 @@ define([
 	"dijit/form/FilteringSelect",
 	"dlagua/c/Subscribable"
 ],function(declare,lang,topic,ioQuery,JsonRest,rqlParser,rqlQuery,FilteringSelect,Subscribable){
-var LocaleRest = declare("lagua.store.LocaleRest",[JsonRest],{
+var LocaleRest = declare("dlagua.c.store.LocaleRest",[JsonRest],{
 	locales:null,
 	idProperty:"id",
 	target:"/persvr/Nls/",
@@ -48,7 +48,7 @@ var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscr
 		this.own(
 			this.watch("currentId",function(){
 				console.log(this.currentId)
-			});
+			})
 		);
 	}
 });

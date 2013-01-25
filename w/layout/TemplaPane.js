@@ -1,7 +1,7 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
-	"dojo/deferred",
+	"dojo/Deferred",
 	"dijit/layout/ContentPane",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/TemplaMixin",
