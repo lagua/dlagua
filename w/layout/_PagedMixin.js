@@ -4,6 +4,7 @@ define([
 	"dojo/_base/array",
 	"dojo/_base/window",
 	"dojo/_base/event",
+	"dojo/_base/fx",
 	"dojo/aspect",
 	"dojo/on",
 	"dojo/dom-class",
@@ -11,7 +12,7 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"persvr/rql/query",
 	"persvr/rql/parser"
-],function(declare,lang,array,win,event,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
+],function(declare,lang,array,win,event,fx,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		startup:function(){
 			this.inherited(arguments);
