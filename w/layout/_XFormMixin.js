@@ -1,17 +1,24 @@
-define(["dojo"],function(dojo){
-return dojo.declare("dlagua.w.layout._XFormMixin",[],{
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/dom",
+	"dojo/dom-style",
+	"dojo/query",
+],function(declare,lang,array,dom,domStyle,query){
+return declare("dlagua.w.layout._XFormMixin",[],{
 	xformTarget:null,
 	xformLoaded: function() {
 		// make sure the DOM is moved
-		var xfc = dojo.byId("xformContainer");
+		var xfc = dom.byId("xformContainer");
 		var dest = this.xformTarget;
 		if(!xfc || !dest) return;
 		dest.set("content","");
-		dojo.query(">",xfc).forEach(function(node){
+		query(">",xfc).forEach(function(node){
 	    	dest.domNode.appendChild(node);
 		});
 		xfc.innerHTML = "";
-		dojo.style(xfc,"display","none");
+		domStyle.set(xfc,"display","none");
 	},
 	setXFormTarget:function(target,href){
 		this.xformTarget = target;
@@ -26,10 +33,10 @@ return dojo.declare("dlagua.w.layout._XFormMixin",[],{
 			fluxProcessor.dispatchEventType("main","unload-xform");
 		}
 		// make sure the DOM is moved
-		var xfc = dojo.byId("xformContainer");
-		if(dojo.isString(ref)) ref = dijit.byId(ref);
-		dojo.forEach(ref.domNode.childNodes,function(node){
-			node = dojo.clone(node);
+		var xfc = dom.byId("xformContainer");
+		if(lang.isString(ref)) ref = dijit.registry.byId(ref);
+		array.forEach(ref.domNode.childNodes,function(node){
+			node = lang.clone(node);
 			xfc.appendChild(node);
 		});
 		ref.set("content","");
