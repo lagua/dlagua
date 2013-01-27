@@ -8,7 +8,7 @@ define([
 	"dojo/text!dlagua/w/templates/TreeMenuNode.html"
 ],function(declare,lang,array,aspect,Tree,Subscribable,nodeTemplate) {
 
-var _TreeNode = declare("dlagua.w._TreeNode",[Tree._TreeNode],{
+var _TreeNode = declare("dlagua.w._TreeMenuNode",[Tree._TreeNode],{
 	templateString: nodeTemplate,
    	 _updateItemClasses: function(item){
    		// summary:
@@ -84,7 +84,69 @@ var _TreeNode = declare("dlagua.w._TreeNode",[Tree._TreeNode],{
 				this.model.cancel();
 				return;
 			}
-			this.inherited(arguments);
+			this.model.getRoot(
+				lang.hitch(this, function(item){
+					if(!item) {
+						this.model._loading = false;
+						return;
+					}
+					var rn = (this.rootNode = this.tree._createTreeNode({
+						item: item,
+						tree: this,
+						isExpandable: true,
+						label: this.label || this.getLabel(item),
+						textDir: this.textDir,
+						indent: this.showRoot ? 0 : -1
+					}));
+					
+					if(!this.showRoot){
+						rn.rowNode.style.display="none";
+						// if root is not visible, move tree role to the invisible
+						// root node's containerNode, see #12135
+						this.domNode.setAttribute("role", "presentation");
+						this.domNode.removeAttribute("aria-expanded");
+						this.domNode.removeAttribute("aria-multiselectable");
+						
+						// move the aria-label or aria-labelledby to the element with the role
+						if(this["aria-label"]){
+							rn.containerNode.setAttribute("aria-label", this["aria-label"]);
+							this.domNode.removeAttribute("aria-label");
+						}else if(this["aria-labelledby"]){
+							rn.containerNode.setAttribute("aria-labelledby", this["aria-labelledby"]);
+							this.domNode.removeAttribute("aria-labelledby");
+						}
+						rn.labelNode.setAttribute("role", "presentation");
+						rn.containerNode.setAttribute("role", "tree");
+						rn.containerNode.setAttribute("aria-expanded","true");
+						rn.containerNode.setAttribute("aria-multiselectable", !this.dndController.singular);
+					}else{
+						this.domNode.setAttribute("aria-multiselectable", !this.dndController.singular);
+						this.rootLoadingIndicator.style.display = "none";
+					}
+					
+					this.containerNode.appendChild(rn.domNode);
+					var identity = this.model.getIdentity(item);
+					if(this._itemNodesMap[identity]){
+						this._itemNodesMap[identity].push(rn);
+					}else{
+						this._itemNodesMap[identity] = [rn];
+					}
+
+					rn._updateLayout();		// sets "dijitTreeIsRoot" CSS classname
+
+					// Load top level children, and if persist==true, all nodes that were previously opened
+					this._expandNode(rn).then(lang.hitch(this, function(){
+						// Then, select the nodes that were selected last time, or
+						// the ones specified by params.paths[].
+
+						this.rootLoadingIndicator.style.display = "none";
+						this.expandChildrenDeferred.resolve(true);
+					}));
+				}),
+				lang.hitch(this, function(err){
+					console.error(this, ": error loading root: ", err);
+				})
+			);
 		},
 		getIconClass:function(){
 		},
