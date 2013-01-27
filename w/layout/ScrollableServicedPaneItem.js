@@ -7,7 +7,7 @@ define([
 	"dijit/_Templated",
 	"dijit/_Contained",
 	"dlagua/w/layout/TemplaMixin"
-],function(declare,lang,domGeom,domStyle,_Widget,_Templated,_Contained,TemplaMixin) {
+],function(declare,lang,domGeometry,domStyle,_Widget,_Templated,_Contained,TemplaMixin) {
 return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained, TemplaMixin], {
 	parent:null, //quickref to parent widget
 	data:null,
@@ -39,12 +39,12 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 		this._setContent(data || "");
 		setTimeout(lang.hitch(this,function(){
 			if(!this.containerNode) return;
-			this.marginBox = domGeom.getMarginBox(this.containerNode);
+			this.marginBox = domGeometry.getMarginBox(this.containerNode);
 		}),1);
 	},
 	updateLayout:function() {
 		if(!this || !this.containerNode) return;
-		this.marginBox = domGeom.getMarginBox(this.containerNode);
+		this.marginBox = domGeometry.getMarginBox(this.containerNode);
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
 	}

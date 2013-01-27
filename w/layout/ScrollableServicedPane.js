@@ -22,7 +22,6 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/dom-attr",
-	"dojo/topic",
 	"dojo/aspect",
 	"dojo/Deferred",
 	"dijit/layout/_LayoutWidget",
@@ -42,7 +41,7 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeometry,domClass,domStyle,domAttr,topic,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
+],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
 return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidget, _Templated, _PersvrMixin,_PagedMixin, Subscribable],{
 	store:null,
 	stores:{},
@@ -376,15 +375,16 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 			// this really is dim reset
 			this._dim = this.getDim();
 		}
+		this.inherited(arguments);
 	},
 	layout:function(){
 		// moved from init() to support dynamically added fixed bars
 		if(this.footer) {
-			this.fixedFooterHeight = domGeom.getMarginBox(this.fixedFooter).h;
+			this.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		}
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
 		if(this.header) {
-			this.fixedHeaderHeight = domGeom.getMarginBox(this.fixedHeader).h;
+			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
 		}
 		this.resetScrollBar();

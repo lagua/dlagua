@@ -7,11 +7,10 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-construct",
 	"dojo/dom-style",
-	"dojo/dom-geometry",
 	"dojox/mobile/sniff",
 	"./_css3",
 	"dojox/mobile/scrollable"
-], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, domGeom, has, css3, Scrollable){
+], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, has, css3, Scrollable){
 	
 	var dm = lang.getObject("dojox.mobile", true);
 	

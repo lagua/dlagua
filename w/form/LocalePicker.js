@@ -14,7 +14,7 @@ var LocaleRest = declare("dlagua.c.store.LocaleRest",[JsonRest],{
 	idProperty:"id",
 	target:"/persvr/Nls/",
 	query: function(query, options){
-		var qo = new RqlParser.parseQuery(ioQuery.objectToQuery(query));
+		var qo = new rqlParser.parseQuery(ioQuery.objectToQuery(query));
 		qo = qo["in"]("id",this.locales);
 		query = "?"+qo.toString();
 		arguments[0] = query;

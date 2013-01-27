@@ -5,6 +5,7 @@ define([
 	"dojo/_base/window",
 	"dojo/_base/event",
 	"dojo/_base/fx",
+	"dojo/topic",
 	"dojo/aspect",
 	"dojo/on",
 	"dojo/dom-class",
@@ -12,7 +13,7 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"persvr/rql/query",
 	"persvr/rql/parser"
-],function(declare,lang,array,win,event,fx,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
+],function(declare,lang,array,win,event,fx,topic,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		startup:function(){
 			this.inherited(arguments);
@@ -257,23 +258,7 @@ define([
 			this.setSelectedItem(i);
 		},
 		onFlickAnimationEnd:function(e){
-			if(e && e.srcElement){
-				event.stopEvent(e);
-			}
-			this.stopAnimation();
-			if(this._bounce){
-				var _this = this;
-				var bounce = _this._bounce;
-				setTimeout(function(){
-					_this.slideTo(bounce, 0.3, "ease-out");
-				}, 0);
-				_this._bounce = undefined;
-			}else{
-				this.hideScrollBar();
-				this.removeCover();
-				this.startTime = 0;
-				// this really is dim reset
-				this._dim = this.getDim();
+			if(!this._bounce){
 				this.checkSelectedItem();
 			}
 		},
