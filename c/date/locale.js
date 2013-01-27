@@ -9,7 +9,7 @@ define([
 "dojo/aspect",
 "dojox/uuid/generateRandomUuid",
 "dojox/timing"
-],function(lang,array,dom,i18n,date,locale,stamp,aspect,generateRandomUuid,timing){
+],function(lang,array,dom,i18n,date,dlocale,stamp,aspect,generateRandomUuid,timing){
 
 lang.getObject("dlagua.c.date.locale", true);
 
@@ -30,7 +30,7 @@ var format = function(val,options) {
 	}
 	if(options._ref.ref && options._ref.ref.locale) options.locale = options._ref.ref.locale.replace("_","-");
 	if(!options.ignoreZeroTimes || date.getHours()+date.getMinutes()+date.getSeconds()>0){
-		oritxt = txt = locale.format(date,options);
+		oritxt = txt = dlocale.format(date,options);
 	}
 	if(options.autoupdate) {
 		var id = generateRandomUuid();

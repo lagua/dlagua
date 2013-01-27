@@ -6,7 +6,7 @@ define([
 	"dojox/string/tokenize",
 	"dlagua/c/string/cleanWhitespace"
 ],function(declare,lang,array,strings,tokenize,cleanWhitespace){
-	var dd = lang.getObject("lagua.dtl.filter.strings", true);
+	var dd = lang.getObject("dlagua.x.dtl.filter.strings", true);
 
 	lang.mixin(dd, {
 		truncatewords_html: function(value, arg){
