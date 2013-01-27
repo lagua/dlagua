@@ -3,10 +3,11 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/aspect",
+    "dojo/topic",
 	"dlagua/w/Tree",
 	"dlagua/c/Subscribable",
 	"dojo/text!dlagua/w/templates/TreeMenuNode.html"
-],function(declare,lang,array,aspect,Tree,Subscribable,nodeTemplate) {
+],function(declare,lang,array,aspect,topic,Tree,Subscribable,nodeTemplate) {
 
 var _TreeNode = declare("dlagua.w._TreeMenuNode",[Tree._TreeNode],{
 	templateString: nodeTemplate,
