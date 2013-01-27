@@ -5,7 +5,7 @@ define([
 "dojo/dom-construct"
 ], function(lang,win,dom,domConstruct) {
 
-lang.getObject("dlagua.x.parser.facebook", true, dlagua);
+lang.getObject("dlagua.x.parser.facebook", true);
 
 dlagua.x.parser.facebook.like = function(val,options) {
 	var id = "facebook-jssdk";

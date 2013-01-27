@@ -1,6 +1,7 @@
-define("dlagua/c/string/cleanWhitespace", ["dojo/dom-construct"], function(domConstruct) {
+define("dlagua/c/string/cleanWhitespace", ["dojo/_base/lang","dojo/dom-construct"], function(lang,domConstruct) {
+lang.getObject("dlagua.c.string", true);
 
-dlagua.c.string._cleanWhitespaceRecursive = function(node) {
+var _cleanWhitespaceRecursive = function(node) {
 	for (var i=0; i<node.childNodes.length; i++) {
 		var child = node.childNodes[i];
 		if(child.nodeType == 3 && !/\S/.test(child.nodeValue)) {
@@ -8,23 +9,24 @@ dlagua.c.string._cleanWhitespaceRecursive = function(node) {
 			i--;
 		}
 		if(child.nodeType == 1) {
-			dlagua.c.string._cleanWhitespaceRecursive(child);
+			_cleanWhitespaceRecursive(child);
 		}
 	}
 	return node;
 };
 
-dlagua.c.string.cleanWhitespace = function(/*String*/ value){
+var cleanWhitespace = function(/*String*/ value){
 	var div = domConstruct.create("div",{
 		innerHTML:value
 	});
-	return dlagua.c.string._cleanWhitespaceRecursive(div).innerHTML;
+	return _cleanWhitespaceRecursive(div).innerHTML;
 };
 
 String.prototype.cleanWhitespace = function() {
-	return dlagua.string.cleanWhitespace(this);
+	return cleanWhitespace(this);
 }
 
-return dlagua.c.string.cleanWhitespace;
+dlagua.c.string.cleanWhitespace = cleanWhitespace;
+return cleanWhitespace;
 
 });

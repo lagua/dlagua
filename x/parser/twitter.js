@@ -5,7 +5,7 @@ define([
 "dojo/dom-construct"
 ], function(lang,win,dom,domConstruct) {
 
-lang.getObject("dlagua.x.parser.facebook", true, dlagua);
+lang.getObject("dlagua.x.parser.twitter", true);
 
 dlagua.x.parser.twitter.like = function(val,options) {
 	var id = "twitter-wjs";

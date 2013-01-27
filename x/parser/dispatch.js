@@ -1,7 +1,7 @@
 define(["dojo/_base/lang","dojo/on","dijit/form/Button","dojox/uuid/generateRandomUuid","dlagua/c/string/toProperCase"
 ], function(lang,on,Button,generateRandomUuid) {
 
-var dispatch = lang.getObject("dlagua.x.parser.dispatch", true, dlagua);
+var dispatch = lang.getObject("dlagua.x.parser.dispatch", true);
 
 var button = function(val,options) {
 	var id = options.id || dojox.uuid.generateRandomUuid();

@@ -5,7 +5,7 @@ define([
 	"dojo/topic"
 ], function(lang,array,on,topic) {
 
-lang.getObject("dlagua.x.parser.mediaelement", true, dlagua);
+lang.getObject("dlagua.x.parser.mediaelement", true);
 
 dlagua.x.parser.mediaelement.audio = function(val,options) {
 	// whenever the content must be deferred, we need an uuid

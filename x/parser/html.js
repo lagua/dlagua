@@ -1,45 +1,54 @@
-dojo.provide("dlagua.x.parser.html");
+define([
+"dojo/_base/lang",
+"dojo/_base/array",
+"dojo/_base/window",
+"dojo/_base/fx",
+"dojo/dom",
+"dojo/dom-construct",
+"dojo/dom-style",
+"dojo/dom-attr",
+"dojo/query",
+"dojo/on",
+"dijit/form/ToggleButton",
+"dojox/uuid/generateRandomUuid"],function(lang,array,win,fx,dom,domConstruct,domStyle,domAttr,query,on,ToggleButton,generateRandomUuid){
 
-dojo.require("dijit.form.Button");
-dojo.require("dojox.uuid.generateRandomUuid");
-
-dojo.getObject("c.x.parser.html", true, dlagua);
-
+lang.getObject("dlagua.x.parser.html", true);
+	
 var dlaguaSelectedOverlayButton;
 
 dlagua.x.parser.html.overlay = function(val,options) {
-	var outerdiv = dojo.create("div",{
+	var outerdiv = domConstruct.create("div",{
 		"class":"dlaguaOverlay"
-	},dojo.body());
+	},win.body());
 	var p,pw;
-	var w = dojo.style(outerdiv, "width");
-	dojo.style(outerdiv,{
+	var w = domStyle.get(outerdiv, "width");
+	domStyle.set(outerdiv,{
 		width:0,
 		left:w+"px",
 		position:"relative"
 	});
-	var innerdiv = dojo.create("div",{
+	var innerdiv = domConstruct.create("div",{
 		innerHTML:val,
 		style:"opacity:0;",
 		"class":"dlaguaOverlayInner"
 	},outerdiv);
-	dojo.connect(innerdiv, "onclick", function(event){
+	on(innerdiv, "onclick", function(event){
 		event.stopPropagation();
 	});
 	var showevents = [], title;
-	dojo.query("[data-mu-onshow]",innerdiv).forEach(function(se){
-		showevents.push(dojo.attr(se,"data-mu-onshow"));
+	query("[data-mu-onshow]",innerdiv).forEach(function(se){
+		showevents.push(domAttr.get(se,"data-mu-onshow"));
 	});
-	dojo.query("[data-mu-title]",innerdiv).forEach(function(te){
-		title = dojo.attr(te,"data-mu-title");
+	query("[data-mu-title]",innerdiv).forEach(function(te){
+		title = domAttr.get(te,"data-mu-title");
 	});
-	var button = new dijit.form.ToggleButton({
+	var button = new ToggleButton({
 		style:"float:right;",
 		onChange:function(){
-			var c = dojo.connect(window,"onclick",this,function(){
+			var c = this.own(on(window,"onclick",lang.hitch(this,function(){
 				this.set("checked", false);
-				dojo.disconnect(c);
-			});
+				c.remove();
+			})))[0];
 			if(this.checked) {
 				var sel = dlaguaSelectedOverlayButton;
 				if(sel && sel!=this) {
@@ -48,9 +57,9 @@ dlagua.x.parser.html.overlay = function(val,options) {
 					} catch(err) {
 					}
 				}
-				dojo.style(p,"width","auto");
+				domStyle.set(p,"width","auto");
 				dlaguaSelectedOverlayButton = this;
-				dojo.animateProperty({
+				fx.animateProperty({
 					node:outerdiv,
 					duration:500,
 					properties:{
@@ -64,10 +73,10 @@ dlagua.x.parser.html.overlay = function(val,options) {
 						}
 					},
 					onEnd:function(){
-						dojo.fadeIn({
+						fx.fadeIn({
 							node:innerdiv,
 							onEnd:function(){
-								dojo.forEach(showevents,function(se){
+								array.forEach(showevents,function(se){
 									console.log(se);
 									eval(se);
 								});
@@ -76,10 +85,10 @@ dlagua.x.parser.html.overlay = function(val,options) {
 					}
 				}).play();
 			} else {
-				dojo.fadeOut({
+				fx.fadeOut({
 					node:innerdiv,
 					onEnd:function(){
-						dojo.animateProperty({
+						fx.animateProperty({
 							node:outerdiv,
 							duration:500,
 							properties:{
@@ -93,7 +102,7 @@ dlagua.x.parser.html.overlay = function(val,options) {
 								}
 							},
 							onEnd:function(){
-								dojo.style(p,"width",pw+"px");
+								domStyle.set(p,"width",pw+"px");
 							}
 						}).play();
 					}
@@ -102,18 +111,24 @@ dlagua.x.parser.html.overlay = function(val,options) {
 		}
 	});
 	if(title) button.attr("title",title);
-	dojo.connect(button.domNode, "onclick", function(event){
-		event.stopPropagation();
-	});
-    var id = options.id || dojox.uuid.generateRandomUuid();
+	button.own(
+		on(button.domNode, "onclick", function(event){
+			event.stopPropagation();
+		})
+	);
+    var id = options.id || generateRandomUuid();
 	setTimeout(function(){
-		var s = dojo.byId(id);
+		var s = dom.byId(id);
 		if(!s) throw new Error("Overlay not rendered.");
 		p = s.parentNode;
-		pw = dojo.style(p,"width");
+		pw = domStyle.get(p,"width");
 		p.insertBefore(outerdiv, s);
 		p.insertBefore(button.domNode, s);
 		p.removeChild(s);
 	},10);
 	return '<span id="'+id+'"></span>';
 };
+
+return dlagua.x.parser.html.overlay;
+
+});

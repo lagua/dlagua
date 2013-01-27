@@ -8,7 +8,7 @@ define([
 	"dijit/Destroyable"
 ], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 
-return declare("dlagua.c.Subscribable", [Stateful], {
+return declare("dlagua.c.Subscribable", [Stateful,Destroyable], {
 	destroyRecursive:function(){
 		this.destroy();
 	},

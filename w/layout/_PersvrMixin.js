@@ -105,7 +105,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			if(type.indexOf("::")) {
 				var ar = type.split("::");
 				type = ar[0];
-				reqs.push(type.replace("\.","/"));
+				reqs.push(type.replace(/\./g,"/"));
 			}
 		});
 		// TODO: wait for requires to return
