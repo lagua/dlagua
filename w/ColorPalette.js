@@ -8,7 +8,7 @@ define([
 	"dijit/ColorPalette",
 	"dojox/color/Palette",
 	"dojo/i18n!dojo/nls/colors",
-	"dojo/colors",], function(declare, lang, array, domConstruct, string, i18n, _ColorPalette, Palette) {
+	"dojo/colors"], function(declare, lang, array, domConstruct, string, i18n, _ColorPalette, Palette) {
 
 var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 	palette: "7x10",

@@ -54,26 +54,24 @@ define([
 			// handle item in ref (i.e. Editor)
 			if(!postfix) postfix="";
 			var d = new Deferred();
-			this.store.get(item.uri+postfix).addBoth(lang.hitch(this,function(res,io){
-				if(res.status!=404) {
-					if(item.__deleted) {
-						this.deleteItem(item);
-					} else if(newItem) {
-						when(this.moveItem(item,newItem,postfix),lang.hitch(this,function(){
-							this.ref.set(this.refProperty,this.target+newItem.uri+postfix);
-						}));
-					} else {
-						this.ref.set(this.refProperty,this.target+item.uri+postfix);
-					}
-					d.resolve(true);
+			this.store.get(item.uri+postfix).then(lang.hitch(this,function(res){
+				if(item.__deleted) {
+					this.deleteItem(item);
+				} else if(newItem) {
+					when(this.moveItem(item,newItem,postfix),lang.hitch(this,function(){
+						this.ref.set(this.refProperty,this.target+newItem.uri+postfix);
+					}));
 				} else {
-					if(postfix=="" && !item.__deleted && !newItem) {
-						item.__new = true;
-						this.ref.set("hasNoPage",true);
-						this.ref.set(this.refProperty,this.target+item.uri+postfix);
-					}
-					d.resolve(false);
+					this.ref.set(this.refProperty,this.target+item.uri+postfix);
 				}
+				d.resolve();
+			},function(err){
+				if(postfix=="" && !item.__deleted && !newItem) {
+					item.__new = true;
+					this.ref.set("hasNoPage",true);
+					this.ref.set(this.refProperty,this.target+item.uri+postfix);
+				}
+				d.reject();
 			}));
 			return d;
 		},
@@ -89,9 +87,10 @@ define([
 			var d = this.loadItem(oldItem, postfix, moved ? newItem : null);
 			if(postfix==="") return;
 			var self = this;
-			d.then(function(sxs){
-				console.log(sxs)
-				if((sxs && (oldItem.__deleted || moved)) || !sxs && !oldItem.__deleted && !moved) self.onChange(null,"");
+			d.then(function(){
+				if(oldItem.__deleted || moved) self.onChange(null,"");
+			},function(){
+				if(!oldItem.__deleted && !moved) self.onChange(null,"");
 			});
 		},
 		postscript: function(mixin){

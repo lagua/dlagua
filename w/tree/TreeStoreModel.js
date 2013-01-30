@@ -135,6 +135,7 @@ return declare("dlagua.w.tree.TreeStoreModel", null, {
 		}, onError);
 	},
 	cancel:function(){
+		if(!this._loading) return;
 		this._loading = false;
 		this.cancelLoading = true;
 	},

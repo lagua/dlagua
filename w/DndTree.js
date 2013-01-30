@@ -10,8 +10,14 @@ var Tree = declare("dlagua.w.DndTree",[_Tree],{
 	checkItemAcceptance:function(target,source,position) {
 		var node = dijit.getEnclosingWidget(target);
 		var item = node.item;
-		if(node && item && (item.children || item.type=="list" || item.type=="content")){
-			return true
+		if(node && item) {
+			if(position=="over" && (item.children || item.type=="list" || item.type=="content")){
+				return true;
+			} else if(position=="before" || position=="after") {
+				return true;
+			} else {
+				return false;
+			}
 		}
 		return false;
     }

@@ -1,5 +1,4 @@
-dojo.provide("dlagua.x.Aes");
-(function(){
+define(function(){
 	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 	/*  AES implementation in JavaScript (c) Chris Veness 2005-2010                                   */
 	/*   - see http://csrc.nist.gov/publications/PubsFIPS.html#197                                    */
@@ -459,8 +458,5 @@ dojo.provide("dlagua.x.Aes");
 	}
 
 	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-	dlagua.x.Aes = dojo.hitch(Aes);
-	dlagua.x.Aes.Base64 = dojo.hitch(Base64);
-	dlagua.x.Aes.Utf8 = dojo.hitch(Utf8);
-
-})();
+	return Aes;
+});

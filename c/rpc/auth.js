@@ -24,32 +24,34 @@ define([
 		var authDialog;
 		var form;
 		
-		var doReq = function(req){
+		var doReq = function(data){
 			var d = new Deferred();
-			request.post(url,{
+			var req = request.post(url,{
 				failOk:true,
 				handleAs:"json",
-				data: JSON.stringify(req),
+				data: JSON.stringify(data),
 				headers: {
 					"Accept":"application/json",
 					"Content-Type":"application/json"
 				}
-			}).then(function(res,io){
-				if(io.xhr.getResponseHeader(sessionParam) || (res && res.user)) {
+			});
+			req.response.then(function(io){
+				token = io.getHeader("phrase");
+				if(!io.getHeader(sessionParam)) d.reject();
+			});
+			req.then(function(res){
+				if(res && res.user) {
 					d.resolve(res);
 				} else {
-					token = io.xhr.getResponseHeader("phrase");
 					d.reject();
 				}
 			},
-			function(res,io) {
-				// return here! first process auth then reload
-				token = io.xhr.getResponseHeader("phrase");
-				var err ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
-				d.reject(err);
+			function(err) {
+				var msg ="The server says: "+err.statusText+"<br/>Reason given: "+err.responseText;
+				d.reject(msg);
 			});
 			return d;
-		}
+		};
 		var doAuth = function() {
 			if(!form.validate()) return;
 			authMsg.innerHTML = "";
@@ -67,7 +69,7 @@ define([
 			},function(err){
 				authMsg.innerHTML = err;
 			});
-		}
+		};
 		
 		var createForm = function(){
 			authDialog = new Dialog({
@@ -75,7 +77,7 @@ define([
 				style: "width:400px; height:300px;text-align:left;",
 				content: "<div style=\"margin-bottom:10px\">Please login</div>"
 			});
-			form = new form.Form({
+			form = new Form({
 				style:"width:100%;height:100%"
 			}).placeAt(authDialog.containerNode);
 			var user = new ValidationTextBox({
@@ -103,7 +105,7 @@ define([
 					}
 				}
 			});
-			var l = new Label({
+			l = new Label({
 				label:"password:",
 				child:passwd
 			}).placeAt(form.domNode);
@@ -125,7 +127,7 @@ define([
 			}).placeAt(form.domNode);
 			// default here
 			authDialog.show();
-		}
+		};
 		
 		var req = {
 			"id":"call-id",

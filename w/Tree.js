@@ -18,34 +18,25 @@ function shimmedPromise(/*Deferred|Promise*/ d){
 		addErrback: function(errback){ this.otherwise(errback); }
 	});
 }
-	
-var TreeNode = declare("dlagua.w._TreeNode",[_Tree._TreeNode],{
-	supressEvents:false,
-	_onClick: function(evt){
-		// summary:
-		//		Handler for onclick event on a node
-		// tags:
-		//		private
-		if(this.supressEvents) return;
-		this.tree._onClick(this, evt);
-		this.tree.collapseAll(this);
-		// wait for collapsing (me=tree)
-		var self = this;
-		console.log(this)
-		if(this.isExpandable) {
-			if(!this.isExpanded) {
-				setTimeout(function(){
-					self.tree._expandNode(self);
-				},100);
-			}
-		}
-	}
-});
 
 var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 	persist:false,
 	_connections:[],
+	openOnClick:true,
 	_found:null,
+	_onExpandoClick: function(/*Object*/ message){
+		// summary:
+		//		User clicked the +/- icon; expand or collapse my children.
+		var node = message.node;
+
+		// If we are collapsing, we might be hiding the currently focused node.
+		// Also, clicking the expando node might have erased focus from the current node.
+		// For simplicity's sake just focus on the node with the expando.
+		this.focusNode(node);
+		this.collapseAll(node).then(lang.hitch(this,function(){
+			this._expandNode(node);
+		}));
+	},
 	search: function(lookfor, buildme, item, field, returnfield, d) {
 		if(d===undefined) {
 			d = new Deferred();
@@ -103,6 +94,8 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 							}
 						};
 						array.forEach(children,function(child){
+							// prevent spooky lazy loaded children
+							if(d.isResolved()) return;
 							var buildmebranch = buildme.slice(0);
 							self.search(lookfor, buildmebranch, child, field, returnfield, d);
 						});
@@ -113,7 +106,7 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 					item.__parent.__onChildrenSearched();
 				} else {
 					// FIXME how to do this properly?
-					if(!d.results) d.resolve();
+					if(!d.isResolved()) d.resolve();
 				}
 			}
 		}
@@ -185,38 +178,38 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		//		Deferred that fires when all nodes have collapsed
 		var _this = this;
 		
-		var parentNode = (exclude ? exclude.getParent() : (_this.showRoot ? this.rootNode : null));
-		function expand(node){
-			// Expand the node
-			return _this._expandNode(node).then(function(){
-				// When node has expanded, call expand() recursively on each non-leaf child
-				var childBranches = array.filter(node.getChildren() || [], function(node){
-					return node.isExpandable &&  node!=parentNode && node!=exclude;
-				});
-
-				// And when all those recursive calls finish, signal that I'm finished
-				return all(array.map(childBranches, expand));
+		var isExcludedOrAncestor = function(node){
+			if(node==exclude) return true;
+			var children = array.filter(node.getChildren() || [],function(child){
+				return child==exclude;
 			});
-		}
-
-		return shimmedPromise(expand(this.rootNode));
-	},
-	expandFirst: function(node) {
-		var me = this;
-		function expand(node){
-			// Expand the node
-			return _this._expandNode(node).then(function(){
-				// When node has expanded, call expand() recursively on each non-leaf child
-				var childBranches = array.filter(node.getChildren() || [], function(node){
+			if(children.length) {
+				return true;
+			} else {
+				children = array.map(node.getChildren() || [],function(child){
+					return isExcludedOrAncestor(child);
+				});
+				return array.indexOf(children,true)>-1;
+			}
+		};
+		function collapse(node){
+			// Collapse children first
+			var childBranches = array.filter(node.getChildren() || [], function(node){
 					return node.isExpandable;
-				});
+				}),
+				defs = all(array.map(childBranches, collapse));
 
-				// And when all those recursive calls finish, signal that I'm finished
-				return all(array.map(childBranches, expand));
-			});
+			// And when all those recursive calls finish, collapse myself, unless I'm the invisible root node,
+			// in which case collapseAll() is finished
+			if(isExcludedOrAncestor(node) || !node.isExpanded || (node == _this.rootNode && !_this.showRoot)){
+				return defs;
+			}else{
+				// When node has collapsed, signal that call is finished
+				return defs.then(function(){ return _this._collapseNode(node); });
+			}
 		}
 
-		return shimmedPromise(expand(node));
+		return shimmedPromise(collapse(this.rootNode));
 	},
 	rebuild:function(){
 		if(this.dndController && this.dndController["selectNone"]) this.dndController.selectNone();
@@ -228,13 +221,9 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		this._itemNodesMap={};
 		this._loadDeferred = new Deferred();
 		this._load();
-	},
-	_createTreeNode: function(/*Object*/ args){
-		return new TreeNode(args);
 	}
 });
 
-Tree._TreeNode = TreeNode;
 return Tree;
 
 });

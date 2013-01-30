@@ -214,7 +214,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/pagechange",item);
 				var par = path.split("/");
 				if(par[0]=="content") par.shift();
-				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+"/"+par.join("/");
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+(par.length ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				dhash(hash);

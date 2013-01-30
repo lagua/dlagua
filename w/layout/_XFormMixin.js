@@ -4,7 +4,7 @@ define([
 	"dojo/_base/array",
 	"dojo/dom",
 	"dojo/dom-style",
-	"dojo/query",
+	"dojo/query"
 ],function(declare,lang,array,dom,domStyle,query){
 return declare("dlagua.w.layout._XFormMixin",[],{
 	xformTarget:null,
