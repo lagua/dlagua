@@ -38,9 +38,8 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 			},10);
 		}
 	};
-	var reqs = ["jquery.min","mediaelement/mediaelement-and-player.min"];
-	require(reqs,function(jQuery){
-		if(!window["$"]) window["$"] = jQuery;
+	var reqs = ["jquery","mediaelement/mediaelement-and-player"];
+	require(reqs,function(){
 		parse();
 	});
 	var text = '<audio id="audio_'+id+'" controls="controls">';

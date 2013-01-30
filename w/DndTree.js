@@ -4,6 +4,9 @@ define([
 	"dijit/tree/dndSource"
 ],function(declare,_Tree,dndSource){
 
+var TreeNode = declare("dlagua.w._DndTreeNode",[_Tree._TreeNode],{
+});
+
 var Tree = declare("dlagua.w.DndTree",[_Tree],{
 	dndController:dndSource,
 	betweenThreshold:5,
@@ -23,5 +26,7 @@ var Tree = declare("dlagua.w.DndTree",[_Tree],{
     }
 });
 
+Tree._TreeNode = TreeNode;
 return Tree;
+
 });

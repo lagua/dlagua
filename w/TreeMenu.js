@@ -7,25 +7,25 @@ define([
 	"dlagua/w/Tree",
 	"dlagua/c/Subscribable",
 	"dojo/text!dlagua/w/templates/TreeMenuNode.html"
-],function(declare,lang,array,aspect,topic,Tree,Subscribable,nodeTemplate) {
+],function(declare,lang,array,aspect,topic,_Tree,Subscribable,nodeTemplate) {
 
-var _TreeNode = declare("dlagua.w._TreeMenuNode",[Tree._TreeNode],{
-	templateString: nodeTemplate,
-   	 _updateItemClasses: function(item){
-   		// summary:
-   		//		Set appropriate CSS classes for icon and label dom node
-   		//		(used to allow for item updates to change respective CSS)
-   		// tags:
-   		//		private
-   		//this._applyClassAndStyle(item, "icon", "Icon");
-   		this._applyClassAndStyle(item, "label", "Label");
-   		this._applyClassAndStyle(item, "row", "Row");
-   	},
-   	_setExpando:function(){
-   	}
-});
+	var TreeNode = declare("dlagua.w._TreeMenuNode",[_Tree._TreeNode],{
+		templateString: nodeTemplate,
+	   	 _updateItemClasses: function(item){
+	   		// summary:
+	   		//		Set appropriate CSS classes for icon and label dom node
+	   		//		(used to allow for item updates to change respective CSS)
+	   		// tags:
+	   		//		private
+	   		//this._applyClassAndStyle(item, "icon", "Icon");
+	   		this._applyClassAndStyle(item, "label", "Label");
+	   		this._applyClassAndStyle(item, "row", "Row");
+	   	},
+	   	_setExpando:function(){
+	   	}
+	});
 
-	var TreeMenu = declare("dlagua.w.TreeMenu",[Tree,Subscribable],{
+	var Tree = declare("dlagua.w.TreeMenu",[_Tree,Subscribable],{
 		store: null,
 		state:"",
 		items:null,
@@ -261,7 +261,7 @@ var _TreeNode = declare("dlagua.w._TreeMenuNode",[Tree._TreeNode],{
 			this._checkTruncate(this.currentId);
 		},
 		_createTreeNode: function(args) {
-	        return new _TreeNode(args);
+	        return new TreeNode(args);
 	    },
 	    onClick:function(item,node) {
 			if(item.type=="link") {
@@ -272,8 +272,8 @@ var _TreeNode = declare("dlagua.w._TreeMenuNode",[Tree._TreeNode],{
 		}
 	});
 	
-	TreeMenu._TreeNode = _TreeNode;
+	Tree._TreeNode = TreeNode;
 	
-	return TreeMenu;
+	return Tree;
 
 });

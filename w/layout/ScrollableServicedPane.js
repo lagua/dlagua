@@ -17,6 +17,7 @@ define([
 	"dojo/on",
 	"dojo/request",
 	"dojo/query",
+	"dojo/dom",
 	"dojo/dom-construct",
 	"dojo/dom-geometry",
 	"dojo/dom-class",
@@ -41,7 +42,7 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
+],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
 return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidget, _Templated, _PersvrMixin,_PagedMixin, Subscribable],{
 	store:null,
 	stores:{},
@@ -116,7 +117,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 	},
 	startup: function(){
 		if(this._started){ return; }
-		var params={};
 		this.listitems = [];
 		this.itemnodesmap = {};
 		this.orifilter = this.filter;
@@ -128,6 +128,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 			this.watch("currentItem",this.loadFromItem)
 		);
 		var self = this;
+		var node, params = {};
 		if(this.header) {
 			if(this.pageButtons) {
 				this.prevButton = new Button({
@@ -143,11 +144,16 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 				});
 				this.fixedHeader.appendChild(this.prevButton.domNode);
 			}
-			params.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
+			node = dom.byId(this.fixedHeader);
+			if(node.parentNode == this.domNode){ // local footer
+				this.isLocalHeader = true;
+			}
+			params.fixedHeaderHeight = node.offsetHeight;
 		} else {
 			domStyle.set(this.fixedHeader,"display","none");
 			params.fixedHeaderHeight = 0;
 		}
+		this.init(params);
 		if(this.footer) {
 			if(this.pageButtons) {
 				this.nextButton = new Button({
@@ -163,12 +169,18 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 				});
 				this.fixedFooter.appendChild(this.nextButton.domNode);
 			}
-			params.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
+			node = dom.byId(this.fixedFooter);
+			if(node.parentNode == this.domNode){ // local footer
+				this.isLocalFooter = true;
+				node.style.bottom = "0px";
+			}
+			params.fixedFooterHeight = node.offsetHeight;
 		} else {
 			domStyle.set(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
 		}
 		this.init(params);
+		this.inherited(arguments);
 		if(this.count>this.maxCount) this.count = this.maxCount;
 		// wait for any pub/sub loaders
 		if(this.loadOnCreation) {
@@ -178,7 +190,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 				this.forcedLoad();
 			}
 		}
-		this.inherited(arguments);
 	},
 	forcedLoad: function(){
 		this.reload = true;

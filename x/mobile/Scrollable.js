@@ -25,7 +25,7 @@ define([
 			//		User-defined function to handle touchStart events.
 			
 			// WSH: escape on form inputs
-			if(this.isFormElement(e.target) || dojo.hasClass(e.target,"dlaguaPreventScroll")) return;
+			if(this.isFormElement(e.target) || domClass.contains(e.target,"dlaguaPreventScroll")) return;
 			
 			if(this.disableTouchScroll){ return; }
 			if(this._conn && (new Date()).getTime() - this.startTime < 500){

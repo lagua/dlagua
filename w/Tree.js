@@ -18,6 +18,8 @@ function shimmedPromise(/*Deferred|Promise*/ d){
 		addErrback: function(errback){ this.otherwise(errback); }
 	});
 }
+var TreeNode = declare("dlagua.w._TreeNode",[_Tree._TreeNode],{
+});
 
 var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 	persist:false,
@@ -224,6 +226,7 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 	}
 });
 
+Tree._TreeNode = TreeNode;
 return Tree;
 
 });

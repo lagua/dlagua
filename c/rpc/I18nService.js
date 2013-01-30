@@ -14,7 +14,7 @@ define([
 			request(this.target,{
 				handleAs:"json",
 				sync:true,
-				data:{
+				query:{
 					locale:this.locale
 				},
 				headers:{
