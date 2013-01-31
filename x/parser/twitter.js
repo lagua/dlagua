@@ -28,5 +28,5 @@ dlagua.x.parser.twitter.like = function(val,options) {
 	return div.innerHTML;
 };
 
-return dlagua.x.parser.twitter.like;
+return dlagua.x.parser.twitter;
 });

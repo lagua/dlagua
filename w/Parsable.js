@@ -8,13 +8,17 @@ define([
 return declare("dlagua.w.Parsable",[_WidgetBase,_TemplatedMixin],{
 	postscript:function(params,refNode){
 		if(!params) params = {};
+		var self = this;
+		var args = arguments;
 		if(params.type && params.method){
-			require(params.type);
-			var o = lang.getObject(params.type);
 			var node = dom.byId(refNode);
-			this.templateString = o[params.method](node.innerHTML,params); 
+			require([params.type],function(o){
+				//var p = params.type.replace(/\//g,"\.");
+				//var o = lang.getObject(p);
+				self.templateString = o[params.method](node.innerHTML,params);
+				self.inherited(args);
+			});
 		}
-		this.inherited(arguments);
 	}
 });
 

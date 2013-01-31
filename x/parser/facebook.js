@@ -29,6 +29,6 @@ dlagua.x.parser.facebook.like = function(val,options) {
 	return div.innerHTML;
 };
 
-return dlagua.x.parser.facebook.like;
+return dlagua.x.parser.facebook;
 
 });

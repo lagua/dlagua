@@ -129,6 +129,6 @@ dlagua.x.parser.html.overlay = function(val,options) {
 	return '<span id="'+id+'"></span>';
 };
 
-return dlagua.x.parser.html.overlay;
+return dlagua.x.parser.html;
 
 });

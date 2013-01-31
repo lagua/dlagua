@@ -57,5 +57,5 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 	return text;
 };
 
-return dlagua.x.parser.mediaelement.audio;
+return dlagua.x.parser.mediaelement;
 });
