@@ -438,11 +438,11 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 	onReady: function(){
 		console.log("done loading "+this.id);
 		this._loading = false;
-		var pos = this.getPos();
 		this.showScrollBar();
 		if(this.useScrollBar) {
-			this.slideScrollBarTo(pos, 0.3, "ease-out");
+			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
 		}
+		this.inherited(arguments);
 	}
 });
 

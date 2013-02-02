@@ -316,18 +316,11 @@ define([
 			this.addChild(listItem,insertIndex);
 		},
 		onReady: function(){
-			console.log("done loading "+this.id);
-			this._loading = false;
 			if(this.loadingAnimation && this.footer) {
 				domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 			}
-			var pos = this.getPos();
-			this.showScrollBar();
-			if(this.useScrollBar) {
-				this.slideScrollBarTo(pos, 0.3, "ease-out");
-			}
 			// if needed, get more stuff from the store
-			if(this.servicetype == "persvr") this.pageStore(pos.y);
+			this.pageStore();
 			// select currentId for #anchor simulation
 			if(this.currentId) {
 				this.selectItemByCurrentId();

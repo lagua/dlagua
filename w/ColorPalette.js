@@ -2,13 +2,14 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
+	"dojo/_base/Color", // dojo.Color dojo.Color.named
 	"dojo/dom-construct", // domConstruct.place
 	"dojo/string", // string.substitute
 	"dojo/i18n",
 	"dijit/ColorPalette",
 	"dojox/color/Palette",
 	"dojo/i18n!dojo/nls/colors",
-	"dojo/colors"], function(declare, lang, array, domConstruct, string, i18n, _ColorPalette, Palette) {
+	"dojo/colors"], function(declare, lang, array, Color, domConstruct, string, i18n, _ColorPalette, Palette) {
 
 var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 	palette: "7x10",

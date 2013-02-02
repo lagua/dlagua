@@ -7,15 +7,27 @@ define([
 ],function(declare,lang,dom,_WidgetBase,_TemplatedMixin){
 return declare("dlagua.w.Parsable",[_WidgetBase,_TemplatedMixin],{
 	postscript:function(params,refNode){
-		if(!params) params = {};
+		if(!params) return;
 		var self = this;
 		var args = arguments;
-		if(params.type && params.method){
-			var node = dom.byId(refNode);
-			require([params.type],function(o){
-				//var p = params.type.replace(/\//g,"\.");
-				//var o = lang.getObject(p);
-				self.templateString = o[params.method](node.innerHTML,params);
+		if(params.type){
+			var node, type, method;
+			node = dom.byId(refNode);
+			type = params.type;
+			delete params.type;
+			if(params.method) {
+				method = params.method;
+				delete params.method;
+			} else if(ar.indexOf("::")>-1) {
+				var ar = type.split("::");
+				type = ar[0];
+				method = ar[1];
+			} else {
+				console.warn("dlagua.w.Parsable type is not implemented");
+				return;
+			}
+			require([type],function(o){
+				self.templateString = o[method](node.innerHTML,params);
 				self.inherited(args);
 			});
 		}

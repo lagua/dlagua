@@ -35,20 +35,23 @@ define([
 					"Content-Type":"application/json"
 				}
 			});
-			req.response.then(function(io){
-				token = io.getHeader("phrase");
-				if(!io.getHeader(sessionParam)) d.reject();
-			});
 			req.then(function(res){
-				if(res && res.user) {
-					d.resolve(res);
-				} else {
-					d.reject();
+				if(!d.isFulfilled()){
+					if(res && res.user) {
+						d.resolve(res);
+					} else {
+						d.reject();
+					}
 				}
-			},
-			function(err) {
-				var msg ="The server says: "+err.statusText+"<br/>Reason given: "+err.responseText;
-				d.reject(msg);
+			},function(err) {
+			},function(xhr){
+				token = xhr.getHeader("phrase");
+				if(xhr.getHeader(sessionParam)) {
+					d.resolve();
+				} else {
+					var msg ="The server says: "+xhr.statusText+"<br/>Reason given: "+xhr.responseText;
+					d.reject(msg);
+				}
 			});
 			return d;
 		};
