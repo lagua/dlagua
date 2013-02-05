@@ -92,7 +92,10 @@ define([
 		_loadFromId:function(prop,oldValue,newValue){
 			if(this.loading) {
 				console.log("not loaded, deferring loadFromId")
-				if(!this._lh) this._lh = aspect.after(this,"onLoaded",lang.hitch(this,this._loadFromId));
+				var args = arguments;
+				if(!this._lh) this._lh = aspect.after(this,"onLoaded",lang.hitch(this,function(){
+					this._loadFromId(args);
+				}));
 				return;
 			}
 			if(this._lh) this._lh.remove();
