@@ -3,13 +3,16 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/_base/Color", // dojo.Color dojo.Color.named
+	"dojo/query",
 	"dojo/dom-construct", // domConstruct.place
+	"dojo/dom-attr",
+	"dojo/dom-style",
 	"dojo/string", // string.substitute
 	"dojo/i18n",
 	"dijit/ColorPalette",
 	"dojox/color/Palette",
 	"dojo/i18n!dojo/nls/colors",
-	"dojo/colors"], function(declare, lang, array, Color, domConstruct, string, i18n, _ColorPalette, Palette) {
+	"dojo/colors"], function(declare, lang, array, Color, query, domConstruct, domAttr, domStyle, string, i18n, _ColorPalette, Palette) {
 
 var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 	palette: "7x10",
@@ -40,10 +43,20 @@ var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 	},
 	getSelectedAlias:function() {
 		if(this._selectedCell == -1) return;
-		var alias = this._cells[this._selectedCell].dye._alias;
-		var titles = this.customTitles ? this.customTitles : i18n.getLocalization("dojo", "colors", this.lang);
+		var alias = this._cells[this._selectedCell].dye._title;
 		var baseAlias = this.baseAlias ? this.baseAlias+"_" : "";
-		return baseAlias+titles[alias];
+		return baseAlias+alias;
+	},
+	setSelectedAlias:function(value,title){
+		if(this._selectedCell == -1) return;
+		var alias = title || value;
+		var c = this._cells[this._selectedCell];
+		c.dye.setColor(Color.fromString(value));
+		var swatch = query(".dijitColorPaletteSwatch",c.node)[0]
+		domStyle.set(swatch,"backgroundColor",value);
+		domAttr.set(c.node,"title",alias);
+		domAttr.set(swatch,"title",alias);
+		domAttr.set(swatch,"alias",alias);
 	},
 	buildRendering: function(){
 		// Instantiate the template, which makes a skeleton into which we'll insert a bunch of
@@ -59,7 +72,7 @@ var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 			this.customTitles = i18n.getLocalization("dojo", "colors", this.lang);
 		}
 		this.palette = this.customColors.length+"x"+this.customColors[0].length;
-		
+		this._palettes[this.palette] = this.customColors;
 		this._dyeClass = declare(ColorPalette._Color, {
 			palette: this.palette
 		});
@@ -67,7 +80,7 @@ var ColorPalette = declare("dlagua.w.ColorPalette",[_ColorPalette], {
 		// Creates <img> nodes in each cell of the template.
 		this._preparePalette(
 			this._palettes[this.palette],
-			i18n.getLocalization("dojo", "colors", this.lang));
+			this.customTitles);
 	}
 });
 
@@ -84,29 +97,27 @@ ColorPalette._Color = declare("dlagua.w._Color", Color, {
 			"<img src='${blankGif}' alt='${alt}' title='${title}' class='dijitColorPaletteSwatch' style='background-color: ${color}'/>" +
 		"</span>",
 
-	constructor: function(/*String*/alias, /*Number*/ row, /*Number*/ col){
+	constructor: function(alias, row, col, title){
 		this._title = title;
 		this._row = row;
 		this._col = col;
-		this.setColor(Color.named[alias]);
+		this.setColor(Color.fromString(alias));
 	},
 
 	getValue: function(){
 		// summary:
 		//		Note that although dijit._Color is initialized with a value like "white" getValue() always
 		//		returns a hex value
-		return this.toHex();
+		return this.toCss(true);
 	},
 
 	fillCell: function(/*DOMNode*/ cell, /*String*/ blankGif){
 		var html = string.substitute(this.template, {
 			// substitution variables for normal mode
-			color: this.toHex(),
+			color: this.toCss(true),
 			blankGif: blankGif,
 			alt: this._title,
-			title: this._title,
-			left: this._col * -20 - 5,
-			top: this._row * -20 - 5
+			title: this._title
 		});
 
 		domConstruct.place(html, cell);
