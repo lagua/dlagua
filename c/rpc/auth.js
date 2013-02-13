@@ -7,12 +7,9 @@ define([
 	"dojo/keys",
 	"dojo/json",
 	"dijit/Dialog",
-	"dijit/form/Form",
-	"dijit/form/ValidationTextBox",
-	"dijit/form/Button",
-	"dforma/Label",
+	"dforma/Builder",
 	"dlagua/x/Aes"
-], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Form, ValidationTextBox, Button, Label, Aes){
+], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Builder, Aes){
 	lang.getObject("dlagua.c.rpc", true);
 
 	var auth = function(url,params){
@@ -55,10 +52,8 @@ define([
 			});
 			return d;
 		};
-		var doAuth = function() {
-			if(!form.validate()) return;
+		var doAuth = function(data) {
 			authMsg.innerHTML = "";
-			var data = form.get("value");
 			var passwd = Aes.Ctr.encrypt(data.passwd, token, 256);
 			var req = {
 				"id":"call-id",
@@ -77,58 +72,41 @@ define([
 		var createForm = function(){
 			authDialog = new Dialog({
 				title: "Login",
-				style: "width:400px; height:300px;text-align:left;",
+				style: "text-align:left;",
 				content: "<div style=\"margin-bottom:10px\">Please login</div>"
 			});
-			form = new Form({
-				style:"width:100%;height:100%"
-			}).placeAt(authDialog.containerNode);
-			var user = new ValidationTextBox({
-				name:"user",
-				placeHolder:"user",
-				required:true,
-				onKeyPress:function(e) {
-					if(e.charOrCode==keys.ENTER) {
-						doAuth();
-					}
-				}
-			});
-			var l = new Label({
-				label:"user:",
-				child:user
-			}).placeAt(form.domNode);
-			var passwd = new ValidationTextBox({
-				name:"passwd",
-				type:"password",
-				placeHolder:"password",
-				required:true,
-				onKeyPress:function(e) {
-					if(e.charOrCode==keys.ENTER) {
-						doAuth();
-					}
-				}
-			});
-			l = new Label({
-				label:"password:",
-				child:passwd
-			}).placeAt(form.domNode);
-			authMsg = domConstruct.create("div",{
-				style:"color:red"
-			},form.domNode);
-			
-			var bt = new Button({
-				label:"Login",
-				style:"float:right",
-				onKeyPress:function(e) {
-					if(e.charOrCode==keys.ENTER) {
-						doAuth();
-					}
+			form = new Builder({
+				style:"max-height:300px;width:400px;overflow:auto",
+				cancel: function(){
+					editDlg.hide();
 				},
-				onClick:function(){
-					doAuth();
+				submit: function(){
+					if(!this.validate()) return;
+					var data = this.get("value");
+					doAuth(data);
+				},
+				data:{
+					controls:[{
+						type:"input",
+						name:"user",
+						required:true,
+						onKeyPress:function(e) {
+							if(e.charOrCode==keys.ENTER) {
+								form.submit();
+							}
+						}
+					},{
+						name:"passwd",
+						type:"password",
+						required:true,
+						onKeyPress:function(e) {
+							if(e.charOrCode==keys.ENTER) {
+								form.submit();
+							}
+						}
+					}]
 				}
-			}).placeAt(form.domNode);
-			// default here
+			}).placeAt(authDialog.containerNode);
 			authDialog.show();
 		};
 		

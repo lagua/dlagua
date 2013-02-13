@@ -9,31 +9,24 @@ dlagua is the workhorse of Lagua Web Solutions. It mirrors the structure of the 
 This means dojo is extended (not forked) to create production quality modules, all actually used in web apps designed by Lagua.
 Apps can be declared in HTML using the data-dojo-* attributes, and use persevere 2.0 by default as a persistent JSON storage layer. A typical app would be:
 
-	<script>
-		// as dlagua currently extends from dojo1.6, we need to require some additional packages (e.g. persvr/rql) through requirejs 
-		dojo.require("dojo.parser");
-		dlagua.c._base.addRequirejs().then(function(){
-			dojo.parser.parse();
-		});
-	</script>
-    <div id="myApp" data-dojo-type="lagua.App">
+    <div id="myApp" data-dojo-type="dlagua/w/App">
     	<script type='dojo/method'>
 			this.subscribe("/components/menu"); // create a subscription to the menu
 		</script>
-		<div data-dojo-id="menustore" data-dojo-type="dlagua.c.store.JsonRest" data-dojo-props="target:'/persvr/Menu/'"></div>
-		<div id="menu" data-dojo-type="dlagua.w.MenuBar" data-dojo-props="region:'top',locale:'en_us',store:menustore">
+		<div data-dojo-id="menustore" data-dojo-type="dojo/store/JsonRest" data-dojo-props="target:'/persvr/Menu/'"></div>
+		<div id="menu" data-dojo-type="dlagua/w/MenuBar" data-dojo-props="region:'top',locale:'en_us',store:menustore">
 	    	<script type='dojo/method'>
 		    	this.subscribe("/app/pathchange"); // create a subscription to the changes of 'path'
 		    </script>
 		</div>
-		<div id="center" data-dojo-type="dlagua.w.layout.ScrollableServicedPane" data-dojo-props="region:'center',locale:'en_us',service:'somerestservice'">
+		<div id="center" data-dojo-type="dlagua/w/layout/ScrollableServicedPane" data-dojo-props="region:'center',locale:'en_us',service:'somerestservice'">
 			<script type='dojo/method'>
 				this.subscribe("/app/pagechange"); // create a subscription to the changes of the currently selected /persvr/Menu item
 			</script>
 		</div>
 	</div>
 	
-The persevere Menu model for this particular setup is defined like this:
+The Persevere Menu model for this particular setup is defined like this:
 	var Model = require("perstore/model").Model,
 		DefaultStore = require("perstore/stores").DefaultStore;
 	
