@@ -10,7 +10,6 @@ define([
 	"dforma/Builder",
 	"dlagua/x/Aes"
 ], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Builder, Aes){
-	lang.getObject("dlagua.c.rpc", true);
 
 	var auth = function(url,params){
 		var d = new Deferred();
@@ -20,6 +19,7 @@ define([
 		var authMsg;
 		var authDialog;
 		var form;
+		var hasSessParam;
 		
 		var doReq = function(data){
 			var d = new Deferred();
@@ -33,20 +33,18 @@ define([
 				}
 			});
 			req.then(function(res){
-				if(!d.isFulfilled()){
-					if(res && res.user) {
-						d.resolve(res);
-					} else {
-						d.reject();
-					}
+				if(res && (res.user || hasSessParam)) {
+					d.resolve(res);
+				} else {
+					if(!d.isFulfilled()) d.reject();
 				}
 			},function(err) {
-			},function(xhr){
-				token = xhr.getHeader("phrase");
-				if(xhr.getHeader(sessionParam)) {
-					d.resolve();
+			},function(io){
+				token = io.getHeader("phrase");
+				if(io.getHeader(sessionParam)) {
+					hasSessParam = true;
 				} else {
-					var msg ="The server says: "+xhr.statusText+"<br/>Reason given: "+xhr.responseText;
+					var msg ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
 					d.reject(msg);
 				}
 			});
@@ -96,6 +94,7 @@ define([
 							}
 						}
 					},{
+						label:"password",
 						name:"passwd",
 						type:"password",
 						required:true,
@@ -108,6 +107,9 @@ define([
 				}
 			}).placeAt(authDialog.containerNode);
 			authDialog.show();
+			var fc = form.getChildren();
+			var maingroup = fc.length ? fc[0] : null;
+			authMsg = maingroup.messageNode;
 		};
 		
 		var req = {
@@ -123,6 +125,9 @@ define([
 		
 		return d;
 	};
+	
+	lang.getObject("dlagua.c.rpc", true);
 	dlagua.c.rpc.auth = auth;
+	
 	return auth;
 });
