@@ -53,8 +53,7 @@ define([
 			// TODO: send item to the ref (if toItem=true)
 			// handle item in ref (i.e. Editor)
 			if(!postfix) postfix="";
-			var d = new Deferred();
-			this.store.get(item.uri+postfix).then(lang.hitch(this,function(res){
+			return this.store.get(item.uri+postfix).then(lang.hitch(this,function(res){
 				if(item.__deleted) {
 					this.deleteItem(item);
 				} else if(newItem) {
@@ -64,16 +63,13 @@ define([
 				} else {
 					this.ref.set(this.refProperty,this.target+item.uri+postfix);
 				}
-				d.resolve();
-			},function(err){
+			}),(lang.hitch(this,function(err){
 				if(postfix=="" && !item.__deleted && !newItem) {
 					item.__new = true;
 					this.ref.set("hasNoPage",true);
 					this.ref.set(this.refProperty,this.target+item.uri+postfix);
 				}
-				d.reject();
-			}));
-			return d;
+			})));
 		},
 		onChange: function(args,postfix){
 			if(postfix!=="") postfix = this.postfix;
