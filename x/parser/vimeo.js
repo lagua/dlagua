@@ -7,7 +7,7 @@ define([
 
 	var dp = lang.getObject("dlagua.x.parser.vimeo", true);
 	var url = "//player.vimeo.com/video/";
-	dp = lang.mixin(dp,{
+	return lang.mixin(dp,{
 		embed:function(val, options){
 			options = options || {};
 			var div = domConstruct.create("div");
@@ -35,6 +35,6 @@ define([
 			dojo.create("iframe",frameattrs,div);
 			return div.innerHTML;
 		}
-	}
+	});
 });
 
