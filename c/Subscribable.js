@@ -3,8 +3,8 @@ define([
 	"dojo/_base/lang",
 	"dojo/Stateful",
 	"dojo/topic",
-	"persvr/rql/parser",
-	"persvr/rql/js-array",
+	"rql/parser",
+	"rql/js-array",
 	"dijit/Destroyable"
 ], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 

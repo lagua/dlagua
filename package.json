@@ -1,0 +1,6 @@
+{
+    "name": "dlagua",
+    "description": "dlagua",
+    "version": 1.0,
+    "dojoBuild": "dlagua.profile.js"
+}

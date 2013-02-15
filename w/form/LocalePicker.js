@@ -4,8 +4,8 @@ define([
 	"dojo/topic",
 	"dojo/io-query",
 	"dojo/store/JsonRest",
-	"persvr/rql/parser",
-	"persvr/rql/query",
+	"rql/parser",
+	"rql/query",
 	"dijit/form/FilteringSelect",
 	"dlagua/c/Subscribable"
 ],function(declare,lang,topic,ioQuery,JsonRest,rqlParser,rqlQuery,FilteringSelect,Subscribable){

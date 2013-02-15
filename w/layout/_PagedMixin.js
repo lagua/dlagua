@@ -11,8 +11,8 @@ define([
 	"dojo/dom-class",
 	"dojox/timing",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
-	"persvr/rql/query",
-	"persvr/rql/parser"
+	"rql/query",
+	"rql/parser"
 ],function(declare,lang,array,win,event,fx,topic,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		startup:function(){
