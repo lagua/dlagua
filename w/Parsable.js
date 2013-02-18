@@ -18,7 +18,7 @@ return declare("dlagua.w.Parsable",[_WidgetBase,_TemplatedMixin],{
 			if(params.method) {
 				method = params.method;
 				delete params.method;
-			} else if(ar.indexOf("::")>-1) {
+			} else if(type.indexOf("::")>-1) {
 				var ar = type.split("::");
 				type = ar[0];
 				method = ar[1];
