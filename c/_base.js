@@ -1,5 +1,5 @@
-define("dlagua/c/_base",["dojo"],function(dojo){
-	dojo.mixin(dlagua.c._base,{
+define(["dojo/_base/lang"],function(lang){
+	lang.mixin(dlagua.c._base,{
 		addScript: function(url,callback,id) {
 			var s = "script", d = document;
 			if(id && d.getElementById(id)) {
@@ -28,43 +28,15 @@ define("dlagua/c/_base",["dojo"],function(dojo){
 			css.href= _css;
 			css.rel = "stylesheet";
 			if(title) css.title = title;
-			var first = d.getElementsByTagName(s)[0];
-			first.parentNode.insertBefore(css,first);
+			var h = d.getElementsByTagName("head")[0];
+			h.appendChild(css);
 		},
-		_addRQL: function(){
-			var d = new dojo.Deferred();
-			require(["rql/parser","rql/query","rql/js-array"],function(rqlParser,rqlQuery,rqlArray){
-				persvr.rql = {
-					Parser:rqlParser,
-					Query:rqlQuery,
-					Array:rqlArray
-				}
-				d.callback(true);
-			});
-			return d;
-		},
-		addRequirejs: function(){
-			var d = new dojo.Deferred();
-			// pre-dojo-1.7 stuff
-			var baseUrl = "/persvr/packages/";
-			if(!window.require) {
-				window.require = {
-					baseUrl: baseUrl
-				};
-				dlagua.c._base.addScript(baseUrl+"requirejs/require.js",function(){
-					if(!window.persvr) window.persvr = {};
-					if(!window.persvr.rql) {
-						dlagua.c._base._addRQL().then(function(){
-							d.callback(true);
-						});
-					} else {
-						d.callback(true);
-					}
-				});
-			} else {
-				d.callback(true);
-			}
-			return d;
+		addBase:function(_base) {
+			var d = document;
+			var h = d.getElementsByTagName("head")[0];
+			var base = domConstruct.create("base",{
+				href: _base
+			},h);
 		}
 	});
 	return dlagua.c._base;
