@@ -2,7 +2,6 @@
 /* take apart ScrollablePane and _ServicedMixin
  * make services require plugin RPCs
  * move persvr to RPC
- * make _MustacheTemplatableMixin -> move hasDeferredContent there?
  * take out skip / autofire / timer and add param for plugin
  * dynamic loading of modules:
  * make JSON / ATOM / XML pluggable, require first
@@ -50,7 +49,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 	itemnodesmap:null,
 	idProperty:"id",
 	hrProperty:"",
-	hasDeferredContent:false,
 	filter:"",
 	sort:"",
 	filterByItemProperties:"",
@@ -264,7 +262,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 		this.start = 0;
 		this.total = 0;
 		this.reload = false;
-		this.hasDeferredContent = false;
 		//this.idProperty = this.hrProperty = "";
 		this.childrenReady = 0;
 		// make a shallow copy to compare next load
