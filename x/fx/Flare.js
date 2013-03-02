@@ -13,25 +13,26 @@ define([
 			// summary:
 			//		Initializes the flare
 			this.inherited(arguments);
-			this._resetFlare();
 			var imgpath = require.toUrl("dlagua/x/fx/resources/flare.png");
 			this._flare = domConstruct.create("div",{
 				style:"position:absolute;",
 				innerHTML:'<img src="'+imgpath+'"/>'
 			});
+			this._resetFlare();
 		},
 		//destroy:function(){
 		//	this.inherited(arguments);
 		//},
 		_showFlare:function(){
 			this._fh.remove();
+			// TODO: move to generic positioning lib
 			var mb = domGeometry.position(this.domNode);
 			var _f = this._flare;
-			var fh = 50;
+			domConstruct.place(_f,win.body());
+			var fh = domGeometry.getMarginBox(_f).h/2;
 			_f.style.top = (mb.y + mb.h/2 - fh)+"px";
 			_f.style.left = (mb.x - fh)+"px";
 			var self = this;
-			domConstruct.place(_f,win.body());
 			var slideArgs = {
 				node: _f,
 				top: (mb.y + mb.h/2 - fh).toString(),

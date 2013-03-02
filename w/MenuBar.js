@@ -7,11 +7,13 @@ define([
 	"dojo/topic",
 	"dojo/aspect",
 	"dijit/MenuBar",
+	"dlagua/w/MenuItem",
+	"dlagua/w/PopupMenuItem",
 	"dlagua/w/MenuBarItem",
 	"dijit/DropDownMenu",
 	"dlagua/w/PopupMenuBarItem",
 	"dlagua/c/Subscribable"
-],function(declare,lang,array,Deferred,ioQuery,topic,aspect,MenuBar,MenuBarItem,DropDownMenu,PopupMenuBarItem,Subscribable){
+],function(declare,lang,array,Deferred,ioQuery,topic,aspect,MenuBar,MenuItem,PopupMenuItem,MenuBarItem,DropDownMenu,PopupMenuBarItem,Subscribable){
 	return declare("dlagua.w.MenuBar",[MenuBar,Subscribable],{
 		store: null,
 		selected:null,
@@ -181,9 +183,10 @@ define([
 		},
 		_resolveRecursive:function(item,depth,d){
 			// simple resolving strategy for maxDepth
+			var maxDepth = this.maxRecursiveDepth || this.maxDepth;
 			if(!d) d = new Deferred();
 			depth = depth || 0;
-			if(this.maxDepth == depth) {
+			if(maxDepth == depth) {
 				item.__parent.__onChildLoaded();
 				return d;
 			}
@@ -231,13 +234,14 @@ define([
 			// add the dropdown menu
 			var dd = new DropDownMenu({});
 			array.forEach(item.children,function(child){
-				if(this.maxDepth>depth+2 && child.children && child.children.length) {
-					dd.addChild(new PopupMenuBarItem({
+				if(this.maxDepth>depth+3 && child.children && child.children.length) {
+					dd.addChild(new PopupMenuItem({
+						item:child,
 						label:child[this.labelAttr],
 						popup:this._addItemRecursive(child,depth+1)
 					}));
 				} else {
-					dd.addChild(new MenuBarItem({
+					dd.addChild(new MenuItem({
 						item:child,
 						depth:depth,
 						label:child[this.labelAttr],

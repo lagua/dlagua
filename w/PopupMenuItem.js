@@ -1,9 +1,9 @@
 define([
 	"dojo/_base/declare", // declare
-	"dijit/PopupMenuBarItem"
-], function(declare, PopupMenuBarItem){
+	"dijit/PopupMenuItem"
+], function(declare, PopupMenuItem){
 
-	return declare("dlagua.w.PopupMenuBarItem", [PopupMenuBarItem], {
+	return declare("dlagua.w.PopupMenuItem", [PopupMenuItem], {
 		selected:false,
 		item:null,
 		postCreate:function(){
