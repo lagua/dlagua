@@ -26,13 +26,13 @@ return declare("dlagua.w.layout._XFormMixin",[],{
 	setXFormTarget:function(href){
 		this.xformTarget = href;
 		if(fluxProcessor) {
-			fluxProcessor.setControlValue("xform-url",href);
+			fluxProcessor.sendValue("xform-url",href);
 			fluxProcessor.dispatchEventType("main","load-xform");
 		}
 	},
 	xformUnloaded: function(ref) {
 		if(fluxProcessor) {
-			fluxProcessor.setControlValue("xform-url","");
+			fluxProcessor.sendValue("xform-url","");
 			fluxProcessor.dispatchEventType("main","unload-xform");
 		}
 		// make sure the DOM is moved

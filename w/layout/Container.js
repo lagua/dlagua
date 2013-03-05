@@ -3,12 +3,12 @@ define([
 	"dojo/_base/declare", // declare
 	"dojo/dom-class", // domClass.add domClass.remove domClass.toggle
 	"dojo/dom-style", // domStyle.style
+	"dojo/dom-geometry",
 	"dojo/_base/lang", // lang.getObject lang.hitch
 	"dijit/_WidgetBase",
-	"dijit/_TemplatedMixin",
 	"dijit/layout/_LayoutWidget",
 	"dijit/layout/utils"        // layoutUtils.layoutChildren
-], function(array, declare, domClass, domStyle, lang, _WidgetBase, _TemplatedMixin, _LayoutWidget, layoutUtils){
+], function(array, declare, domClass, domStyle, domGeometry, lang, _WidgetBase, _LayoutWidget, layoutUtils){
 
 // module:
 //		dlagua/w/layout/Container

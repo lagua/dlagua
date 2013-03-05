@@ -42,7 +42,7 @@ define([
 			if(this._loading) {
 				if(this.localeChanged) return;
 				console.log("not loaded, deferring rebuild")
-				if(!this._bh) this._bh = aspect.after(this,"onLoaded",this.rebuild);
+				if(!this._bh) this._bh = aspect.after(this,"onReady",this.rebuild);
 				return;
 			}
 			if(this._bh) this._bh.remove();
@@ -71,6 +71,7 @@ define([
 			d.then(function(root){
 				self._loading = false;
 				array.forEach(root.children,lang.hitch(self,self._addItem));
+				self.onReady();
 			});
 		},
 		_loadDefault: function() {
@@ -78,7 +79,7 @@ define([
 			console.log("loading default",this._loading,this._lh)
 			if(this._loading) {
 				console.log("not loaded, deferring _loadDefault")
-				if(!this._lh) this._lh = aspect.after(this,"onLoaded",this._loadDefault);
+				if(!this._lh) this._lh = aspect.after(this,"onReady",this._loadDefault);
 				return;
 			}
 			if(this._lh) this._lh.remove();
@@ -118,7 +119,7 @@ define([
 			if(this._loading) {
 				console.log("not loaded, deferring loadFromId")
 				var args = arguments;
-				if(!this._lh) this._lh = aspect.after(this,"onLoaded",lang.hitch(this,function(){
+				if(!this._lh) this._lh = aspect.after(this,"onReady",lang.hitch(this,function(){
 					this._loadFromId(args);
 				}));
 				return;

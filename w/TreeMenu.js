@@ -73,7 +73,7 @@ define([
 				}
 			}
 			console.log("TreeMenu rebuilding currentItem ",this.currentItem)
-			this.model.root = lang.clone(this.currentItem);
+			this.model.root = lang.mixin({},this.currentItem);
 			this.rebuild();
 		},
 		_load: function(){

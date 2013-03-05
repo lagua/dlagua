@@ -27,24 +27,26 @@ define([
 	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/_PagedMixin",
-	"dijit/form/Button",
 	"dojox/mobile/sniff",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dlagua/c/rpc/FeedReader",
-	"dlagua/w/layout/Container",
+	"./Container",
+	"dijit/_TemplatedMixin",
 	"dlagua/c/Subscribable",
+	"dojo/text!./templates/ScrollableServicedPane.html",
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Container,Subscribable){
-return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, _PersvrMixin,_PagedMixin, Subscribable],{
+],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,_PersvrMixin,_PagedMixin,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Container,_TemplatedMixin,Subscribable,templateString){
+return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, _TemplatedMixin, _PersvrMixin,_PagedMixin, Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
 	itemnodesmap:null,
+	templateString:templateString,
 	idProperty:"id",
 	hrProperty:"",
 	filter:"",
@@ -77,14 +79,8 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 	servicetype:"",
 	labelAttr:"title",
 	templateProperty:"path",
-	start:0,
-	count:25,
-	maxCount:Infinity,
-	pageSize:5,
-	total:Infinity,
 	headerLabel:"",
 	footerLabel:"",
-	pageButtons:true,
 	loadingAnimation:true,
 	loadOnCreation:true,
 	currentService:"",
@@ -93,8 +89,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 	filterById:"",
 	reloadTriggerProperties:"path,locale,type",
 	reload:false,
-	_timer:null,
-	autoSkipInterval:300,
 	filterByLocale:true,
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
@@ -125,20 +119,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 		var self = this;
 		var node, params = {};
 		if(this.header) {
-			if(this.pageButtons) {
-				this.prevButton = new Button({
-					label:"Prev",
-					showLabel:false,
-					"class":"dlaguaScrollableServicedPanePrevButton",
-					onMouseDown:function(){
-						self.autoFire(-1);
-					},
-					onClick:function(){
-						self.skip(-1);
-					}
-				});
-				this.fixedHeader.appendChild(this.prevButton.domNode);
-			}
 			node = dom.byId(this.fixedHeader);
 			if(node.parentNode == this.domNode){ // local footer
 				this.isLocalHeader = true;
@@ -150,20 +130,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 		}
 		this.init(params);
 		if(this.footer) {
-			if(this.pageButtons) {
-				this.nextButton = new Button({
-					label:"Next",
-					showLabel:false,
-					"class":"dlaguaScrollableServicedPaneNextButton",
-					onMouseDown:function(){
-						self.autoFire(1);
-					},
-					onClick:function(){
-						self.skip(1);
-					}
-				});
-				this.fixedFooter.appendChild(this.nextButton.domNode);
-			}
 			node = dom.byId(this.fixedFooter);
 			if(node.parentNode == this.domNode){ // local footer
 				this.isLocalFooter = true;
@@ -363,7 +329,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 	},
 	onFlickAnimationEnd:function(e){
 		if(e && e.srcElement){
-			event.stopEvent(e);
+			event.stop(e);
 		}
 		this.stopAnimation();
 		if(this._bounce){
@@ -430,6 +396,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 		fx.fadeIn({node:listItem.containerNode}).play();
 	},
 	onReady: function(){
+		if(this._beingDestroyed) return;
 		console.log("done loading "+this.id);
 		this._loading = false;
 		this.showScrollBar();

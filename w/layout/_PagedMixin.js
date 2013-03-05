@@ -8,16 +8,94 @@ define([
 	"dojo/topic",
 	"dojo/aspect",
 	"dojo/on",
+	"dojo/keys",
 	"dojo/dom-class",
+	"dijit/typematic",
+	"dijit/form/Button",
 	"dojox/timing",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"rql/query",
 	"rql/parser"
-],function(declare,lang,array,win,event,fx,topic,aspect,on,domClass,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
+],function(declare,lang,array,win,event,fx,topic,aspect,on,keys,domClass,typematic,Button,timing,ScrollableServicedPaneItem,rqlQuery,rqlParser) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
+		start:0,
+		count:25,
+		maxCount:Infinity,
+		pageSize:5,
+		total:Infinity,
+		pageButtons:true,
+		pageButtonPlacement:"HF", // prev in Header + next in Footer (default), or both in either Header or Footer
+		// defaultTimeout: Number
+		//		Number of milliseconds before a held arrow key or up/down button becomes typematic
+		defaultTimeout: 500,
+
+		// minimumTimeout: Number
+		//		minimum number of milliseconds that typematic event fires when held key or button is held
+		minimumTimeout: 10,
+
+		// timeoutChangeRate: Number
+		//		Fraction of time used to change the typematic timer between events.
+		//		1.0 means that each typematic event fires at defaultTimeout intervals.
+		//		Less than 1.0 means that each typematic event fires at an increasing faster rate.
+		timeoutChangeRate: 0.90,
+		_timer:null,
+		autoSkipInterval:300,
+		destroyRecursive: function(/*Boolean*/ preserveDom){
+			// summary:
+			//		Destroy the ContentPane and its contents
+			if(this.pageButtons) {
+				this.prevButton.destroy();
+				this.nextButton.destroy();
+			}
+			this.inherited(arguments);
+		},
 		startup:function(){
 			this.inherited(arguments);
 			this._timer = new timing.Timer(this.autoSkipInterval);
+			if(this.pageButtons) {
+				this.prevButton = new Button({
+					label:"Prev",
+					showLabel:false,
+					"class":"dlaguaScrollableServicedPanePrevButton"
+				});
+				this.nextButton = new Button({
+					label:"Next",
+					showLabel:false,
+					"class":"dlaguaScrollableServicedPaneNextButton"
+				});
+				this.own(
+					typematic.addListener(this.nextButton, this.domNode, {
+						keyCode: keys.DOWN_ARROW, 
+						ctrlKey: false, 
+						altKey: false, 
+						shiftKey: false, 
+						metaKey: false
+					}, this, function(){
+						this.skip(1);
+					}, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					typematic.addListener(this.prevButton, this.domNode, {
+						keyCode: keys.UP_ARROW, 
+						ctrlKey: false, 
+						altKey: false, 
+						shiftKey: false, 
+						metaKey: false
+					}, this, function(){
+						this.skip(-1);
+					}, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					this.watch("focused",function(){
+						if(this.focused) {
+							try{ this.domNode.focus(); }catch(e){/*quiet*/}
+						} else {
+							try{ this.domNode.blur(); }catch(e){/*quiet*/}
+						}
+					})
+				);
+				var pp = this.pageButtonPlacement;
+				var prevTrgt = (pp[0]=="H") ? this.fixedHeader : this.fixedFooter;
+				var nextTrgt = (pp[1]=="H") ? this.fixedHeader : this.fixedFooter;
+				prevTrgt.appendChild(this.prevButton.domNode);
+				nextTrgt.appendChild(this.nextButton.domNode);
+			}
 			this.own(
 				this.watch("filter",function(){
 					console.log(this.id,"reloading from filter",this.filter)
@@ -316,6 +394,7 @@ define([
 			this.addChild(listItem,insertIndex);
 		},
 		onReady: function(){
+			if(this._beingDestroyed) return;
 			if(this.loadingAnimation && this.footer) {
 				domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 			}

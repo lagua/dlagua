@@ -34,7 +34,7 @@ var flux = function(val,options) {
 			if(!window.fluxProcessor) return;
 			if(values) {
 				for(var k in options.values) {
-					fluxProcessor.setControlValue(k,values[k]);
+					fluxProcessor.sendValue(k,values[k]);
 				}
 				fluxProcessor.dispatchEventType(targetId,contextInfo)
 			}
