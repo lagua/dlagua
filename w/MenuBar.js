@@ -260,9 +260,6 @@ define([
 				mbi = new PopupMenuBarItem({
 					item:item,
 					label:item[this.labelAttr],
-					onClick:function(){
-						alert(0)
-					},
 					popup:this._addItemRecursive(item)
 				});
 			} else {

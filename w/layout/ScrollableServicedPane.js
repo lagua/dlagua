@@ -24,8 +24,6 @@ define([
 	"dojo/dom-attr",
 	"dojo/aspect",
 	"dojo/Deferred",
-	"dijit/layout/_LayoutWidget",
-	"dijit/_Templated",
 	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/_PagedMixin",
@@ -36,13 +34,13 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dlagua/c/rpc/FeedReader",
+	"dlagua/w/layout/Container",
 	"dlagua/c/Subscribable",
-	"dojo/text!dlagua/w/layout/templates/ScrollableServicedPane.html",
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,_LayoutWidget,_Templated,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Subscribable,templateString){
-return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidget, _Templated, _PersvrMixin,_PagedMixin, Subscribable],{
+],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,_PersvrMixin,_PagedMixin,Button,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Container,Subscribable){
+return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, _PersvrMixin,_PagedMixin, Subscribable],{
 	store:null,
 	stores:{},
 	listitems:null,
@@ -99,7 +97,6 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable,_LayoutWidge
 	autoSkipInterval:300,
 	filterByLocale:true,
 	baseClass:"dlaguaScrollableServicedPane",
-	templateString:templateString,
 	useScrollBar:true,
 	height:"inherit",
 	postscript:function(params, srcNodeRef){
