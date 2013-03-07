@@ -18,6 +18,8 @@ define([
 		init: function(/*Object?*/params){
 			if(this._beingDestroyed) return;
 			this.inherited(arguments);
+			// WSH: add wheel handle after everything
+			if(!has("touch")) this._ch.push(connect.connect(this.containerNode, (!dojo.isMozilla ? "onmousewheel" : "DOMMouseScroll"), this, "onScroll"));
 		},
 		
 		onTouchStart: function(e){

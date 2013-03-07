@@ -11,6 +11,12 @@ define([
 ], function(declare, lang, request, Deferred, when, ioQuery, topic, Subscribable, PlainRest){
 	// module:
 	//   lagua/c/rpc/ExistRest
+	var XMLOptions = {
+		"headers":{
+			"accept":"application/xml",
+			"content-type":"application/xml",
+		}
+	};
 	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Subscribable],{
 		// FIXME: current item should be corresponding item
 		// TODO: but this is a dirty thing anyway...
@@ -53,7 +59,7 @@ define([
 			// TODO: send item to the ref (if toItem=true)
 			// handle item in ref (i.e. Editor)
 			if(!postfix) postfix="";
-			return this.store.get(item.uri+postfix).then(lang.hitch(this,function(res){
+			return this.store.get(item.uri+postfix,XMLOptions).then(lang.hitch(this,function(res){
 				if(item.__deleted) {
 					this.deleteItem(item);
 				} else if(newItem) {
@@ -126,7 +132,7 @@ define([
 			}
 			d.then(function(data){
 				if(!data) return alert("Default instance error!");
-				when(self.store.put(item.uri,data),function(res){
+				when(self.store.put(item.uri,data,XMLOptions),function(res){
 					dd.resolve({id:self.target+item.uri,response:res});
 				},function(res){
 					dd.reject({id:self.target+item.uri,response:res});
@@ -135,6 +141,7 @@ define([
 			return dd;
 		},
 		save: function(data,publish,options) {
+			options = options || {};
 			var _q = ioQuery.objectToQuery(options);
 			var dd = new Deferred();
 			//console.log(this)
@@ -143,12 +150,12 @@ define([
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
-			var url = item.uri;
+			var url = options.uri || item.uri;
 			// FIXME: what needs to get called back to where?
 			if(!publish) url += this.postfix;
 			if(_q) url += "?"+_q;
 			console.log(url)
-			return this.store.put(url,data);
+			return this.store.put(url,data,XMLOptions);
 		},
 		deleteItem:function(item) {
 			var dd = new Deferred();
