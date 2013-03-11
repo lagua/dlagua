@@ -257,7 +257,11 @@ define([
 		_addItem: function(item) {
 			var self = this;
 			var mbi;
-			if(this.maxDepth>2 && item.children && item.children.length) {
+			var children = item.children && item.children.length ? item.children : [];
+			children = array.filter(children,function(child){
+				return !child.hidden;
+			});
+			if(this.maxDepth>2 && children.length) {
 				mbi = new PopupMenuBarItem({
 					item:item,
 					label:item[this.labelAttr],
