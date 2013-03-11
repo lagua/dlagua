@@ -108,11 +108,23 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				reqs.push(type.replace(/\./g,"/"));
 			}
 		});
-		// TODO: wait for requires to return
-		if(reqs.length) require(reqs);
 		tpl = div.innerHTML.toString();
 		tpl = tpl.replace(/\{\{&gt;/g,"{{>");
-		return {tpl:tpl,partials:partials};
+		var d = new Deferred();
+		if(reqs.length) {
+			require(reqs,function(){
+				d.resolve({
+					tpl:tpl,
+					partials:partials
+				});
+			})
+		} else {
+			d.resolve({
+				tpl:tpl,
+				partials:partials
+			});
+		}
+		return d;
 	}
 });
 

@@ -2,6 +2,7 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
+	"dojo/aspect",
 	"dojo/topic",
 	"dojo/request",
 	"dijit/TooltipDialog",
@@ -12,7 +13,7 @@ define([
 	"dlagua/c/Subscribable",
 	"dforma/Group",
 	"dforma/Label"
-],function(declare,lang,topic,request,TooltipDialog,DropDownButton,Button,Select,CheckBox,Subscribable,Group,Label){
+],function(declare,lang,array,aspect,topic,request,TooltipDialog,DropDownButton,Button,Select,CheckBox,Subscribable,Group,Label){
 
 return declare("dlagua.w.form.OptionDropDownButton",[DropDownButton],{
 	baseClass:"dlaguaOptionDropDownButton",
@@ -38,7 +39,8 @@ return declare("dlagua.w.form.OptionDropDownButton",[DropDownButton],{
 		var widgetid = this.id;
 		this.contentgroup = new Group({
 			"class":"dlaguaOptionDropDownContent"
-		}).placeAt(this.dropDown.containerNode);
+		});
+		this.contentgroup.placeAt(this.dropDown.containerNode);
 		for(var k in options) {
 			var ops = options[k];
 			var j,l;
