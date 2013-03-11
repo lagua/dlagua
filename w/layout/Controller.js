@@ -41,6 +41,7 @@ define([
 				textDir: page.textDir || "ltr",
 				showLabel: true,
 				iconClass: page.iconClass,
+				closeButton: false,
 				title: page.title,
 				page: page
 			});
@@ -57,7 +58,7 @@ define([
 		},
 		
 		selectChild:function(c){
-			console.log(c)
+			topic.publish("/components/"+this.id,c);
 		},
 		
 		closeChild:function(){
@@ -90,22 +91,15 @@ define([
 		},
 		_rebuild:function(){
 			this.destroyDescendants();
-			if(this.currentItem.__depth <= this.loadChildrenDepth) {
-				children = this.loadChildrenDepth==this.currentItem.__depth ? this.currentItem.children : [this.currentItem];
-				children = array.filter(children,function(c){
-					return !c.hidden;
-				});
-				if(!children.length) {
-					children = [this.currentItem];
-				}
-			} else {
-				children = this.currentItem.__parent.children;
-				children = array.filter(children,function(c){
-					return !c.hidden;
-				});
+			children = this.currentItem.children;
+			children = array.filter(children,function(c){
+				return !c.hidden;
+			});
+			if(!children.length) {
+				children = [this.currentItem];
 			}
-			//array.forEach(children,lang.hitch(this,this._addTab));
 			this.onStartup({children:children});
+			this.getParent().layout();
 		}
 	});
 
