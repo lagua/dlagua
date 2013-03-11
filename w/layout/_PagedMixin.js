@@ -170,14 +170,17 @@ define([
 			if(!templateDir) templateDir = this.templateDir;
 			var template = this.getTemplate(templateDir);
 			this._fetchTpl(template).then(lang.hitch(this,function(tpl){
-				var tplo = this.parseTemplate(tpl);
-				if(child && child!="childTemplate"){
-					child.applyTemplate(tplo.tpl,tplo.partials);
-				} else {
-					array.forEach(this.listitems,function(li){
-						li.applyTemplate(tplo.tpl,tplo.partials);
-					});
-				}
+				this.parseTemplate(tpl).then(function(tplo){
+					if(child && child!="childTemplate"){
+						child.applyTemplate(tplo.tpl,tplo.partials);
+					} else {
+						// FIXME: is this really permanent?
+						this._tplo = tplo;
+						array.forEach(this.listitems,function(li){
+							li.applyTemplate(tplo.tpl,tplo.partials);
+						});
+					}
+				});
 			}));
 		},
 		selectItemByCurrentId: function(){
@@ -377,9 +380,7 @@ define([
 			aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 				// as this can take a while, listItem may be destroyed in the meantime
 				if(this._beingDestroyed || listItem._beingDestroyed) return;
-				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-					var tplo = this.parseTemplate(tpl);
-					listItem.applyTemplate(tplo.tpl,tplo.partials);
+					listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
 					fx.fadeIn({node:listItem.containerNode}).play();
 					this.childrenReady++;
 					if(this.childrenReady == items.length) {
@@ -389,7 +390,6 @@ define([
 						}),10);
 					}
 					this.itemnodesmap[item[this.idProperty]] = listItem;
-				}));
 			}));
 			this.addChild(listItem,insertIndex);
 		},
