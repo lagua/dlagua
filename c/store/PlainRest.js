@@ -29,7 +29,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 		},
 		get: function(id, options){
 			options = options || {};
-			var headers = options.headers || {}
+			var headers = options.headers || {};
 			return request(this.target + id,{
 				headers:headers,
 				query:this._query,
@@ -38,14 +38,13 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 		},
 		put: function(id, data, options){
 			options = options || {};
-			var headers = options.headers || {}
+			var headers = lang.mixin(options.headers || {},{
+				"If-Match": options.overwrite === true ? "*" : null,
+				"If-None-Match": options.overwrite === false ? "*" : null
+			});
 			return request.put(this.target + id,{
 				data: data,
-				headers:headers,
-				headers:{
-					"If-Match": options.overwrite === true ? "*" : null,
-					"If-None-Match": options.overwrite === false ? "*" : null
-				}
+				headers:headers
 			});
 		},
 		post: function(id, data, options){
