@@ -93,6 +93,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
 	height:"inherit",
+	_tplo:null,
 	postscript:function(params, srcNodeRef){
 		var args = arguments;
 		if(window.fluxProcessor) {
@@ -282,25 +283,31 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 		if(this.loadingAnimation && this.footer) {
 			domClass.add(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
+		this._tplo = {};
 		this.selectedIndex = 0;
 		this.selectedItem = null;
 		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
-			this._getSchema().then(lang.hitch(this,function(){
-				var q = this.createQuery();
-				var start = this.start;
-				this.start += this.count;
-				var results = this.results = this.store.query(q,{
-					start:start,
-					count:this.count,
-					useXDomain:this.useXDomain
-				});
-				results.total.then(lang.hitch(this,function(total){
-					this.total = total;
-					if(total===0 || isNaN(total)) this.onReady();
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+					this._tplo = tplo;
+					this._getSchema().then(lang.hitch(this,function(){
+						var q = this.createQuery();
+						var start = this.start;
+						this.start += this.count;
+						var results = this.results = this.store.query(q,{
+							start:start,
+							count:this.count,
+							useXDomain:this.useXDomain
+						});
+						results.total.then(lang.hitch(this,function(total){
+							this.total = total;
+							if(total===0 || isNaN(total)) this.onReady();
+						}));
+						results.forEach(lang.hitch(this,this.addItem));
+					}));
 				}));
-				results.forEach(lang.hitch(this,this.addItem));
 			}));
 		} else if(this.servicetype=="atom") {
         	var fr = new FeedReader();
