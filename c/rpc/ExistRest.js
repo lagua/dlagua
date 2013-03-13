@@ -14,7 +14,7 @@ define([
 	var XMLOptions = {
 		"headers":{
 			"Accept":"application/xml",
-			"Content-Type":"application/xml",
+			"Content-Type":"application/xml"
 		}
 	};
 	var ExistRest = declare("dlagua.c.rpc.ExistRest",[Subscribable],{
@@ -142,16 +142,16 @@ define([
 		},
 		save: function(data,publish,options) {
 			options = options || {};
-			var url = options.uri || item.uri;
-			if(options.uri) delete options.uri;
-			var _q = ioQuery.objectToQuery(options);
-			var dd = new Deferred();
-			//console.log(this)
 			var item = this.mappedItem;
 			if(!item) {
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
+			var url = options.uri || item.uri;
+			if(options.uri) delete options.uri;
+			var _q = ioQuery.objectToQuery(options);
+			var dd = new Deferred();
+			//console.log(this)
 			// FIXME: what needs to get called back to where?
 			if(!publish) url += this.postfix;
 			if(_q) url += "?"+_q;
