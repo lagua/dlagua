@@ -59,7 +59,8 @@ define([
 			// TODO: send item to the ref (if toItem=true)
 			// handle item in ref (i.e. Editor)
 			if(!postfix) postfix="";
-			return this.store.get(item.uri+postfix,XMLOptions).then(lang.hitch(this,function(res){
+			var d = new Deferred();
+			this.store.get(item.uri+postfix,XMLOptions).then(lang.hitch(this,function(res){
 				if(item.__deleted) {
 					this.deleteItem(item);
 				} else if(newItem) {
@@ -69,15 +70,18 @@ define([
 				} else {
 					this.ref.set(this.refProperty,this.target+item.uri+postfix);
 				}
+				d.resolve();
 			}),(lang.hitch(this,function(err){
 				if(postfix=="" && !item.__deleted && !newItem) {
 					item.__new = true;
 					this.ref.set("hasNoPage",true);
 					this.ref.set(this.refProperty,this.target+item.uri+postfix);
 				}
+				d.reject();
 			})));
+			return d;
 		},
-		onChange: function(args,postfix){
+		onChange: function(property,changeSet,postfix){
 			if(postfix!=="") postfix = this.postfix;
 			var newItem = this.itemMapper(this.changeSet[0],postfix);
 			var oldItem = this.itemMapper(this.changeSet[1],postfix);
@@ -90,9 +94,9 @@ define([
 			if(postfix==="") return;
 			var self = this;
 			d.then(function(){
-				if(oldItem.__deleted || moved) self.onChange(null,"");
+				if(oldItem.__deleted || moved) self.onChange(property,changeSet,"");
 			},function(){
-				if(!oldItem.__deleted && !moved) self.onChange(null,"");
+				if(!oldItem.__deleted && !moved) self.onChange(property,changeSet,"");
 			});
 		},
 		postscript: function(mixin){
