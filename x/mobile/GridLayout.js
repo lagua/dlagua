@@ -5,17 +5,21 @@ define([
 "dojo/on",
 "dojo/sniff",
 "dojo/dom",
+"dojo/dom-geometry",
 "dojo/dom-class",
 "dojo/dom-construct",
 "dojo/dom-style",
-"dojox/mobile/GridLayout"
- ], function(declare, lang, array, on, has, dom, domClass, domConstruct, domStyle, GridLayout){
-	return declare("dlagua/x/mobile/GridLayout",[GridLayout],{
+"dojox/mobile/IconMenu"
+ ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu){
+	return declare("dlagua.x.mobile.GridLayout",IconMenu,{
 		cols:0,
 		rows:0,
+		childItemClass: "mblGridItem",
+		baseClass: "mblGridLayout",
+		tag: "div",
+		_tags: "div",
 		gridChildren:null,
 		size:100,
-		maxPrio:99,
 		allowFill:false,
 		allowOverlap:false,
 		startup: function(){
@@ -50,8 +54,7 @@ define([
 			});
 			return ar;
 		},
-		getChildByIndex:function(index){
-			var children = this.gridChildren;
+		getChildByIndex:function(children,index){
 			for(var i=0,z=children.length;i<z;i++) {
 				if(children[i].index==index) return children[i];
 			}
@@ -67,22 +70,16 @@ define([
 				if(widget.hasOwnProperty(attr)) widgetProps[attr] = widget[attr];
 			});
 			widgetProps = lang.mixin({
-				index: insertIndex ? insertIndex : this.gridChildren.length,
+				index: insertIndex ? insertIndex : this.gridChildren.length+1,
 				colSpan: 1,
 				rowSpan: 1,
 				priority:999,
 				hAlign:"trailing"
 			},widgetProps);
 			if(widgetProps.tier && array.indexOf(this.gridTiers,widgetProps.tier)===-1) this.gridTiers.push(widgetProps.tier);
-			this.gridChildren[widgetProps.index] = widgetProps;
+			this.gridChildren.push(widgetProps);
 		},
-		refresh:function(){
-			if(!this._started) return;
-			var p = this.getParent();
-			if(p){
-				domClass.remove(p.domNode, "mblSimpleDialogDecoration");
-			}
-			// reset items
+		resetChildren:function(){
 			var children = this.getChildren();
 			for(var i = 0; i < children.length; i++){
 				var item = children[i];
@@ -98,6 +95,15 @@ define([
 				domClass.remove(item.domNode, this.childItemClass + "FirstRow");
 				domClass.remove(item.domNode, this.childItemClass + "LastRow");
 			}
+		},
+		refresh:function(){
+			if(!this._started) return;
+			var p = this.getParent();
+			if(p){
+				domClass.remove(p.domNode, "mblSimpleDialogDecoration");
+			}
+			// reset DOM
+			this.resetChildren();
 			var children = lang.clone(this.gridChildren);
 			var matrix = this.calcMatrix(children);
 			if(matrix) {
@@ -108,30 +114,59 @@ define([
 		},
 		calcMatrix:function(children){
 			var tierMatrices = [];
+			// process tiers
 			array.forEach(this.gridTiers,function(tier){
 				children = array.filter(children,function(c){
 					return c.tier == tier;
 				});
 				var matrix = this.calcTier(children);
-				if(!matrix) {
-					var allResized = false;
-					while(!allResized && !matrix) {
-						children = this.sortBy(children,["-priority","-region","-hAlign"]);
-						var i = 0;
-						for(;i<children.length;i++){
-							var c = children[i];
-							if(c.minColSpan && c.colSpan>c.minColSpan) {
-								children[i].colSpan--;
-								break;
-							}
+				var allResized = false;
+				while(!allResized && !matrix) {
+					children = this.sortBy(children,["-priority","-region","-hAlign"]);
+					var i = 0;
+					for(;i<children.length;i++){
+						var c = children[i];
+						if(c.minColSpan && c.colSpan>c.minColSpan) {
+							children[i].colSpan--;
+							break;
 						}
-						matrix = this.calcTier(children);
-						if(i==children.length) allResized = true;
 					}
+					matrix = this.calcTier(children);
+					if(i==children.length) allResized = true;
 				}
+				// if there still is no matrix, see if children may be resized to buttons
+				// this means they should be placed in a certain region designated as button container
+				if(matrix) matrix = this.placeCenter(lang.clone(matrix),children);
 				if(matrix) tierMatrices = tierMatrices.concat(matrix);
 			},this);
 			return tierMatrices;
+		},
+		placeCenter:function(matrix,children){
+			var center = [], leading = [];
+			array.forEach(children,function(c){
+				if(c.hAlign=="center" && center.indexOf(c.index)===-1) center.push(c.index);
+				if(c.hAlign=="leading" && leading.indexOf(c.index)===-1) leading.push(c.index);
+			});
+			array.forEach(matrix,function(row,rc){
+				array.forEach(center,function(c){
+					var firstc = row.indexOf(c);
+					if(firstc>-1) {
+						// find last leading
+						var lastl = -1;
+						array.forEach(leading,function(l){
+							var index = array.lastIndexOf(row,l);
+							if(index>lastl) lastl = index;
+						});
+						if(lastl>-1) {
+							var lastc = array.lastIndexOf(row,c);
+							var args = [lastl-lastc, 0].concat(row.splice(firstc,lastc-firstc+1));
+							Array.prototype.splice.apply(row, args);
+							matrix[rc] = row;
+						}
+					}
+				});
+			});
+			return matrix;
 		},
 		calcTier: function(children){
 			var self = this;
@@ -139,47 +174,42 @@ define([
 			var rowIdx=0;
 			var matrix = [];
 			var colspan, rowspan;
-			// since this calcs only tier, start with 1
 			var nRows = 1;
 			var nCols = this.cols;
 			var emptyX=0,emptyY=0;
 			children = this.sortBy(children,["priority","hAlign","colSpan","rowSpan","index"]);
 			var rc,cc;
 			var maxCols = 1;
-			var mid = Math.round(nCols/2)+1;
 			var updateRowCount = function(h) {
 				if(!h) h = 1;
 				rowIdx+=h;
 			}
 			var updateColCount = function(w){
-				if(!w) {
+				if(w===undefined) {
 					// reset
-					colIdx = mid-1;
+					colIdx = 0;
 				} else {
-					if(colIdx<mid) {
-						colIdx-=w;
-						if(colIdx<0) colIdx = mid;
-					} else {
-						colIdx+=w;
-					}
+					colIdx+=w;
 				}
 			}
+			// since this calcs only tier, get max of tier
 			for(var i = 0; i < children.length; i++){
 				maxCols = Math.max(maxCols,children[i].colSpan);
+				nRows = Math.max(nRows,children[i].rowSpan);
 			}
+			maxCols = Math.min(maxCols, nCols)
 			updateColCount();
 			for(var i = 0; i < children.length; i++){
 				var item = children[i];
 				colspan = item.colSpan;
 				rowspan = item.rowSpan;
-				var beforeMid = colIdx<mid;
 				// will it fit?
 				var fit = function(){
 					// stop trying if no more rows
 					// or less columns than max width
 					var cc=0, rc=0, range = [], inrange = false;
-					beforeMid = colIdx<mid;
-					if(rowIdx>=nRows || colspan==maxCols) return;
+					if(rowIdx+rowspan>nRows) return;
+					if(colspan==maxCols) return true;
 					if(colIdx+colspan>nCols) {
 						updateColCount();
 						updateRowCount();
@@ -192,9 +222,8 @@ define([
 						range = matrix[rowIdx].slice(colIdx+colspan,nCols);
 						for(cc=0;cc<range.length;cc++){
 							if(range[cc]!==false) {
-								var c = self.getChildByIndex(range[cc]);
-								if(c && ((item.hAlign=="trailing" && c.hAlign && c.hAlign=="center")
-									|| (item.hAlign==c.hAlign && item.priority>c.priority))) {
+								var c = self.getChildByIndex(children,range[cc]);
+								if(c && item.hAlign==c.hAlign && item.priority>c.priority) {
 									updateColCount(1);
 									inrange = true;
 									break;
@@ -209,13 +238,13 @@ define([
 							updateColCount(1);
 							inrange = true;
 						} else {
-							range = beforeMid ? matrix[rowIdx].slice(colIdx-colspan,colIdx) : matrix[rowIdx].slice(colIdx,colIdx+colspan);
-							for(cc=0;cc<range.length;cc++){
-								if(range[cc]!==false) {
-									updateColCount(range.length);
-									inrange = true;
-									break;
-								}
+							range = matrix[rowIdx].slice(colIdx,colIdx+colspan);
+							range = array.filter(range,function(cc){
+								return cc!==false;
+							});
+							if(range.length>0) {
+								updateColCount(range.length);
+								inrange = true;
 							}
 						}
 					}
@@ -245,9 +274,9 @@ define([
 						}
 					}
 					if(inrange) {
-						fit();
+						return fit();
 					} else {
-						return;
+						return true;
 					}
 				}
 				if(this.allowFill) {
@@ -262,27 +291,14 @@ define([
 					colIdx = emptyX;
 					rowIdx = emptyY;
 				}
-				if(beforeMid) colIdx -= Math.floor(colspan/2);
 				var oldRow = rowIdx;
-				fit();
-				if(oldRow!=rowIdx) {
-					// stuff didn't fit
-					return;
-				}
-				/*if(oldRow!=rowIdx && item.minColSpan && !item._curColSpan) {
-					// stuff didn't fit
-					// try refit with minColSpan
-					colspan = item._curColSpan = item.minColSpan;
-					if(colspan==1 && item.minRowSpan) rowspan = item._curRowSpan = item.minRowSpan;
-					rowIdx = oldRow;
-					i--;
-					continue;
-				}*/
+				var fits = fit();
+				// stuff didn't fit
+				if(oldRow!=rowIdx ||!fits) return ;
 				// update matrix
 				var checkRow = function(rc){
 					if(!matrix[rc]) {
 						matrix[rc] = [];
-						self.rows = nRows = matrix.length;
 						for(var c = 0; c<nCols; c++) {
 							matrix[rc][c] = false;
 						}
@@ -294,7 +310,7 @@ define([
 						matrix[rc][cc] = item.index;
 					}
 				}
-				updateColCount(beforeMid ? 1 : colspan);
+				updateColCount(colspan);
 				if(colIdx>=nCols) {
 					updateColCount();
 					updateRowCount();
@@ -305,18 +321,26 @@ define([
 		sortChildren:function(matrix,children){
 			var order = [];
 			for(var rc = 0; rc<this.rows;rc++) {
-				for(var cc=0;cc<this.cols;cc++) {
-					var x = matrix[rc] ? matrix[rc][cc] : false;
-					if(x!==undefined && x!==false && order.indexOf(x)===-1) order.push(x);
-				}
+				order = order.concat(matrix[rc]);
 			}
 			var childrenSorted = [];
-			for(var i=0; i<children.length; i++) {
-				var child = children[i];
-				childrenSorted[order.indexOf(child.index)] = child;
+			for(var i=0; i<order.length;i++) {
+				var c = order[i];
+				if(c!==false && c!=undefined && childrenSorted.indexOf(c)===-1) childrenSorted.push(c);
 			}
+			var domChildren = this.getChildren();
+			var prevId;
 			for(var i=0;i<childrenSorted.length;i++){
-				domConstruct.place(dom.byId(childrenSorted[i].id),this.containerNode);
+				var child = this.getChildByIndex(children,childrenSorted[i]);
+				var id = child.id;
+				if(domChildren[i].id != id) {
+					if(!prevId) {
+						domConstruct.place(dom.byId(id),this.containerNode,"first");
+					} else {
+						domConstruct.place(dom.byId(id),dom.byId(prevId),"after");
+					}
+				}
+				prevId = id;
 			}
 		},
 		printMatrix:function(matrix){
@@ -336,8 +360,10 @@ define([
 		matrixToDOM:function(matrix,children){
 			var nCols = this.cols;
 			var nRows = this.rows;
-			var size = this.size;
+			var self = this;
 			children = this.sortBy(children,["index"]);
+			var box = domGeometry.position(this.containerNode);
+			var size = box.w/nCols;			
 			var w = Math.floor(size/nCols);
 			var _w = size - w*nCols;
 			var h = Math.floor(size / nRows);
@@ -350,7 +376,7 @@ define([
 				if(!matrix[rc]) continue;
 				for(var cc = 0;cc<nCols;cc++){
 					var n = matrix[rc][cc];
-					var item = n!== false ? children[n] : null;
+					var item = n!== false ? this.getChildByIndex(children,n) : null;
 					if(item && !item._placed) {
 						var first = cc == 0;
 						var last = cc == nCols-1;
@@ -358,12 +384,14 @@ define([
 						var rowspan = item.rowSpan;
 						var iw = w*colspan;
 						var ih = h*rowspan;
-						iw = iw * nCols;
-						ih = ih * nRows;
+						iw = size * colspan;
+						ih = size * rowspan;
 						item._placed = [rc,cc];
+						/*
 						var range = [];
 						var before = false;
 						var inline = false;
+						
 						if(rowspan>1) {
 							// look in next row if there's anything
 							range = matrix[rc+1] ? matrix[rc+1].slice(0,nCols) : [];
@@ -383,7 +411,8 @@ define([
 									if(range[j]!==false) {
 										// ignore blocks of my size and larger
 										var nxt = range[j];
-										if(!children[nxt].rowSpan || children[nxt].rowSpan<rowspan) {
+										var nxtc = this.getChildByIndex(children,nxt);
+										if(nxtc.rowSpan<rowspan) {
 											smaller.push(nxt);
 										} else {
 											bigger.push(nxt);
@@ -401,7 +430,8 @@ define([
 											if(bigger.indexOf(range[j])>-1) continue;
 											if(range[j]!==false) {
 												// ignore blocks already placed
-												if(!children[range[j]]._placed) {
+												var c = this.getChildByIndex(children,range[j]);
+												if(!c._placed) {
 													inline = rowspan-i;
 													break;
 												}
@@ -417,8 +447,8 @@ define([
 						var blockBefore = function(cc){
 							if(cc<1) return;
 							var prev = matrix[rc][cc-1];
-							var prevItem = children[prev];
-							var prevcolspan = prevItem ? prevItem.colSpan : 0;
+							var prevItem = self.getChildByIndex(children,prev);
+							var prevcolspan = prevItem.colSpan;
 							if(prevItem && prevcolspan) {
 								if(matrix[rc-1] && matrix[rc-1][cc-1]===prev) {
 									// if prev is first, make this first
@@ -444,13 +474,14 @@ define([
 									break;
 								}
 							}
-						}
+						}*/
 						var widget = dom.byId(item.id);
 						domStyle.set(widget, {
-							width: iw + (last ? _w*nCols/2 : 0) + "px",
-							marginLeft: (first ? _w*nCols/2 : 0) + (colsTaken * w * nCols) + "px",
-							height: ih + "px",
-							marginBottom: inline ? inline * -size+"px" : 0
+							width: iw + "px",
+							position: "absolute",
+							top: item._placed[0]*size+"px",
+							left: item._placed[1]*size+"px",
+							height: ih + "px"
 						});
 						domClass.toggle(widget, this.childItemClass + "FirstColumn", first);
 						domClass.toggle(widget, this.childItemClass + "LastColumn", last);
