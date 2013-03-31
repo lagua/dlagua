@@ -54,7 +54,8 @@ define([
 			});
 			return ar;
 		},
-		getChildByIndex:function(children,index){
+		getChildByIndex:function(index){
+			var children = this.gridChildren;
 			for(var i=0,z=children.length;i<z;i++) {
 				if(children[i].index==index) return children[i];
 			}
@@ -108,9 +109,28 @@ define([
 			var matrix = this.calcMatrix(children);
 			if(matrix) {
 				this.printMatrix(matrix);
-				this.sortChildren(matrix,children);
-				this.matrixToDOM(matrix,children);
+				this.sortChildren(matrix);
+				this.matrixToDOM(matrix);
 			}
+		},
+		resizeFitTier:function(children,nRows,maxCols){
+			var matrix = this.calcTier(children,nRows,maxCols);
+			if(matrix) return matrix;
+			var allResized = false;
+			while(!allResized && !matrix) {
+				children = this.sortBy(children,["-priority","-region","-hAlign"]);
+				var i = 0;
+				for(;i<children.length;i++){
+					var c = children[i];
+					if(c.minColSpan && c.colSpan>c.minColSpan) {
+						children[i].colSpan--;
+						break;
+					}
+				}
+				matrix = this.calcTier(children,nRows,maxCols);
+				if(i==children.length) allResized = true;
+			}
+			return matrix;
 		},
 		calcMatrix:function(children){
 			var tierMatrices = [];
@@ -119,20 +139,21 @@ define([
 				children = array.filter(children,function(c){
 					return c.tier == tier;
 				});
-				var matrix = this.calcTier(children);
-				var allResized = false;
-				while(!allResized && !matrix) {
-					children = this.sortBy(children,["-priority","-region","-hAlign"]);
-					var i = 0;
-					for(;i<children.length;i++){
-						var c = children[i];
-						if(c.minColSpan && c.colSpan>c.minColSpan) {
-							children[i].colSpan--;
-							break;
-						}
+				var matrix, maxCols = 1, maxRows = 1;
+				for(var i = 0; i < children.length; i++){
+					maxCols = Math.max(maxCols,children[i].colSpan);
+					maxRows = Math.max(maxRows,children[i].rowSpan);
+				}
+				matrix = this.resizeFitTier(lang.clone(children),maxRows,maxCols);
+				if(!matrix) {
+					// increase with minRows
+					var minRows = maxRows;
+					for(var i = 0; i < children.length; i++){
+						minRows = Math.min(minRows,children[i].rowSpan);
 					}
-					matrix = this.calcTier(children);
-					if(i==children.length) allResized = true;
+					if(maxRows+minRows<this.rows) {
+						matrix = this.resizeFitTier(lang.clone(children),maxRows+minRows,maxCols);
+					}
 				}
 				// if there still is no matrix, see if children may be resized to buttons
 				// this means they should be placed in a certain region designated as button container
@@ -168,21 +189,20 @@ define([
 			});
 			return matrix;
 		},
-		calcTier: function(children){
+		calcTier: function(children,nRows,maxCols){
 			var self = this;
 			var colIdx = 0;
 			var rowIdx=0;
 			var matrix = [];
 			var colspan, rowspan;
-			var nRows = 1;
 			var nCols = this.cols;
 			var emptyX=0,emptyY=0;
 			children = this.sortBy(children,["priority","hAlign","colSpan","rowSpan","index"]);
 			var rc,cc;
-			var maxCols = 1;
 			var updateRowCount = function(h) {
 				if(!h) h = 1;
 				rowIdx+=h;
+				checkRow(rc);
 			}
 			var updateColCount = function(w){
 				if(w===undefined) {
@@ -192,11 +212,15 @@ define([
 					colIdx+=w;
 				}
 			}
-			// since this calcs only tier, get max of tier
-			for(var i = 0; i < children.length; i++){
-				maxCols = Math.max(maxCols,children[i].colSpan);
-				nRows = Math.max(nRows,children[i].rowSpan);
+			var checkRow = function(rc){
+				if(!matrix[rc]) {
+					matrix[rc] = [];
+					for(var c = 0; c<nCols; c++) {
+						matrix[rc][c] = false;
+					}
+				}
 			}
+			// since this calcs only tier, get max of tier
 			maxCols = Math.min(maxCols, nCols)
 			updateColCount();
 			for(var i = 0; i < children.length; i++){
@@ -209,6 +233,7 @@ define([
 					// or less columns than max width
 					var cc=0, rc=0, range = [], inrange = false;
 					if(rowIdx+rowspan>nRows) return;
+					// just escape when the largest item is placed
 					if(colspan==maxCols) return true;
 					if(colIdx+colspan>nCols) {
 						updateColCount();
@@ -222,7 +247,7 @@ define([
 						range = matrix[rowIdx].slice(colIdx+colspan,nCols);
 						for(cc=0;cc<range.length;cc++){
 							if(range[cc]!==false) {
-								var c = self.getChildByIndex(children,range[cc]);
+								var c = self.getChildByIndex(range[cc]);
 								if(c && item.hAlign==c.hAlign && item.priority>c.priority) {
 									updateColCount(1);
 									inrange = true;
@@ -294,16 +319,8 @@ define([
 				var oldRow = rowIdx;
 				var fits = fit();
 				// stuff didn't fit
-				if(oldRow!=rowIdx ||!fits) return ;
+				if(!fits) return;
 				// update matrix
-				var checkRow = function(rc){
-					if(!matrix[rc]) {
-						matrix[rc] = [];
-						for(var c = 0; c<nCols; c++) {
-							matrix[rc][c] = false;
-						}
-					}
-				}
 				for(cc = colIdx; cc<colIdx+colspan; cc++) {
 					for(rc=rowIdx;rc<rowIdx+rowspan;rc++) {
 						checkRow(rc);
@@ -318,7 +335,7 @@ define([
 			}
 			return matrix;
 		},
-		sortChildren:function(matrix,children){
+		sortChildren:function(matrix){
 			var order = [];
 			for(var rc = 0; rc<this.rows;rc++) {
 				order = order.concat(matrix[rc]);
@@ -331,7 +348,7 @@ define([
 			var domChildren = this.getChildren();
 			var prevId;
 			for(var i=0;i<childrenSorted.length;i++){
-				var child = this.getChildByIndex(children,childrenSorted[i]);
+				var child = this.getChildByIndex(childrenSorted[i]);
 				var id = child.id;
 				if(domChildren[i].id != id) {
 					if(!prevId) {
@@ -339,6 +356,7 @@ define([
 					} else {
 						domConstruct.place(dom.byId(id),dom.byId(prevId),"after");
 					}
+					console.log("sorted")
 				}
 				prevId = id;
 			}
@@ -357,124 +375,29 @@ define([
 				console.log(s);
 			}
 		},
-		matrixToDOM:function(matrix,children){
+		matrixToDOM:function(matrix){
 			var nCols = this.cols;
 			var nRows = this.rows;
 			var self = this;
-			children = this.sortBy(children,["index"]);
 			var box = domGeometry.position(this.containerNode);
-			var size = box.w/nCols;			
-			var w = Math.floor(size/nCols);
-			var _w = size - w*nCols;
-			var h = Math.floor(size / nRows);
-			var _h = size - h*nRows;
-			if(has("ie")){
-				_w--;
-				_h--;
-			}
+			var size = Math.floor(box.w/nCols);
+			var children = [];
+			console.log(box.w,nCols,size)
 			for(var rc = 0;rc<nRows;rc++){
 				if(!matrix[rc]) continue;
 				for(var cc = 0;cc<nCols;cc++){
 					var n = matrix[rc][cc];
-					var item = n!== false ? this.getChildByIndex(children,n) : null;
+					var item = n!== false ? (children[n] ? children[n] : lang.clone(this.getChildByIndex(n))) : null;
 					if(item && !item._placed) {
+						children[n] = item;
 						var first = cc == 0;
 						var last = cc == nCols-1;
-						var colspan = item.colSpan;
+						var lasti = matrix[rc].lastIndexOf(n)+1;
+						var colspan = lasti-cc;
 						var rowspan = item.rowSpan;
-						var iw = w*colspan;
-						var ih = h*rowspan;
-						iw = size * colspan;
-						ih = size * rowspan;
+						var iw = size * colspan;
+						var ih = size * rowspan;
 						item._placed = [rc,cc];
-						/*
-						var range = [];
-						var before = false;
-						var inline = false;
-						
-						if(rowspan>1) {
-							// look in next row if there's anything
-							range = matrix[rc+1] ? matrix[rc+1].slice(0,nCols) : [];
-							for(var j=0;j<range.length;j++) {
-								if(range[j]!==false) {
-									before = j<cc;
-									inline = rowspan-1;
-									break;
-								}
-							}
-							// if nothing before me, check if there is anything after me
-							if(inline && !before) {
-								var smaller = [];
-								var bigger = [];
-								range = matrix[rc] ? matrix[rc].slice(cc+colspan,nCols) : [];
-								for(var j=0;j<range.length;j++) {
-									if(range[j]!==false) {
-										// ignore blocks of my size and larger
-										var nxt = range[j];
-										var nxtc = this.getChildByIndex(children,nxt);
-										if(nxtc.rowSpan<rowspan) {
-											smaller.push(nxt);
-										} else {
-											bigger.push(nxt);
-										}
-									}
-								}
-								// no equal or larger blocks after me
-								if(!smaller.length) {
-									inline = false;
-									// check if there is anything starting below (overlapping)
-									for(var i=0;i<rowspan;i++){
-										range = matrix[rc+i] ? matrix[rc+i].slice(cc+colspan,nCols) : [];
-										for(var j=0;j<range.length;j++) {
-											// skip items in same row
-											if(bigger.indexOf(range[j])>-1) continue;
-											if(range[j]!==false) {
-												// ignore blocks already placed
-												var c = this.getChildByIndex(children,range[j]);
-												if(!c._placed) {
-													inline = rowspan-i;
-													break;
-												}
-											}
-										}
-										if(inline!==false) break;
-									}
-								}
-							}
-						}
-						var colsTaken = 0;
-						// block was before, I'm on its nth row
-						var blockBefore = function(cc){
-							if(cc<1) return;
-							var prev = matrix[rc][cc-1];
-							var prevItem = self.getChildByIndex(children,prev);
-							var prevcolspan = prevItem.colSpan;
-							if(prevItem && prevcolspan) {
-								if(matrix[rc-1] && matrix[rc-1][cc-1]===prev) {
-									// if prev is first, make this first
-									if(matrix[rc][0]===prev) first = true;
-									colsTaken += prevcolspan;
-									blockBefore(cc-prevcolspan);
-								}
-							} else if(prev===false) {
-								colsTaken++;
-								if(cc==1) first = true;
-								blockBefore(cc-1);
-							}
-						}
-						blockBefore(cc);
-						// empty before?
-						if(!colsTaken && cc>0) {
-							var j = cc-1;
-							while(matrix[rc] && matrix[rc][j]===false){
-								colsTaken++;
-								j--;
-								if(j==0) {
-									first = true;
-									break;
-								}
-							}
-						}*/
 						var widget = dom.byId(item.id);
 						domStyle.set(widget, {
 							width: iw + "px",
