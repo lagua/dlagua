@@ -77,7 +77,7 @@ dojo.declare("dlagua.w.layout._XFormMixin",[],{
 		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
 			if(!self.containerNode || self.listitems.length===0 || !self.xformTarget) return;
 			var uri = xmlEvent.contextInfo.uri;
-			if(uri) uri = uri.replace(location.protocol+"//"+location.host,"");
+			if(uri) uri = dojo.create("a",{href:uri}).pathname.replace(/^[^\/]/,'/');
 			self.xformLoaded(uri);
 			self.scrollToItem(0);
 			setTimeout(reset,100);

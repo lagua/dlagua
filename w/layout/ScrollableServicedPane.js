@@ -242,7 +242,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 	replaceChildTemplate: function(child,templateDir) {
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
-		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
+		this._fetchTpl(template).then(dojo.hitch(this,function(tpl){
 			var tplo = this.parseTemplate(tpl);
 			if(child && child!="childTemplate"){
 				child.applyTemplate(tplo.tpl,tplo.partials);
@@ -753,7 +753,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.connect(listItem,"onLoad",function(){
 			// as this can take a while, listItem may be destroyed in the meantime
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
-			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+			this._fetchTpl(this.template).then(dojo.hitch(this,function(tpl){
 				var tplo = this.parseTemplate(tpl);
 				listItem.applyTemplate(tplo.tpl,tplo.partials);
 				dojo.fadeIn({node:listItem.containerNode}).play();

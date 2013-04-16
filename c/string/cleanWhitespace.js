@@ -20,7 +20,8 @@ dlagua.c.string.cleanWhitespace = function(/*String*/ value){
 	});
 	return dlagua.c.string._cleanWhitespaceRecursive(div).innerHTML;
 };
-
+/*
 String.prototype.cleanWhitespace = function() {
-	return lague.string.cleanWhitespace(this);
+	return dlagua.string.cleanWhitespace(this);
 }
+*/
