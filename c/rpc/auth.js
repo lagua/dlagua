@@ -39,6 +39,7 @@ define([
 					if(!d.isFulfilled()) d.reject();
 				}
 			},function(err) {
+				d.reject();
 			},function(io){
 				token = io.getHeader("phrase");
 				if(io.getHeader(sessionParam)) {

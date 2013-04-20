@@ -18,6 +18,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	path:"",
 	defaultHash:"",
 	indexable:false,
+	stripPath:"content",
 	locale:"",
 	servicetype:"",
 	useLocale:true,
@@ -72,9 +73,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				}
 			}
 		}
+		// concat stripPath:
 		var restar = rest.split("/");
 		if(this.useLocale) locale = restar.shift();
-		if(restar[0]!="content") restar.unshift("content");
+		if(this.stripPath) {
+			restar = this.stripPath.split("/").concat(restar);
+		}
 		path = restar.join("/");
 		var item = {
 			state:state,
@@ -213,7 +217,10 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			if(pathchanged || localechanged) {
 				topic.publish("/app/pagechange",item);
 				var par = path.split("/");
-				if(par[0]=="content") par.shift();
+				var stripar = this.stripPath.split("/");
+				par = array.filter(par,function(item,index){
+					return par[index]!=stripar[index];
+				});
 				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+(par.length ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
