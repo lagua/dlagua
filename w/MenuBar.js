@@ -10,11 +10,12 @@ define([
 	"dlagua/w/MenuItem",
 	"dlagua/w/PopupMenuItem",
 	"dlagua/w/MenuBarItem",
-	"dijit/DropDownMenu",
+	"dlagua/w/DropDownMenu",
 	"dlagua/w/PopupMenuBarItem",
-	"dlagua/c/Subscribable"
-],function(declare,lang,array,Deferred,ioQuery,topic,aspect,MenuBar,MenuItem,PopupMenuItem,MenuBarItem,DropDownMenu,PopupMenuBarItem,Subscribable){
-	return declare("dlagua.w.MenuBar",[MenuBar,Subscribable],{
+	"dlagua/c/Subscribable",
+	"dlagua/w/Resolvable"
+],function(declare,lang,array,Deferred,ioQuery,topic,aspect,MenuBar,MenuItem,PopupMenuItem,MenuBarItem,DropDownMenu,PopupMenuBarItem,Subscribable,Resolvable){
+	return declare("dlagua.w.MenuBar",[MenuBar,Subscribable,Resolvable],{
 		store: null,
 		selected:null,
 		locale:"",
@@ -29,13 +30,34 @@ define([
 		_bh:null,
 		idProperty:"path",
 		onItemHover: function(item){
+	        var self = this;
+	        if(this.maxDepth>2 && item.item.children && item.item.children.length) {
+	        	var type = this.declaredClass == "dlagua.w.MenuBar" ? "dlagua/w/PopupMenuBarItem" : "dlagua/w/PopupMenuItem";
+				item.transform(type,lang.hitch(item,function(){
+					var popup = new DropDownMenu({
+						store:self.store,
+						maxDepth:self.maxDepth,
+						labelAttr:self.labelAttr
+					});
+					// TODO: mixin
+					popup.selectNode = lang.hitch(popup, self.selectNode);
+					popup.onItemHover = lang.hitch(popup, self.onItemHover);
+					popup.onItemClick = lang.hitch(popup, self.onItemClick);
+					
+					var data = self.resolve(this.item,self.store);
+					array.forEach(data.children,popup._addItem,popup);
+					return {
+						popup:popup
+					}
+				}));
+	        }
 	        if(!this.isActive){
 	            this._markActive();
 	        }
 	        this.inherited(arguments);
 	    },
 	    onItemClick: function(item){
-	    	this.selectNode(item);
+	    	if(this.maxDepth<=2 || !item.item.children || !item.item.children.length) this.selectNode(item);
 	        this.inherited(arguments);
 	    },
 		rebuild:function(){
@@ -57,22 +79,14 @@ define([
 			});
 			var self = this;
 			this._loading = true;
-			var d = new Deferred();
 			// since we have children with _refs, resolve children first
-			this.store.query("?"+q,{start:0,count:100}).then(function(res){
-				if(res && res.length) {
-					self._resolveRecursive(res[0]).then(function(root){
-						d.resolve(root);
-					});
-				} else {
-					d.reject();
-				}
-			});
-			d.then(function(root){
-				self._loading = false;
-				array.forEach(root.children,lang.hitch(self,self._addItem));
-				self.onReady();
-			});
+			var q = this.store.query("?"+q,{start:0,count:100})
+			q.then(lang.hitch(this,function(res){
+				var data = this.resolve(res[0],this.store);
+				this._loading = false;
+				array.forEach(data.children,this._addItem,this);
+				this.onReady();
+			}));
 		},
 		_loadDefault: function() {
 			// user should always see a menu item selected
@@ -139,11 +153,14 @@ define([
 			this.selectNode(this._itemNodesMap[currentId],truncated);
 		},
 		startup: function(){
-			this.watch("currentId",this._loadFromId);
-			this.watch("locale", function() {
-				this.localeChanged = true;
-				this.rebuild();
-			});
+			this.own(
+				this.watch("currentId",this._loadFromId),
+				this.watch("locale", function() {
+					this.localeChanged = true;
+					this.rebuild();
+				}),
+				aspect.after(this,"onReady",lang.hitch(this,"_loadFromId"))
+			);
 			console.log("menubar startup")
 			this.rebuild();
 			this.inherited(arguments);
@@ -182,53 +199,6 @@ define([
 				this._loadDefault();
 			}
 		},
-		_resolveRecursive:function(item,depth,d){
-			// simple resolving strategy for maxDepth
-			var maxDepth = this.maxRecursiveDepth || this.maxDepth;
-			if(!d) d = new Deferred();
-			depth = depth || 0;
-			if(maxDepth == depth) {
-				item.__parent.__onChildLoaded();
-				return d;
-			}
-			var len = item.children ? item.children.length : 0;
-			if(!len) {
-				item.__parent.__onChildLoaded();
-				return d;
-			} else {
-				item.__onChildLoaded = function(){
-					this.__childrenLoaded = this.__childrenLoaded || 0;
-					this.__childrenLoaded++;
-					if(this.__childrenLoaded==this.children.length) {
-						delete this.__childrenLoaded;
-						delete this.__onChildLoaded;
-						if(!this.__parent) {
-							d.resolve(this);
-						} else {
-							this.__parent.__onChildLoaded();
-						}
-					}
-				}
-				array.forEach(item.children,function(child){
-					if(child._ref) {
-						var ref = child["_ref"];
-						this.store.get(ref).then(lang.hitch(this,function(resolved){
-							resolved.__parent = item;
-							for(var i=0;i<item.children.length;i++) {
-								if(item.children[i]._ref==ref) {
-									item.children[i] = resolved;
-								}
-							}
-							this._resolveRecursive(resolved,depth+1,d);
-						}));
-					} else {
-						child.__parent = item;
-						this._resolveRecursive(child,depth+1,d);
-					}
-				},this);
-			}
-			return d;
-		},
 		_addItemRecursive:function(item,depth){
 			depth = depth || 0;
 			var self = this;
@@ -253,31 +223,6 @@ define([
 				}
 			},this);
 			return dd;
-		},
-		_addItem: function(item) {
-			var self = this;
-			var mbi;
-			var children = item.children && item.children.length ? item.children : [];
-			children = array.filter(children,function(child){
-				return !child.hidden;
-			});
-			if(this.maxDepth>2 && children.length) {
-				mbi = new PopupMenuBarItem({
-					item:item,
-					label:item[this.labelAttr],
-					popup:this._addItemRecursive(item)
-				});
-			} else {
-				mbi = new MenuBarItem({
-					item:item,
-					label:item[this.labelAttr],
-					onClick:function(){
-						self.selectNode(this, false);
-					}
-				});
-			}
-			this._itemNodesMap[item[this.idProperty]] = mbi;
-			this.addChild(mbi);
 		}
 	});
 });

@@ -248,7 +248,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/statechange",this.state);
 			}),
 			this.watch("locale",function(){
-				dojo.locale = this.locale.replace("_","-");
+				//dojo.locale = this.locale.replace("_","-");
 				if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 				this.localechanged = true;
 				topic.publish("/app/localechange",this.locale);

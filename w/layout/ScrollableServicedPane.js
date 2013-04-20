@@ -266,7 +266,7 @@ return declare("dlagua.w.layout.ScrollableServicedPane",[Scrollable, Container, 
 				if(!item.service) item.service = (this.service || "/atom/content");
 				break;
 			default:
-				if(!item.service) item.service = (this.service || "/xbrota/rest");
+				if(!item.service) item.service = (this.service!==undefined ? this.service : "/xbrota/rest");
 				break;
 		}
 		this.rebuild(item);
