@@ -326,6 +326,7 @@ define([
 			var py = this.getPos().y;
 			var li = this.listitems;
 			var len = li.length;
+			if(!len) return;
 			var y=0, y1=0, y2=0, i=0;
 			var h = this.itemHeight;
 			// won't work for inline items

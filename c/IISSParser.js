@@ -1,0 +1,1 @@
+var words = s.match(/\w+|"[\w\s]*"/g);
