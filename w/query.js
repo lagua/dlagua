@@ -1,5 +1,5 @@
-define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(lang, loader, defaultEngine, registry, _WidgetBase, df){
+define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
+	function(lang, array, aspect, on, has, loader, defaultEngine, registry, _WidgetBase, df){
 	
 	"use strict";
 
@@ -26,12 +26,45 @@ define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_
 		var nodeList = new (NodeListCtor || this._NodeListCtor || nl)(a);
 		return parent ? nodeList._stash(parent) : nodeList;
 	};
-	var nl = NodeList, nlp = nl.prototype = 
+	
+	var WidgetList = function(array){
+		var isNew = this instanceof nl && has("array-extensible");
+		if(typeof array == "number"){
+			array = Array(array);
+		}
+		var nodeArray = (array && "length" in array) ? array : arguments;
+		if(isNew || !nodeArray.sort){
+			// make sure it's a real array before we pass it on to be wrapped 
+			var target = isNew ? this : [],
+				l = target.length = nodeArray.length;
+			for(var i = 0; i < l; i++){
+				target[i] = nodeArray[i];
+			}
+			if(isNew){
+				// called with new operator, this means we are going to use this instance and push
+				// the nodes on to it. This is usually much faster since the NodeList properties
+				//	don't need to be copied (unless the list of nodes is extremely large).
+				return target;
+			}
+			nodeArray = target;
+		}
+		// called without new operator, use a real array and copy prototype properties,
+		// this is slower and exists for back-compat. Should be removed in 2.0.
+		lang._mixin(nodeArray, nlp);
+		nodeArray._NodeListCtor = function(array){
+			// call without new operator to preserve back-compat behavior
+			return nl(array);
+		};
+		return nodeArray;
+	};
+	
+	var nl = WidgetList, nlp = nl.prototype = 
 		has("array-extensible") ? [] : {};// extend an array if it is extensible
 
 	// expose adapters and the wrapper as private functions
 
 	nl._wrap = nlp._wrap = tnl;
+	nl._handles;
 
 	// mass assignment
 
@@ -52,7 +85,7 @@ define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_
 		nlp[name] = function(){ return f.apply(dojo, [this].concat(aps.call(arguments, 0))); };
 	});
 
-	lang.extend(NodeList, {
+	lang.extend(WidgetList, {
 		// copy the constructors
 		constructor: nl,
 		_NodeListCtor: nl,
@@ -86,30 +119,35 @@ define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_
 			return this; // dojo/NodeList
 		},
 
-		on: function(eventName, listener){
-			// summary:
-			//		Listen for events on the nodes in the NodeList. Basic usage is:
-			//		| query(".my-class").on("click", listener);
-			//		This supports event delegation by using selectors as the first argument with the event names as
-			//		pseudo selectors. For example:
-			//		| dojo.query("#my-list").on("li:click", listener);
-			//		This will listen for click events within `<li>` elements that are inside the `#my-list` element.
-			//		Because on supports CSS selector syntax, we can use comma-delimited events as well:
-			//		| dojo.query("#my-list").on("li button:mouseover, li:click", listener);
+		on: function(eventName, mylistener){
+			// pass WidgetList as first argument for chaining
+			var self = this;
 			var handles = this.map(function(node){
-				return on(node, eventName, listener); // TODO: apply to the NodeList so the same selector engine is used for matches
+				var handle;
+				var listener = function(e){
+					mylistener(self,node,handle,e);
+				};
+				handle = on(node, eventName, listener);
+				return handle;
 			});
 			handles.remove = function(){
 				for(var i = 0; i < handles.length; i++){
 					handles[i].remove();
 				}
 			};
-			return handles;
+			this._handles = handles;
+		},
+		off:function(){
+			if(this._handles) {
+				this._handles.remove();
+				this._handles = null;
+			}
 		},
 		
 		lambda: function(s, callback) {
 			var x = df.lambda(s);
 			var res = x.apply(null,this);
+			//if(typeof res != "Object" && !(res instanceof WidgetList) && res) res = this;
 			if(callback) {
 				callback(res);
 			} else {
@@ -151,68 +189,18 @@ define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_
 		},
 
 		map: function(/*Function*/ func, /*Function?*/ obj){
-			return this._wrap(array.map(this, func, obj), this); // dojo/NodeList
+			return this._wrap(df.map(this, func, obj), this); // dojo/NodeList
 		},
 
 		forEach: function(callback, thisObj){
-			forEach(this, callback, thisObj);
+			df.forEach(this, callback, thisObj);
 			// non-standard return to allow easier chaining
 			return this; // dojo/NodeList
 		},
 		filter: function(/*String|Function*/ filter){
-			//		|	dojo.query("*").filter("p").styles("backgroundColor", "yellow");
-
-			var a = arguments, items = this, start = 0;
-			if(typeof filter == "string"){ // inline'd type check
-				items = query._filterResult(this, a[0]);
-				if(a.length == 1){
-					// if we only got a string query, pass back the filtered results
-					return items._stash(this); // dojo/NodeList
-				}
-				// if we got a callback, run it over the filtered items
-				start = 1;
-			}
-			return this._wrap(array.filter(items, a[start], a[start + 1]), this);	// dojo/NodeList
-		},
-		instantiate: function(/*String|Object*/ declaredClass, /*Object?*/ properties){
-			// summary:
-			//		Create a new instance of a specified class, using the
-			//		specified properties and each node in the NodeList as a
-			//		srcNodeRef.
-			// example:
-			//		Grabs all buttons in the page and converts them to dijit/form/Button's.
-			//	|	var buttons = query("button").instantiate(Button, {showLabel: true});
-			var c = lang.isFunction(declaredClass) ? declaredClass : lang.getObject(declaredClass);
-			properties = properties || {};
-			return this.forEach(function(node){
-				new c(properties, node);
-			});	// dojo/NodeList
+			return this._wrap(df.filter(this, filter), this); // dojo/NodeList
 		},
 		at: function(/*===== index =====*/){
-			// summary:
-			//		Returns a new NodeList comprised of items in this NodeList
-			//		at the given index or indices.
-			//
-			// index: Integer...
-			//		One or more 0-based indices of items in the current
-			//		NodeList. A negative index will start at the end of the
-			//		list and go backwards.
-			//
-			// example:
-			//	Shorten the list to the first, second, and third elements
-			//	|	query("a").at(0, 1, 2).forEach(fn);
-			//
-			// example:
-			//	Retrieve the first and last elements of a unordered list:
-			//	|	query("ul > li").at(0, -1).forEach(cb);
-			//
-			// example:
-			//	Do something for the first element only, but end() out back to
-			//	the original list and continue chaining:
-			//	|	query("a").at(0).onclick(fn).end().forEach(function(n){
-			//	|		console.log(n); // all anchors on the page.
-			//	|	})
-
 			var t = new this._NodeListCtor(0);
 			forEach(arguments, function(i){
 				if(i < 0){ i = this.length + i; }
@@ -221,48 +209,20 @@ define(["dojo/_base/lang", "dojo/has", "dojo/selector/_loader", "dojo/selector/_
 			return t._stash(this); // dojo/NodeList
 		}
 	});
-	var WidgetList = function(array){
-		var isNew = this instanceof nl && has("array-extensible");
-		if(typeof array == "number"){
-			array = Array(array);
-		}
-		var nodeArray = (array && "length" in array) ? array : arguments;
-		if(isNew || !nodeArray.sort){
-			// make sure it's a real array before we pass it on to be wrapped 
-			var target = isNew ? this : [],
-				l = target.length = nodeArray.length;
-			for(var i = 0; i < l; i++){
-				target[i] = nodeArray[i];
-			}
-			if(isNew){
-				// called with new operator, this means we are going to use this instance and push
-				// the nodes on to it. This is usually much faster since the NodeList properties
-				//	don't need to be copied (unless the list of nodes is extremely large).
-				return target;
-			}
-			nodeArray = target;
-		}
-		// called without new operator, use a real array and copy prototype properties,
-		// this is slower and exists for back-compat. Should be removed in 2.0.
-		lang._mixin(nodeArray, nlp);
-		nodeArray._NodeListCtor = function(array){
-			// call without new operator to preserve back-compat behavior
-			return nl(array);
-		};
-		return nodeArray;
-	};
 	
 	var w = lang.getObject("dlagua.w", true);
 	
 	var query = function(q) {
 		var nodelist = defaultEngine(q);
 		var widgetlist = [];
-		nodelist.forEach(function(node){
+		array.forEach(nodelist,function(node){
 			var widget = registry.byNode(node);
-			if(!widget) widget = new _WidgetBase({
-				id:node.id
-			},node);
-			widget.startup();
+			if(!widget) {
+				widget = new _WidgetBase({
+					id:node.id
+				},node);
+				widget.startup();
+			}
 			widgetlist.push(widget);
 		});
 		return new WidgetList(widgetlist);

@@ -32,7 +32,7 @@ define([
 				frameattrs.frameborder = 0;
 			}
 			frameattrs.src = url+val+"?"+ioQuery.objectToQuery(options);
-			dojo.create("iframe",frameattrs,div);
+			domConstruct.create("iframe",frameattrs,div);
 			return div.innerHTML;
 		}
 	});

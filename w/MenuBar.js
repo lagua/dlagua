@@ -17,7 +17,7 @@ define([
 ],function(declare,lang,array,Deferred,ioQuery,topic,aspect,MenuBar,MenuItem,PopupMenuItem,MenuBarItem,DropDownMenu,PopupMenuBarItem,Subscribable,Resolvable){
 	return declare("dlagua.w.MenuBar",[MenuBar,Subscribable,Resolvable],{
 		store: null,
-		selected:null,
+		_selectedNode:null,
 		locale:"",
 		rootType:"content",
 		currentId:"",
@@ -30,9 +30,9 @@ define([
 		_bh:null,
 		idProperty:"path",
 		onItemHover: function(item){
-	        var self = this;
-	        if(this.maxDepth>2 && item.item.children && item.item.children.length) {
-	        	var type = this.declaredClass == "dlagua.w.MenuBar" ? "dlagua/w/PopupMenuBarItem" : "dlagua/w/PopupMenuItem";
+			var self = this;
+			if(this.maxDepth>2 && item.item.children && item.item.children.length) {
+				var type = this.declaredClass == "dlagua.w.MenuBar" ? "dlagua/w/PopupMenuBarItem" : "dlagua/w/PopupMenuItem";
 				item.transform(type,lang.hitch(item,function(){
 					var popup = new DropDownMenu({
 						store:self.store,
@@ -50,12 +50,9 @@ define([
 						popup:popup
 					}
 				}));
-	        }
-	        if(!this.isActive){
-	            this._markActive();
-	        }
-	        this.inherited(arguments);
-	    },
+			}
+			this.inherited(arguments);
+		},
 	    onItemClick: function(item){
 	    	if(this.maxDepth<=2 || !item.item.children || !item.item.children.length) this.selectNode(item);
 	        this.inherited(arguments);
@@ -72,7 +69,7 @@ define([
 			this.destroyDescendants();
 			this._itemNodesMap = {};
 			this.containerNode.innerHTML = "";
-			this.selected = null;
+			this._selectedNode = null;
 			var q = ioQuery.objectToQuery({
 				locale:this.locale,
 				type:this.rootType
@@ -148,7 +145,7 @@ define([
 			var check = this._checkTruncated(this.currentId);
 			var currentId = check.currentId;
 			var truncated = check.truncated;
-			if(this.selected && this.selected.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
+			if(this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
 			console.log("MenuBar loading currentID ",currentId, truncated);
 			this.selectNode(this._itemNodesMap[currentId],truncated);
 		},
@@ -167,22 +164,13 @@ define([
 		},
 		selectNode:function(node,truncated){
 			console.log("MenuBar selectNode ",truncated);
-			//if(this.selected==node) return;
 			var p;
-			if(this.selected) {
-				this.selected.set("selected",false);
-				if(this.selected.depth===0) {
-					p = this.selected.getParent();
-					p.from_item.set("selected",false);
-				}
+			if(this._selectedNode) {
+				this._selectedNode.set("selected",false);
 			}
-			this.selected = node;
+			this._selectedNode = node;
 			node.set("selected",true);
-			if(node.depth===0) {
-				p = node.getParent();
-				p.from_item.set("selected",true);
-			}
-			var item = lang.mixin({},this.selected.item);
+			var item = lang.mixin({},this._selectedNode.item);
 			// FIXME: dirty hack for subnav components:
 			// they will set the state if i am truncated
 			// BUT if there is no subnav to pick it up, nothing will happen
@@ -198,31 +186,6 @@ define([
 				this.localeChanged = false;
 				this._loadDefault();
 			}
-		},
-		_addItemRecursive:function(item,depth){
-			depth = depth || 0;
-			var self = this;
-			// add the dropdown menu
-			var dd = new DropDownMenu({});
-			array.forEach(item.children,function(child){
-				if(this.maxDepth>depth+3 && child.children && child.children.length) {
-					dd.addChild(new PopupMenuItem({
-						item:child,
-						label:child[this.labelAttr],
-						popup:this._addItemRecursive(child,depth+1)
-					}));
-				} else {
-					dd.addChild(new MenuItem({
-						item:child,
-						depth:depth,
-						label:child[this.labelAttr],
-						onClick:function(){
-							self.selectNode(this, false);
-						}
-					}));
-				}
-			},this);
-			return dd;
 		}
 	});
 });

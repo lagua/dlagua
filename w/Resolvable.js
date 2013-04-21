@@ -10,11 +10,28 @@ define([
 		resolve:function(data,store){
 			if(!data || !store) return;
 			ref.refAttribute = "_ref";
+			var self = this;
 			return ref.resolveJson(data,{
 				loader:function(callback){
+					var parent = this.__parent;
+					if(!parent.__onChildLoaded) {
+						parent.__childrenLoaded = 0;
+						parent.__onChildLoaded = function(){
+							this.__childrenLoaded++;
+							if(this.__childrenLoaded==this.children.length) {
+								delete this.__childrenLoaded;
+								delete this.__onChildLoaded;
+								self._loading = false;
+								self.onReady();
+							}
+						}
+					}
 					store.get(this["_ref"]).then(function(item){
+						console.log("ref res")
 						item._resolved = true;
+						item.__parent = parent;
 				        callback(item);
+				        parent.__onChildLoaded();
 					});
 				}
 			});
@@ -22,6 +39,7 @@ define([
 		_addItem: function(item) {
 			var self = this;
 			if(item._loadObject) {
+				this._loading = true;
 				item._loadObject(lang.hitch(this,this._addItem));
 				return;
 			}
