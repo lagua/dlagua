@@ -2,45 +2,72 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
+	"dojo/dom-construct",
 	"dojox/json/ref",
 	"dlagua/w/MenuItem",
 	"dlagua/w/MenuBarItem",
-],function(declare,lang,array,ref,MenuItem,MenuBarItem) {
+],function(declare,lang,array,domConstruct,ref,MenuItem,MenuBarItem) {
+	var _childNodesMap = [];
 	return declare("dlagua.w.Resolvable",[],{
-		resolve:function(data,store){
+		childrenAttr:"children",
+		refAttribute:"_ref",
+		resolve:function(data,store,rootcallback){
 			if(!data || !store) return;
-			ref.refAttribute = "_ref";
+			ref.refAttribute = this.refAttribute;
 			var self = this;
 			return ref.resolveJson(data,{
-				loader:function(callback){
+				loader:function(callback,index,items){
 					var parent = this.__parent;
 					if(!parent.__onChildLoaded) {
 						parent.__childrenLoaded = 0;
 						parent.__onChildLoaded = function(){
 							this.__childrenLoaded++;
-							if(this.__childrenLoaded==this.children.length) {
+							if(this.__childrenLoaded==this[self.childrenAttr].length) {
 								delete this.__childrenLoaded;
 								delete this.__onChildLoaded;
-								self._loading = false;
-								self.onReady();
+								if(rootcallback) rootcallback(this);
 							}
 						}
 					}
-					store.get(this["_ref"]).then(function(item){
-						console.log("ref res")
+					store.get(this[self.refAttribute]).then(function(item){
 						item._resolved = true;
 						item.__parent = parent;
-				        callback(item);
-				        parent.__onChildLoaded();
+						callback(item,index,items);
+						parent.__onChildLoaded();
 					});
 				}
 			});
 		},
-		_addItem: function(item) {
+		addChild: function(/*dijit/_WidgetBase*/ widget, /*int?*/ index, /*int?*/ length){
+			var refNode = this.containerNode;
+			var insertIndex = "last";
+			if(typeof index == "number" && length > 0) {
+				if(_childNodesMap.length>0) {
+					for(var i=index;i<_childNodesMap.length;i++) {
+						if(_childNodesMap[i]) {
+							refNode = _childNodesMap[i];
+							insertIndex = "before";
+							break;
+						}
+					}
+				}
+				_childNodesMap[index] = widget.domNode;
+				if(index===length-1) {
+					_childNodesMap = [];
+				}
+			}
+			domConstruct.place(widget.domNode, refNode, insertIndex);
+			
+			if(this._started && !widget._started){
+				widget.startup();
+			}
+		},
+		_addItem: function(item,index,items) {
+			console.log(item.name,index)
 			var self = this;
 			if(item._loadObject) {
 				this._loading = true;
-				item._loadObject(lang.hitch(this,this._addItem));
+				item._loadObject(lang.hitch(this,this._addItem),index,items);
 				return;
 			}
 			if(!this._itemNodesMap) this._itemNodesMap = {};
@@ -55,7 +82,7 @@ define([
 				label:item[this.labelAttr] || ""
 			});
 			this._itemNodesMap[item[this.idProperty]] = mbi;
-			this.addChild(mbi);
+			this.addChild(mbi,index,items.length);
 		}
 	});
 

@@ -23,7 +23,7 @@ define([
 		currentId:"",
 		maxDepth:2,
 		_loading:false,
-		_itemNodesMap:{},
+		_itemNodesMap:null,
 		labelAttr:"title",
 		localeChanged:false,// this should work with false if path is published after this widget is started 
 		_lh:null,
@@ -79,7 +79,10 @@ define([
 			// since we have children with _refs, resolve children first
 			var q = this.store.query("?"+q,{start:0,count:100})
 			q.then(lang.hitch(this,function(res){
-				var data = this.resolve(res[0],this.store);
+				var data = this.resolve(res[0],this.store,lang.hitch(this,function(root){
+					this._loading = false;
+					this.onReady();
+				}));
 				this._loading = false;
 				array.forEach(data.children,this._addItem,this);
 				this.onReady();

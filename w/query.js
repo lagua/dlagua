@@ -27,7 +27,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		return parent ? nodeList._stash(parent) : nodeList;
 	};
 	
-	var WidgetList = function(array){
+	var NodeList = function(array){
 		var isNew = this instanceof nl && has("array-extensible");
 		if(typeof array == "number"){
 			array = Array(array);
@@ -58,7 +58,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		return nodeArray;
 	};
 	
-	var nl = WidgetList, nlp = nl.prototype = 
+	var nl = NodeList, nlp = nl.prototype = 
 		has("array-extensible") ? [] : {};// extend an array if it is extensible
 
 	// expose adapters and the wrapper as private functions
@@ -85,7 +85,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		nlp[name] = function(){ return f.apply(dojo, [this].concat(aps.call(arguments, 0))); };
 	});
 
-	lang.extend(WidgetList, {
+	lang.extend(NodeList, {
 		// copy the constructors
 		constructor: nl,
 		_NodeListCtor: nl,
@@ -94,33 +94,12 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			return this.join(",");
 		},
 		_stash: function(parent){
-			// summary:
-			//		private function to hold to a parent NodeList. end() to return the parent NodeList.
-			//
-			// example:
-			//		How to make a `dojo/NodeList` method that only returns the third node in
-			//		the dojo/NodeList but allows access to the original NodeList by using this._stash:
-			//	|	dojo.extend(NodeList, {
-			//	|		third: function(){
-			//	|			var newNodeList = NodeList(this[2]);
-			//	|			return newNodeList._stash(this);
-			//	|		}
-			//	|	});
-			//	|	// then see how _stash applies a sub-list, to be .end()'ed out of
-			//	|	dojo.query(".foo")
-			//	|		.third()
-			//	|			.addClass("thirdFoo")
-			//	|		.end()
-			//	|		// access to the orig .foo list
-			//	|		.removeClass("foo")
-			//	|
-			//
 			this._parent = parent;
-			return this; // dojo/NodeList
+			return this;
 		},
 
 		on: function(eventName, mylistener){
-			// pass WidgetList as first argument for chaining
+			// pass NodeList as first argument for chaining
 			var self = this;
 			var handles = this.map(function(node){
 				var handle;
@@ -147,7 +126,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		lambda: function(s, callback) {
 			var x = df.lambda(s);
 			var res = x.apply(null,this);
-			//if(typeof res != "Object" && !(res instanceof WidgetList) && res) res = this;
+			//if(typeof res != "Object" && !(res instanceof NodeList) && res) res = this;
 			if(callback) {
 				callback(res);
 			} else {
@@ -156,21 +135,6 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		},
 
 		end: function(){
-			// summary:
-			//		Ends use of the current `NodeList` by returning the previous NodeList
-			//		that generated the current NodeList.
-			// description:
-			//		Returns the `NodeList` that generated the current `NodeList`. If there
-			//		is no parent NodeList, an empty NodeList is returned.
-			// example:
-			//	|	dojo.query("a")
-			//	|		.filter(".disabled")
-			//	|			// operate on the anchors that only have a disabled class
-			//	|			.style("color", "grey")
-			//	|		.end()
-			//	|		// jump back to the list of anchors
-			//	|		.style(...)
-			//
 			if(this._parent){
 				return this._parent;
 			}else{
@@ -225,7 +189,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			}
 			widgetlist.push(widget);
 		});
-		return new WidgetList(widgetlist);
+		return new NodeList(widgetlist);
 	};
 	
 	w.query = query;
