@@ -2,9 +2,8 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
-	"dojo/topic",
-	"dlagua/w/DropDownMenu",
-],function(declare,lang,array,topic,DropDownMenu){
+	"dojo/topic"
+],function(declare,lang,array,topic){
 	return declare("dlagua.w.TreeController",[],{
 		_selectedNode:null,
 		maxDepth:2,
@@ -23,8 +22,6 @@ define([
 						labelAttr:self.labelAttr
 					});
 					
-					var data = self.resolve(this.item,self.store);
-					array.forEach(data.children,popup._addItem,popup);
 					return {
 						popup:popup
 					}
