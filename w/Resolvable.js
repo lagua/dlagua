@@ -7,8 +7,8 @@ define([
 	"dlagua/w/MenuItem",
 	"dlagua/w/MenuBarItem",
 ],function(declare,lang,array,domConstruct,ref,MenuItem,MenuBarItem) {
-	var _childNodesMap = [];
 	return declare("dlagua.w.Resolvable",[],{
+		_childNodesMap:null,
 		childrenAttr:"children",
 		refAttribute:"_ref",
 		resolve:function(data,store,rootcallback){
@@ -42,22 +42,24 @@ define([
 			var refNode = this.containerNode;
 			var insertIndex = "last";
 			if(typeof index == "number" && length > 0) {
-				if(_childNodesMap.length>0) {
-					for(var i=index;i<_childNodesMap.length;i++) {
-						if(_childNodesMap[i]) {
-							refNode = _childNodesMap[i];
-							insertIndex = "before";
-							break;
-						}
+				if(!this._childNodesMap) this._childNodesMap = [];
+				for(var i=0;i<this._childNodesMap.length;i++) {
+					if(this._childNodesMap[i] && index<i) {
+						refNode = this._childNodesMap[i];
+						insertIndex = "before";
+						break;
 					}
 				}
-				_childNodesMap[index] = widget.domNode;
-				if(index===length-1) {
-					_childNodesMap = [];
+				this._childNodesMap[index] = widget.domNode;
+				if(this._childNodesMap.length == length) {
+					var reset = true;
+					for(var i=0;i<this._childNodesMap.length;i++) {
+						if(!this._childNodesMap[i]) reset = false;
+					}
+					if(reset) this._childNodesMap = [];
 				}
 			}
 			domConstruct.place(widget.domNode, refNode, insertIndex);
-			
 			if(this._started && !widget._started){
 				widget.startup();
 			}
