@@ -3,10 +3,8 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/dom-construct",
-	"dojox/json/ref",
-	"dlagua/w/MenuItem",
-	"dlagua/w/MenuBarItem",
-],function(declare,lang,array,domConstruct,ref,MenuItem,MenuBarItem) {
+	"dojox/json/ref"
+],function(declare,lang,array,domConstruct,ref) {
 	return declare("dlagua.w.Resolvable",[],{
 		_childNodesMap:null,
 		childrenAttr:"children",
@@ -72,14 +70,19 @@ define([
 				item._loadObject(lang.hitch(this,this._addItem),index,items);
 				return;
 			}
+			if(!this.childWidget) {
+				require([this.childWidgetType],lang.hitch(this,function(Widget){
+					this.childWidget = Widget;
+					this._addItem(item,index,items);
+				}));
+				return;
+			}
 			if(!this._itemNodesMap) this._itemNodesMap = {};
-			var mbi;
 			var children = item.children && item.children.length ? item.children : [];
 			children = array.filter(children,function(child){
 				return !child.hidden;
 			});
-			var Widget = this.declaredClass == "dlagua.w.MenuBar" ? MenuBarItem : MenuItem;
-			mbi = new Widget({
+			var mbi = new this.childWidget({
 				item:item,
 				label:item[this.labelAttr] || ""
 			});

@@ -1,5 +1,5 @@
-define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(lang, array, aspect, on, has, loader, defaultEngine, registry, _WidgetBase, df){
+define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
+	function(declare,lang, array, aspect, on, has, loader, defaultEngine, registry, _WidgetBase, df){
 	
 	"use strict";
 
@@ -97,7 +97,18 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			this._parent = parent;
 			return this;
 		},
-
+		// mixin decorators
+		extend: function() {
+			var mixins = arguments;
+			var nodes = array.map(this,function(node){
+				var params = node.params;
+				forEach(mixins,function(mixin){
+					node = declare.safeMixin(node, new mixin());
+				});
+				return lang.mixin(node,params);
+			});
+			return this._wrap(nodes);
+		},
 		on: function(eventName, mylistener){
 			// pass NodeList as first argument for chaining
 			var self = this;

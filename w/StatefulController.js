@@ -10,9 +10,8 @@ define([
 	"dlagua/w/Resolvable"
 ],function(declare,lang,array,Deferred,ioQuery,topic,aspect,Subscribable,Resolvable){
 	return declare("dlagua.w.StatefulController",[Subscribable,Resolvable],{
-		store: null,
 		_selectedNode:null,
-		locale:"",
+		locale:"en_us",
 		rootType:"content",
 		currentId:"",
 		maxDepth:2,
@@ -37,7 +36,7 @@ define([
 			this.containerNode.innerHTML = "";
 			this._selectedNode = null;
 			this._loading = true;
-			this.getRoot.then(lang.hitch(this,function(res){
+			this.getRoot().then(lang.hitch(this,function(res){
 				var data = this.resolve(res[0],this.store,lang.hitch(this,function(root){
 					this._loading = false;
 					this.onReady();
@@ -127,9 +126,6 @@ define([
 				aspect.after(this,"onReady",lang.hitch(this,this._loadFromId))
 			);
 			this.rebuild();
-			this.inherited(arguments);
-		},
-		_addItem:function(){
 			this.inherited(arguments);
 		},
 		onReady:function(){
