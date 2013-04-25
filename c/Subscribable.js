@@ -25,13 +25,13 @@ return declare("dlagua.c.Subscribable", [Stateful,Destroyable], {
 					var ar = [item];
 					var res = rqlArray.executeQuery(filter,{},ar);
 					if(!res.length) {
-						console.log("filtered:",this.id,params.filter,item);
+						console.log(params.id,"filtered:",this.id,params.filter,item);
 						return;
 					} else {
-						console.log("passed:",this.id,params.filter,item);
+						console.log(params.id,"passed:",this.id,params.filter,item);
 					}
 				} else {
-					console.log("passed:",this.id,item);
+					console.log(params.id,"passed:",this.id,item);
 				}
 				if(lang.isObject(item)) {
 					if(lang.isObject(olditem)) {

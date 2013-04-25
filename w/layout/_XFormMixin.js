@@ -74,7 +74,7 @@ return declare("dlagua.w.layout._XFormMixin",[],{
 		}
 		dojo.subscribe("/xf/ready",this,function(data){
 			if(!this.containerNode) return;
-			this.scrollToItem(0);
+			this.scrollToInitPos();
 			setTimeout(reset,100);
 		});
 		dojo.connect(fluxProcessor,"dispatchEvent",function(xmlEvent){
@@ -86,9 +86,13 @@ return declare("dlagua.w.layout._XFormMixin",[],{
 		dojo.connect(fluxProcessor,"_handleBetterFormLoadURI",function(xmlEvent){
 			if(!self.containerNode || self.listitems.length===0 || !self.xformTarget) return;
 			var uri = xmlEvent.contextInfo.uri;
-			if(uri) uri = domConstruct.create("a",{href:uri}).pathname.replace(/^[^\/]/,'/');
+			if(uri) {
+				var elm = domConstruct.create("a",{href:uri});
+				uri = elm.pathname;
+				if(uri.charAt(0)!="/") uri = "/"+uri;
+			}
 			self.xformLoaded(uri);
-			self.scrollToItem(0);
+			self.scrollToInitPos();
 			setTimeout(reset,100);
 		});
 		this.inherited(arguments);

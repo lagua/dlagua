@@ -183,6 +183,18 @@ define([
 				});
 			}));
 		},
+		layout:function(){
+			this.inherited(arguments);
+			var _this = this;
+			setTimeout(function(){
+				if(!_this || _this._beingDestroyed) {
+					return;
+				}
+				// recalc dim
+				var pos = _this.getPos();
+				_this.pageStore(pos.y);
+			}, 10);
+		},
 		selectItemByCurrentId: function(){
 			if(this._beingDestroyed) return;
 			var item = this.itemnodesmap[this.currentId];
