@@ -48,6 +48,11 @@ define([
 						break;
 					}
 				}
+			}
+			console.log("place",widget.id,insertIndex,refNode)
+			domConstruct.place(widget.domNode, refNode, insertIndex);
+			if(typeof index == "number" && length > 0) {
+				console.log("update",widget.id,insertIndex,refNode)
 				this._childNodesMap[index] = widget.domNode;
 				if(this._childNodesMap.length == length) {
 					var reset = true;
@@ -57,7 +62,6 @@ define([
 					if(reset) this._childNodesMap = [];
 				}
 			}
-			domConstruct.place(widget.domNode, refNode, insertIndex);
 			if(this._started && !widget._started){
 				widget.startup();
 			}

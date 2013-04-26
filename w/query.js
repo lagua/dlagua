@@ -1,5 +1,5 @@
-define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(declare,lang, array, aspect, on, has, loader, defaultEngine, registry, _WidgetBase, df){
+define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
+	function(lang, array, aspect, on, has, loader, defaultEngine, domConstruct,domAttr,domClass, registry, _WidgetBase, df){
 	
 	"use strict";
 
@@ -9,6 +9,7 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 	});
 	
 	var ap = Array.prototype, aps = ap.slice, apc = ap.concat, forEach = array.forEach;
+	var op = Object.prototype, opts = op.toString, cname = "constructor";
 
 	var tnl = function(/*Array*/ a, /*dojo/NodeList?*/ parent, /*Function?*/ NodeListCtor){
 		// summary:
@@ -26,6 +27,42 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 		var nodeList = new (NodeListCtor || this._NodeListCtor || nl)(a);
 		return parent ? nodeList._stash(parent) : nodeList;
 	};
+	
+	function transform(widget,newdom) {
+		// TODO: apply rule-based transforms
+		// for now, just update the DOM from template:
+		// - update children: not needed! template is the same! popup is just added!
+		// - update classes
+		// - update attributes
+		defaultEngine(">*",widget.domNode).forEach(function(c){
+			if(c.parentNode) c.parentNode.removeChild(c);
+		});
+		defaultEngine(">*",newdom).forEach(function(c){
+			domConstruct.place(c,widget.domNode);
+		});
+		domClass.replace(widget.domNode,domAttr.get(newdom,"class"),domAttr.get(widget.domNode,"class"));
+		array.forEach(newdom.attributes,function(attr){
+			if(array.indexOf(["id","class","widgetid"],attr.name) == -1 && domAttr.get(widget.domNode,attr.name)!=attr.value) {
+				domAttr.set(widget.domNode,attr.name,attr.value);
+			}
+		});
+	}
+	
+	function mixin(target, source, exclude){
+		var name, t;
+		// add props adding metadata for incoming functions skipping a constructor
+		for(name in source){
+			t = source[name];
+			if((t !== op[name] || !(name in op)) && name != cname && array.indexOf(exclude,name)==-1){
+				if(opts.call(t) == "[object Function]"){
+					// non-trivial function method => attach its name
+					t.nom = name;
+				}
+				target[name] = t;
+			}
+		}
+		return target;
+	}
 	
 	var NodeList = function(array){
 		var isNew = this instanceof nl && has("array-extensible");
@@ -101,11 +138,33 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 		extend: function() {
 			var mixins = arguments;
 			var nodes = array.map(this,function(node){
-				var params = node.params;
-				forEach(mixins,function(mixin){
-					node = declare.safeMixin(node, new mixin());
+				var params = node.params || {};
+				var exclude = ["id","domNode","containerNode"];
+				for(var k in params) exclude.push(k);
+				if(node._started) node._started = false;
+				var oriproto = node.__proto__;
+				forEach(mixins,function(m){
+					var excl = lang.clone(exclude);
+					if(node.domNode) excl.push();
+					if(node.containerNode) excl.push();
+					var instance = new m();
+					node = mixin(node, instance, excl);
+					if(instance.domNode) transform(node,instance.domNode);
 				});
-				return lang.mixin(node,params);
+				node.__oriproto = oriproto;
+				return node;
+			});
+			return this._wrap(nodes);
+		},
+		base: function() {
+			var nodes = array.map(this,function(node){
+				if(!node.__oriproto) return node;
+				var params = node.params || {};
+				var domNode = node.domNode;
+				registry.remove(node.id);
+				node = node.__oriproto;
+				node.create(params,domNode);
+				return node;
 			});
 			return this._wrap(nodes);
 		},
@@ -117,7 +176,11 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 				var listener = function(e){
 					mylistener(self,node,handle,e);
 				};
-				handle = on(node, eventName, listener);
+				handle = on.parse(node, eventName, listener, function(target, type){
+					type = type.charAt(0).toUpperCase() + type.slice(1);
+					return aspect.after(target, 'on' + type, listener, true);
+				});
+				//handle = on(node, eventName, listener);
 				return handle;
 			});
 			handles.remove = function(){
@@ -126,6 +189,7 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 				}
 			};
 			this._handles = handles;
+			return this;
 		},
 		off:function(){
 			if(this._handles) {
@@ -202,6 +266,8 @@ define(["dojo/_base/declare","dojo/_base/lang", "dojo/_base/array", "dojo/aspect
 		});
 		return new NodeList(widgetlist);
 	};
+	
+	query.NodeList = NodeList;
 	
 	w.query = query;
 	
