@@ -204,6 +204,7 @@ define([
 				return;
 			}
 			this.currentId = null;
+			if(this.selectedItem && this.selectedItem == item) return;
 			var index = item.getIndexInParent();
 			this.scrollToItem(index);
 		},
@@ -355,6 +356,7 @@ define([
 			if(!this._bounce){
 				this.checkSelectedItem();
 			}
+			this.inherited(arguments);
 		},
 		getModel:function(){
 			return this.model || this.currentItem.model;
@@ -383,7 +385,6 @@ define([
 		addItem:function(item,index,items,insertIndex) {
 			if(this._beingDestroyed) return;
 			var content = "";
-			var id = item[this.idProperty];
 			var listItem = new ScrollableServicedPaneItem({
 				parent:this,
 				data:item,
@@ -393,24 +394,25 @@ define([
 			aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 				// as this can take a while, listItem may be destroyed in the meantime
 				if(this._beingDestroyed || listItem._beingDestroyed) return;
-					listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
-					fx.fadeIn({node:listItem.containerNode}).play();
-					this.childrenReady++;
-					if(this.childrenReady == items.length) {
-						// wait for the margin boxes to be set
-						setTimeout(lang.hitch(this,function(){
-							this.onReady();
-						}),10);
-					}
-					this.itemnodesmap[item[this.idProperty]] = listItem;
+				// ref item may have been resolved now
+				var item = listItem.data;
+				var id = item[this.idProperty];
+				listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
+				fx.fadeIn({node:listItem.containerNode}).play();
+				this.childrenReady++;
+				if(this.childrenReady == items.length) {
+					// wait for the margin boxes to be set
+					setTimeout(lang.hitch(this,function(){
+						this.onReady();
+					}),10);
+				}
+				this.itemnodesmap[id] = listItem;
 			}));
 			this.addChild(listItem,insertIndex);
 		},
 		onReady: function(){
 			if(this._beingDestroyed) return;
-			if(this.loadingAnimation && this.footer) {
-				domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
-			}
+			this.inherited(arguments);
 			// if needed, get more stuff from the store
 			this.pageStore();
 			// select currentId for #anchor simulation
