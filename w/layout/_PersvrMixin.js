@@ -6,8 +6,12 @@ define([
 	"dojo/request",
 	"dojo/dom-construct",
 	"dojo/dom-attr",
-	"dojo/Deferred"
-],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred) {
+	"dojo/Deferred",
+	"dlagua/c/store/JsonRest",
+	"dojo/store/Memory",
+	"dojo/store/Cache",
+	"dojox/json/ref"
+],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred,JsonRest,Memory,Cache,jsonref) {
 
 return declare("dlagua.w.layout._PersvrMixin", [], {
 	store:null,
@@ -16,6 +20,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	schemata:{},
 	templateModule:"",
 	template:"",
+	useItemChildren:false,
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
 		return request(require.toUrl(this.templateModule)+"/"+template);
@@ -50,6 +55,76 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			d.resolve(true);
 		}
 		return d;
+	},
+	loadFromItem:function(){
+		this.inherited(arguments);
+		if(this.servicetype=="persvr") {
+			var item = lang.mixin({},this.currentItem);
+			if(!item.service) item.service = (this.service || "/persvr/");
+			if(!item.model) return;
+			var model = item.model;
+			var target = item.service+model+"/";
+			var schemaUri = item.service+"Class/"+model;
+			if(!this.newsort && item.sort) this.sort = item.sort;
+			if(item.filter) this.orifilter = this.filter = item.filter;
+			if(!this.store) {
+				this.store = new JsonRest({
+					target:target,
+					schemaUri:schemaUri
+				});
+				if(this.stores) {
+					if(!this.stores[target]) {
+						this.stores[target] = new Cache(this.store, new Memory());
+					}
+				}
+			} else {
+				this.store.target = target;
+				this.store.schemaUri = schemaUri;
+			}
+			this.rebuild(item);
+		}
+	},
+	rebuild:function(){
+		this.inherited(arguments);
+		if(this.servicetype=="persvr") {
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+					this._tplo = tplo;
+					this._getSchema().then(lang.hitch(this,function(){
+						var q = this.createQuery();
+						var start = this.start;
+						this.start += this.count;
+						var results = this.results = this.store.query(q,{
+							start:start,
+							count:this.count,
+							useXDomain:this.useXDomain
+						});
+						if(!this.useItemChildren){
+							results.total.then(lang.hitch(this,function(total){
+								this.total = total;
+								if(total===0 || isNaN(total)) this.onReady();
+							}));
+							results.forEach(lang.hitch(this,this.addItem));
+						} else {
+							results.then(lang.hitch(this,function(res){
+								this.total = res[0].children.length;
+								if(this.total===0 || isNaN(this.total)) this.onReady();
+								jsonref.refAttribute = "_ref";
+								var store = this.store;
+								var item = jsonref.resolveJson(res[0],{
+									loader:function(callback,d){
+										store.get(this["_ref"]).then(function(item){
+											callback(item,d);
+										});
+									}
+								});
+								item.children.forEach(lang.hitch(this,this.addItem));
+							}));
+						}
+					}));
+				}));
+			}));
+		}
 	},
 	parseTemplate: function(tpl){
 		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
