@@ -22,8 +22,15 @@ return declare("dlagua.w.layout.TemplaMixin", [], {
 	applyTemplate: function(tpl,partials){
 		this.set("content",Mustache.to_html(tpl,this.mixeddata,partials));
 	},
-	_load:function(){
-		var d = new Deferred();
+	_load:function(resolved, d){
+		d = d || new Deferred();
+		if(resolved) {
+			this.data = resolved;
+		}
+		if(this.data._loadObject) {
+			this.data._loadObject(lang.hitch(this,this._load), d);
+			return d;
+		}
 		if(!this.data) {
 			d.resolve();
 			return d;
