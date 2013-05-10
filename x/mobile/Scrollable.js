@@ -7,10 +7,11 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-construct",
 	"dojo/dom-style",
+	"dojo/touch",
 	"dojox/mobile/sniff",
 	"./_css3",
 	"dojox/mobile/scrollable"
-], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, has, css3, Scrollable){
+], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, touch, has, css3, Scrollable){
 	
 	var dm = lang.getObject("dojox.mobile", true);
 	
@@ -21,13 +22,19 @@ define([
 			// WSH: add wheel handle after everything
 			if(!has("touch")) this._ch.push(connect.connect(this.containerNode, (!dojo.isMozilla ? "onmousewheel" : "DOMMouseScroll"), this, "onScroll"));
 		},
-		
+		isScrollable:function(node){
+			var w = dijit.registry.getEnclosingWidget(node);
+			if(w && w.baseClass=="dlaguaScrollableServicedPaneItem") {
+				w = w.getParent();
+			}
+			return (w && w.baseClass=="dlaguaScrollableServicedPane" && w != this);
+		},
 		onTouchStart: function(e){
 			// summary:
 			//		User-defined function to handle touchStart events.
 			
 			// WSH: escape on form inputs
-			if(this.isFormElement(e.target) || domClass.contains(e.target,"dlaguaPreventScroll")) return;
+			if(this.isFormElement(e.target) || domClass.contains(e.target,"dlaguaPreventScroll") || this.isScrollable(e.target)) return;
 			
 			if(this.disableTouchScroll){ return; }
 			if(this._conn && (new Date()).getTime() - this.startTime < 500){
@@ -35,8 +42,8 @@ define([
 			}
 			if(!this._conn){
 				this._conn = [];
-				this._conn.push(connect.connect(win.doc, has('touch') ? "ontouchmove" : "onmousemove", this, "onTouchMove"));
-				this._conn.push(connect.connect(win.doc, has('touch') ? "ontouchend" : "onmouseup", this, "onTouchEnd"));
+				this._conn.push(connect.connect(win.doc, touch.move, this, "onTouchMove"));
+				this._conn.push(connect.connect(win.doc, touch.release, this, "onTouchEnd"));
 			}
 
 			this._aborted = false;
@@ -195,7 +202,7 @@ define([
 				if(!this._aborted){
 					if(n <= 1){
 						clicked = true;
-					// WSH: don't do this on invert (any scroll is scroll)
+						// WSH: don't do this on invert (any scroll is scroll)
 					}else if(n == 2 && Math.abs(this._posY[1] - this._posY[0]) < 4
 						&& has('touch') && !this.invert){ // for desktop browsers, posY could be the same, since we're using clientY, see onTouchMove()
 						clicked = true;
@@ -204,24 +211,15 @@ define([
 				if(clicked){ // clicked, not dragged or flicked
 					this.hideScrollBar();
 					this.removeCover();
-					// #12697 Do not generate a click event programmatically when a
-					// form element (input, select, etc.) is clicked.
-					// Otherwise, in particular, when checkbox is clicked, its state
-					// is reversed again by the generated event.
-					// #15878 The reason we send this synthetic click event is that we assume that the OS
-					// will not send the click because we prevented/stopped the touchstart.
-					// However, this does not seem true any more in Android 4.1 where the click is
-					// actually sent by the OS. So we must not send it a second time.
-					if(has('touch') && !this.isFormElement(e.target) && !(has("android") >= 4.1)){
+					// need to send a synthetic click?
+					if(has("touch") && has("clicks-prevented") && !this.isFormElement(e.target)){
 						var elem = e.target;
 						if(elem.nodeType != 1){
 							elem = elem.parentNode;
 						}
-						var ev = win.doc.createEvent("MouseEvents");
-						ev.initMouseEvent("click", true, true, win.global, 1, e.screenX, e.screenY, e.clientX, e.clientY);
 						setTimeout(function(){
-							elem.dispatchEvent(ev);
-						}, 0);
+							dm._sendClick(elem, e);
+						});
 					}
 					return;
 				}
@@ -240,15 +238,17 @@ define([
 
 			if(this.adjustDestination(to, pos, dim) === false){ return; }
 
-			if(this.scrollDir == "v" && dim.c.h < dim.d.h){ // content is shorter than display
-				this.slideTo({y:0}, 0.3, "ease-out"); // go back to the top
-				return;
-			}else if(this.scrollDir == "h" && dim.c.w < dim.d.w){ // content is narrower than display
-				this.slideTo({x:0}, 0.3, "ease-out"); // go back to the left
-				return;
-			}else if(this._v && this._h && dim.c.h < dim.d.h && dim.c.w < dim.d.w){
-				this.slideTo({x:0, y:0}, 0.3, "ease-out"); // go back to the top-left
-				return;
+			if(this.constraint){
+				if(this.scrollDir == "v" && dim.c.h < dim.d.h){ // content is shorter than display
+					this.slideTo({y:0}, 0.3, "ease-out"); // go back to the top
+					return;
+				}else if(this.scrollDir == "h" && dim.c.w < dim.d.w){ // content is narrower than display
+					this.slideTo({x:0}, 0.3, "ease-out"); // go back to the left
+					return;
+				}else if(this._v && this._h && dim.c.h < dim.d.h && dim.c.w < dim.d.w){
+					this.slideTo({x:0, y:0}, 0.3, "ease-out"); // go back to the top-left
+					return;
+				}
 			}
 
 			var duration, easing = "ease-out";
