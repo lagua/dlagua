@@ -226,6 +226,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				dhash(hash);
 				this.set("path",path);
+				this.set("pageid",item.id);
 				d.resolve(true);
 			} else {
 				topic.publish("/app/pagechange",item);
@@ -267,6 +268,9 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			}),
 			this.watch("path",function(){
 				topic.publish("/app/pathchange",this.path);
+			}),
+			this.watch("pageid",function(){
+				topic.publish("/app/pageidchange",this.pageid);
 			}),
 			this.watch("servicetype",function(){
 				topic.publish("/app/servicetypechange",this.servicetype);
