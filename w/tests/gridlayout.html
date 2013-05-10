@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+	<title>Grid Layout test</title>
+	<script type="text/javascript" src="../../../dojox/mobile/deviceTheme.js" data-dojo-config="mblThemeFiles: ['base','Button','GridLayout']"></script>
+	<script type="text/javascript" src="../../../dojo/dojo.js" data-dojo-config="async: true"></script>
+	<style>
+		.mblButton {
+			width: 100px;
+			height: 100px;
+		}
+		.mblView, html, body {
+			height:100%;
+		}
+  .mblPane, .mblGridLayout {
+-webkit-transition-duration: 0.9s;
+     -moz-transition-duration: 0.9s;
+      -ms-transition-duration: 0.9s;
+       -o-transition-duration: 0.9s;
+          transition-duration: 0.9s;
+}
+
+.mblGridLayout {
+  -webkit-transition-property: width, height;
+     -moz-transition-property: width, height;
+      -ms-transition-property: width, height;
+       -o-transition-property: width, height;
+          transition-property: width, height;
+}
+
+.mblPane {
+  -webkit-transition-property: width, height, left, right, top;
+     -moz-transition-property: width, height, left, right, top;
+      -ms-transition-property: width, height, left, right, top;
+       -o-transition-property: width, height, left, right, top;
+          transition-property: width, height, left, right, top;
+}
+		
+	</style>
+	<script>
+	var resize;
+	require([
+			"dijit/registry",
+			"dojo/_base/array",
+			"dojo/ready",
+			"dlagua/x/mobile/GridLayout",
+			"dojox/mobile/Pane",
+			"dojox/mobile/Button",
+			"dojox/mobile/View",
+			"dojox/mobile",
+			"dojox/mobile/parser"
+		 ], function(registry, array, ready, GridLayout, Pane, Button, View){
+			var view, widget;
+			var gridSize = 45;
+			var gridLeeway = 10;
+			ready(function(){
+				view = new View({},"view1");
+				widget = new GridLayout({
+					size:gridSize,
+					tileSize:2,
+					allowFill:true,
+					allowOverlap:true
+				});
+				view.addChild(widget);
+				var pane, button;
+				pane = new Pane({
+					colSpan:8,
+					rowSpan:8,
+					priority:1,
+					region:"center"
+				});
+				button = new Button({
+					label:"Center",
+					class:"mblBlueButton",
+					style: "width:100%;height:100%"
+				});
+				button.placeAt(pane.containerNode);
+				button.startup();
+				widget.addChild(pane);
+				
+				pane = new Pane({
+					colSpan:4,
+					rowSpan:6,
+					minColSpan:4,
+					allowTileSize:true,
+					priority:2,
+					region:"leading",
+					tier:1
+				});
+				button = new Button({
+					label:"Leading 1",
+					class:"mblBlueButton",
+					style: "width:100%;height:100%"
+				});
+				button.placeAt(pane.containerNode);
+				button.startup();
+				widget.addChild(pane);
+				
+				pane = new Pane({
+					colSpan:4,
+					rowSpan:6,
+					minColSpan:4,
+					allowTileSize:true,
+					priority:3,
+					region:"leading",
+					tier:2
+				});
+				button = new Button({
+					label:"Leading 2",
+					class:"mblBlueButton",
+					style: "width:100%;height:100%"
+				});
+				button.placeAt(pane.containerNode);
+				button.startup();
+				widget.addChild(pane);
+				
+				pane = new Pane({
+					colSpan:4,
+					rowSpan:6,
+					minColSpan:4,
+					allowTileSize:true,
+					priority:3,
+					region:"trailing",
+					tier:1
+				});
+				button = new Button({
+					label:"Trailing 1",
+					class:"mblBlueButton",
+					style: "width:100%;height:100%"
+				});
+				button.placeAt(pane.containerNode);
+				button.startup();
+				widget.addChild(pane);
+				
+				pane = new Pane({
+					colSpan:4,
+					rowSpan:6,
+					minColSpan:4,
+					allowTileSize:true,
+					priority:3,
+					region:"trailing",
+					tier:2
+				});
+				button = new Button({
+					label:"Trailing 2",
+					class:"mblBlueButton",
+					style: "width:100%;height:100%",
+					onClick:function(){
+						widget.centerWidget(pane);
+					}
+				});
+				button.placeAt(pane.containerNode);
+				button.startup();
+				widget.addChild(pane);
+				
+				view.startup();
+			});
+		 });
+	</script>
+</head>
+<body class="claro">
+	<div id="view1"></div>
+</body>
+</html>
