@@ -9,9 +9,10 @@ define([
 "dojo/dom-class",
 "dojo/dom-construct",
 "dojo/dom-style",
-"dojox/mobile/IconMenu"
- ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu){
-	return declare("dlagua.x.mobile.GridLayout",IconMenu,{
+"dojox/mobile/IconMenu",
+"dijit/layout/_ContentPaneResizeMixin"
+ ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu, _ContentPaneResizeMixin){
+	return declare("dlagua.x.mobile.GridLayout",[IconMenu,_ContentPaneResizeMixin],{
 		cols:0,
 		rows:0,
 		childItemClass: "mblGridItem",
@@ -25,8 +26,18 @@ define([
 		allowOverlap:false,
 		startup: function(){
 			if(this._started){ return; }
-			this.inherited(arguments);
 			this.initRows = this.rows;
+			this.inherited(arguments);
+		},
+		getSize:function(){
+			return domGeometry.position(this.domNode);
+		},
+		resize:function(){
+			this.inherited(arguments);
+			var viewport = this.getSize();
+			var gridSize = this.size;
+			this.set("cols",Math.floor(viewport.w / gridSize));
+			this.set("rows",Math.floor(viewport.h / gridSize));
 			this.refresh();
 		},
 		sortBy: function(ar,keys){
@@ -55,8 +66,8 @@ define([
 			});
 			return ar;
 		},
-		getChildByIndex:function(index){
-			var children = this.gridChildren;
+		getChildByIndex:function(index, children){
+			children = children || this.gridChildren;
 			for(var i=0,z=children.length;i<z;i++) {
 				if(children[i].index==index) return children[i];
 			}
@@ -77,7 +88,7 @@ define([
 			for(var i=0;i<children.length;i++) {
 				var c = children[i];
 				if(c.id === widget.id) selIdx = i;
-				if(c.hAlign === "center" && c.tier===selected.tier) centerIdx = i;
+				if(c.region === "center") centerIdx = i;
 				if(selIdx && centerIdx) break;
 			}
 			if(selIdx===centerIdx) return;
@@ -96,20 +107,19 @@ define([
 		addChild:function(widget,insertIndex){
 			this.inherited(arguments);
 			if(!this.gridChildren) this.gridChildren = [];
-			if(!this.gridTiers) this.gridTiers = [];
-			var attrs = ["id","tier","colSpan","rowSpan","minColSpan","minRowSpan","priority","index","hAlign","allowTileSize"];
+			var attrs = ["id","colSpan","rowSpan","minColSpan","minRowSpan","priority","tier","index","region","allowTileSize"];
 			var widgetProps = {};
 			array.forEach(attrs,function(attr){
 				if(widget.hasOwnProperty(attr)) widgetProps[attr] = widget[attr];
 			});
 			widgetProps = lang.mixin({
-				index: insertIndex ? insertIndex : this.gridChildren.length+1,
+				index: insertIndex && typeof insertIndex !="string" ? insertIndex : this.gridChildren.length+1,
 				colSpan: 1,
 				rowSpan: 1,
+				tier:1,
 				priority:999,
-				hAlign:"trailing"
+				region:"trailing"
 			},widgetProps);
-			if(widgetProps.tier && array.indexOf(this.gridTiers,widgetProps.tier)===-1) this.gridTiers.push(widgetProps.tier);
 			this.gridChildren.push(widgetProps);
 		},
 		resetChildren:function(){
@@ -139,12 +149,12 @@ define([
 				this.matrixToDOM(matrix);
 			}
 		},
-		resizeFitTier:function(children,nRows,maxCols){
+		resizeFit:function(children,nRows,maxCols){
 			var matrix = this.calcTier(children,nRows,maxCols);
 			if(matrix) return matrix;
 			var allResized = false;
 			while(!allResized && !matrix) {
-				children = this.sortBy(children,["-priority","-hAlign"]);
+				children = this.sortBy(children,["-priority","-region"]);
 				var i = 0;
 				for(;i<children.length;i++){
 					var c = children[i];
@@ -158,80 +168,72 @@ define([
 			}
 			return matrix;
 		},
-		tileFitTier:function(children,nRows,maxCols){
+		tileFit:function(children,nRows,maxCols){
 			var i = 0;
 			for(;i<children.length;i++){
 				var c = children[i];
 				if(c.allowTileSize) {
 					children[i].colSpan = children[i].rowSpan = this.tileSize;
-					children[i].hAlign = "trailing";
+					//children[i].region = "trailing";
 				}
 			}
 			return this.calcTier(children,nRows,maxCols);
 		},
 		calcMatrix:function(children){
-			var tierMatrices = [];
-			// process tiers
 			var rows = 0;
-			array.forEach(this.gridTiers,function(tier){
-				children = array.filter(children,function(c){
-					return c.tier == tier;
-				});
-				var matrix, maxCols = 1, maxRows = 1, minRows = 1;
+			var matrix, maxCols = this.cols, maxRows = this.rows, minRows = 1;
+			/*for(var i = 0; i < children.length; i++){
+				maxCols = Math.max(maxCols,children[i].colSpan);
+				maxRows = Math.max(maxRows,children[i].rowSpan);
+			}*/
+			if(maxRows<=this.rows){
+				matrix = this.resizeFit(lang.clone(children),maxRows,maxCols);
+				if(matrix) rows += matrix.length;
+			}
+			if(!matrix) {
+				// increase with minRows
+				minRows = maxRows;
 				for(var i = 0; i < children.length; i++){
-					maxCols = Math.max(maxCols,children[i].colSpan);
-					maxRows = Math.max(maxRows,children[i].rowSpan);
+					minRows = Math.min(minRows,children[i].rowSpan);
 				}
-				if(maxRows<=this.rows){
-					matrix = this.resizeFitTier(lang.clone(children),maxRows,maxCols);
-					if(matrix) rows += matrix.length;
+				if(maxRows+minRows<=this.rows) {
+					matrix = this.resizeFit(lang.clone(children),maxRows+minRows,maxCols);
 				}
-				if(!matrix) {
-					// increase with minRows
-					minRows = maxRows;
-					for(var i = 0; i < children.length; i++){
-						minRows = Math.min(minRows,children[i].rowSpan);
-					}
-					if(maxRows+minRows<=this.rows) {
-						matrix = this.resizeFitTier(lang.clone(children),maxRows+minRows,maxCols);
-					}
-					if(matrix) rows += matrix.length;
+				if(matrix) rows += matrix.length;
+			}
+			// if there still is no matrix, see if children may be resized to buttons
+			// this means they should be placed in a certain region designated as button container
+			var hasTiles = false;
+			if(!matrix) {
+				matrix = this.tileFit(lang.clone(children),maxRows,maxCols);
+				if(!matrix && maxRows+this.tileSize<=this.rows) matrix = this.tileFit(lang.clone(children),maxRows+this.tileSize,maxCols);
+				if(matrix) {
+					hasTiles = true;
+					rows += matrix.length;
 				}
-				// if there still is no matrix, see if children may be resized to buttons
-				// this means they should be placed in a certain region designated as button container
-				var hasTiles = false;
-				if(!matrix) {
-					matrix = this.tileFitTier(lang.clone(children),maxRows,maxCols);
-					if(!matrix && maxRows+this.tileSize<=this.rows) matrix = this.tileFitTier(lang.clone(children),maxRows+this.tileSize,maxCols);
-					if(matrix) {
-						hasTiles = true;
-						rows += matrix.length;
-					}
-				}
-				if(matrix) matrix = this.placeCenter(lang.clone(matrix),lang.clone(children),hasTiles);
-				if(matrix) tierMatrices.push(matrix);
-			},this);
+			}
+			if(matrix) matrix = this.placeCenter(lang.clone(matrix),lang.clone(children),hasTiles);
 			// are there rows to fill?
-			if(tierMatrices[0] && rows<this.rows) {
-				// FIXME: just using tier 1 for testing
-				var center = this.filterBy(children,"center",tierMatrices[0])[0];
+			if(matrix && rows<this.rows) {
+				var center = this.filterBy(children,"center",matrix)[0];
 				// this means there is space below,
 				// but center is not last
 				var free = this.rows-rows;
 				if(center._box[3]!=rows-1) {
 					for(var i=0;i<free;i++) {
-						tierMatrices[0].splice(center._box[3]+1,0,null);
+						matrix.splice(center._box[3]+1,0,null);
 					}
 				}
 				var lastRow = center._box[3]+free;
-				tierMatrices[0] = this.fillEmpty(tierMatrices[0],center._box[0],center._box[3]+1,center._box[2],lastRow,center.index);
+				matrix = this.fillEmpty(matrix,center._box[0],center._box[3]+1,center._box[2],lastRow,center.index);
 			}
-			if(tierMatrices[0]) {
-				var center = this.filterBy(children,"center",tierMatrices[0])[0];
-				var free = this.getFree(tierMatrices[0]);
+			/*
+			if(matrix) {
+				var center = this.filterBy(children,"center",matrix)[0];
+				var free = this.getFree(matrix);
 				console.log(free)
-			}
-			return Array.prototype.concat.apply([],tierMatrices);
+			}*/
+			return matrix;
 		},
 		getFree:function(matrix){
 			var freeCols = 0, freeRows = 0;
@@ -245,7 +247,7 @@ define([
 		filterBy:function(children,region,matrix) {
 			var self = this;
 			return array.filter(lang.clone(children),function(c){
-				if(c.hAlign==region) {
+				if(c.region==region) {
 					for(var rc = 0;rc<matrix.length;rc++){
 						var cc = matrix[rc].indexOf(c.index);
 						if(cc>-1) {
@@ -300,7 +302,7 @@ define([
 		placeCenter:function(matrix,children,hasTiles){
 			var center = [];
 			var self = this;
-			children = this.sortBy(children,["hAlign","priority","colSpan","rowSpan","index"]);
+			children = this.sortBy(children,["region","priority","colSpan","rowSpan","index"]);
 			var nRows = matrix.length;
 			for(var rc = 0; rc<nRows; rc++) {
 				if(!matrix[rc]) continue;
@@ -309,7 +311,7 @@ define([
 					var row = matrix[rc];
 					var index = row[cc];
 					var c = array.filter(children,function(c){ return c.index===index; })[0];
-					if(c && c.hAlign=="center") {
+					if(c && c.region=="center") {
 						// get center block
 						var lastCol = row.lastIndexOf(index);
 						var col = this.columnFromMatrix(matrix,cc);
@@ -323,7 +325,7 @@ define([
 						}
 						if(!hasTiles) {
 							var leadingInRow = array.filter(children,function(c){
-								return c.hAlign=="leading" && row.indexOf(c.index) > -1;
+								return c.region=="leading" && row.indexOf(c.index) > -1;
 							});
 							if(leadingInRow.length){
 								var lastLeadingInRow = leadingInRow.pop();
@@ -355,7 +357,7 @@ define([
 			var colspan, rowspan;
 			var nCols = this.cols;
 			var emptyX=0,emptyY=0;
-			children = this.sortBy(children,["hAlign","priority","colSpan","rowSpan","index"]);
+			children = this.sortBy(children,["region","priority","colSpan","rowSpan","index"]);
 			var rc,cc;
 			var updateRowCount = function(h) {
 				if(!h) h = 1;
@@ -382,7 +384,7 @@ define([
 				checkRow(rc);
 			}
 			// since this calcs only tier, get max of tier
-			maxCols = Math.min(maxCols, nCols)
+			maxCols = Math.min(maxCols, nCols);
 			updateColCount();
 			for(var i = 0; i < children.length; i++){
 				var item = children[i];
@@ -417,7 +419,27 @@ define([
 							}
 						}
 					}
-					// if overlap and fill not allowed and have height
+					// if block before me same region but other tier
+					if(!inrange) {
+						range = matrix[rowIdx] ? matrix[rowIdx].slice(0,colIdx) : [];
+						for(cc=0;cc<range.length;cc++){
+							if(range[cc]) {
+								var prev = range[cc];
+								var prevItem = self.getChildByIndex(prev,children);
+								if(prevItem.region==item.region && prevItem.tier<item.tier) {
+									inrange = true;
+									var h = rowIdx;
+									while(matrix[h] && matrix[h][cc]===prev) {
+										h++;
+									}
+									updateColCount();
+									updateRowCount(h-rowIdx);
+									break;
+								}
+							}
+						}
+					}
+					// if overlap not allowed and have height
 					if(!inrange && !self.allowOverlap && rowspan>1) {
 						// if block after or before me has 1 up
 						// and less down than me
