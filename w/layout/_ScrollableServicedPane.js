@@ -26,10 +26,7 @@ define([
 	"dojo/Deferred",
 	"dlagua/x/mobile/Scrollable",
 	"dojox/mobile/sniff",
-	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
-	"dojo/store/Memory",
-	"dojo/store/Cache",
 	"dlagua/c/rpc/FeedReader",
 	"./Container",
 	"dijit/_TemplatedMixin",
@@ -37,7 +34,7 @@ define([
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,has,JsonRest,ScrollableServicedPaneItem,Memory,Cache,FeedReader,Container,_TemplatedMixin,templateString){
+],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,has,ScrollableServicedPaneItem,FeedReader,Container,_TemplatedMixin,templateString){
 return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container, _TemplatedMixin],{
 	store:null,
 	stores:{},
@@ -226,36 +223,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 		}
 		switch(this.servicetype) {
 			case "persvr":
-				if(!item.service) item.service = (this.service || "/persvr/");
-				if(!item.model) return;
-				var model = item.model;
-				var target = item.service+model+"/";
-				var schemaUri = item.service+"Class/"+model;
-				if(!this.newsort && item.sort) this.sort = item.sort;
-				if(item.filter) this.orifilter = this.filter = item.filter;
-				if(!this.store) {
-					this.store = new JsonRest({
-						target:target,
-						schemaUri:schemaUri
-					});
-					if(this.stores) {
-						if(!this.stores[target]) {
-							this.stores[target] = new Cache(this.store, new Memory());
-						}
-					}
-				} else {
-					this.store.target = target;
-					this.store.schemaUri = schemaUri;
-				}
+				// find in _PersvrMixin
 				break;
 			case "atom":
 				if(!item.service) item.service = (this.service || "/atom/content");
+				this.rebuild(item);
 				break;
 			default:
 				if(!item.service) item.service = "/xbrota/rest";
+				this.rebuild(item);
 				break;
 		}
-		this.rebuild(item);
 	},
 	rebuild:function(item) {
 		this.currentService = item.service;
@@ -275,26 +253,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
-			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-					this._tplo = tplo;
-					this._getSchema().then(lang.hitch(this,function(){
-						var q = this.createQuery();
-						var start = this.start;
-						this.start += this.count;
-						var results = this.results = this.store.query(q,{
-							start:start,
-							count:this.count,
-							useXDomain:this.useXDomain
-						});
-						results.total.then(lang.hitch(this,function(total){
-							this.total = total;
-							if(total===0 || isNaN(total)) this.onReady();
-						}));
-						results.forEach(lang.hitch(this,this.addItem));
-					}));
-				}));
-			}));
+			// find in _PervsMixin
 		} else if(this.servicetype=="atom") {
         	var fr = new FeedReader();
         	fr.read(item.service+"/"+item.path).then(lang.hitch(this,function(items){
@@ -384,6 +343,9 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 		if(this._beingDestroyed) return;
 		console.log("done loading "+this.id);
 		this._loading = false;
+		if(this.loadingAnimation && this.footer) {
+			domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
+		}
 		this.showScrollBar();
 		if(this.useScrollBar) {
 			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
