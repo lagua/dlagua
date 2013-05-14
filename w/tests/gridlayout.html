@@ -54,7 +54,7 @@
 			"dojox/mobile/parser"
 		 ], function(registry, array, ready, GridLayout, Pane, Button, View){
 			var view, widget;
-			var gridSize = 45;
+			var gridSize = 60;
 			var gridLeeway = 10;
 			ready(function(){
 				view = new View({},"view1");
@@ -81,29 +81,33 @@
 				button.startup();
 				widget.addChild(pane);
 				
-				pane = new Pane({
-					colSpan:4,
-					rowSpan:6,
+				pane1 = new Pane({
+					colSpan:8,
 					minColSpan:4,
+					rowSpan:4,
 					allowTileSize:true,
-					priority:2,
+					priority:3,
 					region:"leading",
 					tier:1
 				});
 				button = new Button({
 					label:"Leading 1",
 					class:"mblBlueButton",
-					style: "width:100%;height:100%"
+					style: "width:100%;height:100%",
+					onClick:function(){
+						widget.resize();
+					}
 				});
-				button.placeAt(pane.containerNode);
+				button.placeAt(pane1.containerNode);
 				button.startup();
-				widget.addChild(pane);
+				widget.addChild(pane1);
 				
-				pane = new Pane({
-					colSpan:4,
-					rowSpan:6,
+				var pane2 = new Pane({
+					colSpan:8,
 					minColSpan:4,
+					rowSpan:2,
 					allowTileSize:true,
+					preventResize:true,
 					priority:3,
 					region:"leading",
 					tier:2
@@ -111,16 +115,19 @@
 				button = new Button({
 					label:"Leading 2",
 					class:"mblBlueButton",
-					style: "width:100%;height:100%"
+					style: "width:100%;height:100%",
+					onClick:function(){
+						var c=widget.getChildByIndex(2)
+						widget.swapWidget(pane2,c);
+					}
 				});
-				button.placeAt(pane.containerNode);
+				button.placeAt(pane2.containerNode);
 				button.startup();
-				widget.addChild(pane);
+				widget.addChild(pane2);
 				
 				pane = new Pane({
 					colSpan:4,
-					rowSpan:6,
-					minColSpan:4,
+					rowSpan:4,
 					allowTileSize:true,
 					priority:3,
 					region:"trailing",
@@ -137,9 +144,9 @@
 				
 				pane = new Pane({
 					colSpan:4,
-					rowSpan:6,
-					minColSpan:4,
+					rowSpan:4,
 					allowTileSize:true,
+					preventResize:true,
 					priority:3,
 					region:"trailing",
 					tier:2
@@ -149,7 +156,8 @@
 					class:"mblBlueButton",
 					style: "width:100%;height:100%",
 					onClick:function(){
-						widget.centerWidget(pane);
+						var c=widget.getChildByIndex(1)
+						widget.swapWidget(pane,c);
 					}
 				});
 				button.placeAt(pane.containerNode);
