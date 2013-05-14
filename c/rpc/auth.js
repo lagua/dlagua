@@ -39,13 +39,15 @@ define([
 					if(!d.isFulfilled()) d.reject();
 				}
 			},function(err) {
-				d.reject();
+				token = err.response.getHeader("phrase");
+				var msg = err.response.xhr.responseText;
+				d.reject(msg);
 			},function(io){
 				token = io.getHeader("phrase");
 				if(io.getHeader(sessionParam)) {
 					hasSessParam = true;
 				} else {
-					var msg ="The server says: "+io.xhr.statusText+"<br/>Reason given: "+io.xhr.responseText;
+					var msg = io.xhr.responseText;
 					d.reject(msg);
 				}
 			});
@@ -68,7 +70,7 @@ define([
 			});
 		};
 		
-		var createForm = function(){
+		var createForm = function(errmsg){
 			authDialog = new Dialog({
 				title: "Login",
 				style: "text-align:left;",
@@ -111,6 +113,7 @@ define([
 			var fc = form.getChildren();
 			var maingroup = fc.length ? fc[0] : null;
 			authMsg = maingroup.messageNode;
+			if(errmsg) authMsg.innerHTML = errmsg;
 		};
 		
 		var req = {
@@ -120,8 +123,8 @@ define([
 		
 		doReq(req).then(function(auth){
 			d.resolve(auth);
-		},function(err){
-			createForm();
+		},function(errmsg){
+			createForm(params.errorMessage || errmsg);
 		});
 		
 		return d;
