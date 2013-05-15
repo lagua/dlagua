@@ -10,8 +10,9 @@ define([
 "dojo/dom-construct",
 "dojo/dom-style",
 "dojox/mobile/IconMenu",
+"dijit/registry",
 "dijit/layout/_ContentPaneResizeMixin"
- ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu, _ContentPaneResizeMixin){
+ ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu, registry, _ContentPaneResizeMixin){
 	return declare("dlagua.x.mobile.GridLayout",[IconMenu,_ContentPaneResizeMixin],{
 		cols:0,
 		rows:0,
@@ -82,6 +83,8 @@ define([
 		},
 		swapWidget:function(widget,target) {
 			this.resetChildren();
+			if(typeof widget == "string") widget = registry.byId(widget);
+			if(typeof target == "string") target = registry.byId(target); 
 			var children = lang.clone(this.gridChildren);
 			var selected = this.getChildById(widget.id);
 			var trgtIdx, selIdx;
