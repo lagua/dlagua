@@ -21,6 +21,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	templateModule:"",
 	template:"",
 	useItemChildren:false,
+	_tplo:null,
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
 		return request(require.toUrl(this.templateModule)+"/"+template);
