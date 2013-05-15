@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+	<title>Grid Layout test</title>
+	<script type="text/javascript" src="../../../dojo/dojo.js" data-dojo-config="async: true"></script>
+	<style>
+		.mblButton {
+			width: 100px;
+			height: 100px;
+		}
+		.mblView, html, body {
+			margin:0;
+			padding:0;
+			height:100%;
+			overflow:hidden;
+		}
+		#view1 {
+			height:100%;
+			overflow:hidden;
+		}
+  .mblPane, .mblGridLayout {
+-webkit-transition-duration: 0.9s;
+     -moz-transition-duration: 0.9s;
+      -ms-transition-duration: 0.9s;
+       -o-transition-duration: 0.9s;
+          transition-duration: 0.9s;
+}
+
+.mblGridLayout {
+  -webkit-transition-property: width, height;
+     -moz-transition-property: width, height;
+      -ms-transition-property: width, height;
+       -o-transition-property: width, height;
+          transition-property: width, height;
+}
+
+.mblPane {
+  -webkit-transition-property: width, height, left, right, top;
+     -moz-transition-property: width, height, left, right, top;
+      -ms-transition-property: width, height, left, right, top;
+       -o-transition-property: width, height, left, right, top;
+          transition-property: width, height, left, right, top;
+}
+		
+	</style>
+	<script>
+	var resize;
+	require([
+			"dijit/registry",
+			"dojo/window",
+			"dojo/on",
+			"dojo/ready",
+			"dlagua/w/layout/ScrollablePane"
+		 ], function(registry, win, on, ready, ScrollablePane){
+			ready(function(){
+				var widget = new ScrollablePane({
+					href:"testcontent.html"
+				},"view1");
+				widget.startup();
+				var resizeTimeout;
+				resize = function(){
+					clearTimeout(resizeTimeout);
+			        // handle normal resize
+			        resizeTimeout = setTimeout(function() {
+			        	if(!widget) return;
+						var viewport = win.getBox();
+						widget.resize(viewport)
+			        }, 250);
+				}
+				on(window,"resize",resize);
+			});
+		 });
+	</script>
+</head>
+<body class="claro">
+	<div id="view1"></div>
+</body>
+</html>
