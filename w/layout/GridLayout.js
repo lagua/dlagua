@@ -7,6 +7,7 @@ define([
 	"dojo/dom",
 	"dojo/dom-geometry",
 	"dojo/dom-class",
+	"dojo/dom-attr",
 	"dojo/dom-construct",
 	"dojo/dom-style",
 	"dijit/registry",
@@ -14,7 +15,7 @@ define([
 	"dijit/_Container",
 	"dijit/_WidgetBase",
 	"dijit/layout/_ContentPaneResizeMixin"
- ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, registry, _Contained, _Container, _WidgetBase, _ContentPaneResizeMixin){
+ ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domAttr, domConstruct, domStyle, registry, _Contained, _Container, _WidgetBase, _ContentPaneResizeMixin){
 	return declare("dlagua.w.layout.GridLayout",[_WidgetBase, _Container, _Contained,_ContentPaneResizeMixin],{
 		cols:0,
 		rows:0,
