@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+	<title>ScrollablePane test</title>
+	<script type="text/javascript" src="../../../dojo/dojo.js" data-dojo-config="async: true"></script>
+	<style>
+		html, body {
+			margin:0;
+			padding:0;
+			height:100%;
+			overflow:hidden;
+		}
+		#scrollable {
+			height:100%;
+			overflow:hidden;
+		}
+	</style>
+	<script>
+	var resize;
+	require([
+			"dijit/registry",
+			"dojo/window",
+			"dojo/on",
+			"dojo/ready",
+			"dlagua/w/layout/ScrollablePane"
+		 ], function(registry, win, on, ready, ScrollablePane){
+			ready(function(){
+				var widget = new ScrollablePane({
+					href:"testcontent.html"
+				},"scrollable");
+				widget.startup();
+				
+				// window resize handle
+				var resizeTimeout;
+				resize = function(){
+					clearTimeout(resizeTimeout);
+			        // handle normal resize
+			        resizeTimeout = setTimeout(function() {
+			        	if(!widget) return;
+						var viewport = win.getBox();
+						widget.resize(viewport)
+			        }, 250);
+				}
+				on(window,"resize",resize);
+			});
+		 });
+	</script>
+</head>
+<body class="claro">
+	<div id="scrollable"></div>
+</body>
+</html>

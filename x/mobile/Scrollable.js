@@ -3,6 +3,7 @@ define([
 	"dojo/_base/connect",
 	"dojo/_base/declare",
 	"dojo/_base/lang",
+	"dojo/_base/event",
 	"dojo/_base/window",
 	"dojo/dom-class",
 	"dojo/dom-construct",
@@ -11,14 +12,26 @@ define([
 	"dojox/mobile/sniff",
 	"./_css3",
 	"dojox/mobile/scrollable"
-], function(dojo, connect, declare, lang, win, domClass, domConstruct, domStyle, touch, has, css3, Scrollable){
+], function(dojo, connect, declare, lang, event, win, domClass, domConstruct, domStyle, touch, has, css3, Scrollable){
 	
 	var dm = lang.getObject("dojox.mobile", true);
 	
 	return declare("dlagua.x.mobile.Scrollable", Scrollable, {
+		noTouch:false,
 		init: function(/*Object?*/params){
 			if(this._beingDestroyed) return;
-			this.inherited(arguments);
+			// WSH: scrollbar only (bit hacky)
+			if(this.noTouch) {
+				this._v = (this.scrollDir.indexOf("v") != -1); // vertical scrolling
+				this._h = (this.scrollDir.indexOf("h") != -1); // horizontal scrolling
+				var bars = this.showScrollBar(true);
+				this.touchNode = bars._scrollBarV ? bars._scrollBarV : bars._scrollBarH;
+				this.inherited(arguments);
+				if(bars._scrollBarV) this._scrollBarV = bars._scrollBarV;
+				if(bars._scrollBarH) this._scrollBarH = bars._scrollBarH;
+			} else {
+				this.inherited(arguments);
+			}
 			// WSH: add wheel handle after everything
 			if(!has("touch")) this._ch.push(connect.connect(this.containerNode, (!dojo.isMozilla ? "onmousewheel" : "DOMMouseScroll"), this, "onScroll"));
 		},
@@ -334,7 +347,7 @@ define([
 			return {x:x, y:y};
 		},
 		
-		showScrollBar: function(){
+		showScrollBar: function(force){
 			// summary:
 			//		Shows the scroll bar.
 			// description:
@@ -352,7 +365,7 @@ define([
 				(this.scrollDir == "h" && dim.c.w <= dim.d.w) || 
 				(this._v && this._h && dim.c.h <= dim.d.h && dim.c.w <= dim.d.w);
 			
-			if(skip) {
+			if(skip && !force) {
 				this.clearScrollBar = true;
 				this.hideScrollBar();
 				return;
@@ -391,6 +404,16 @@ define([
 				}
 				return bar;
 			};
+			if(force) {
+				var bars = {};
+				if(this._v){
+					bars._scrollBarV = createBar(this, "V");
+				}
+				if(this._h){
+					bars._scrollBarH = createBar(this, "H");
+				}
+				return bars;
+			}
 			if(this._v && !this._scrollBarV){
 				this._scrollBarV = createBar(this, "V");
 				this._ch.push(connect.connect(this._scrollBarV, has("touch") ? "touchstart" : "onmousedown", this, "onTouchStart"));
@@ -506,11 +529,14 @@ define([
 		// WSH: custom additions
 		getScrollBarPos: function(bar){
 			if(!bar) return {x:0,y:0};
-			if(has("webkit")){
-				var m = win.doc.defaultView.getComputedStyle(bar, '')["-webkit-transform"];
+			if(has("css3-animations")){
+				var s = win.doc.defaultView.getComputedStyle(bar, '');
+				var m = s[css3.name("transform")];
 				if(m && m.indexOf("matrix") === 0){
 					var arr = m.split(/[,\s\)]+/);
-					return {y:arr[5] - 0, x:arr[4] - 0};
+					// IE10 returns a matrix3d
+					var i = m.indexOf("matrix3d") === 0 ? 12 : 4;
+					return {y:arr[i+1] - 0, x:arr[i] - 0};
 				}
 				return {x:0, y:0};
 			}else{
@@ -650,6 +676,53 @@ define([
 				setTimeout(ontime,100);
 			} else {
 				this._time.push((new Date()).getTime());
+			}
+		},
+		onFlickAnimationEnd:function(e){
+			if(e){
+				var an = e.animationName;
+				if(an && an.indexOf("scrollableViewScroll2") === -1){
+					if(an.indexOf("scrollableViewScroll0") !== -1){ // scrollBarV
+						if(this._scrollBarNodeV){ domClass.remove(this._scrollBarNodeV, "mblScrollableScrollTo0"); }
+					}else if(an.indexOf("scrollableViewScroll1") !== -1){ // scrollBarH
+						if(this._scrollBarNodeH){ domClass.remove(this._scrollBarNodeH, "mblScrollableScrollTo1"); }
+					}else{ // fade or others
+						if(this._scrollBarNodeV){ this._scrollBarNodeV.className = ""; }
+						if(this._scrollBarNodeH){ this._scrollBarNodeH.className = ""; }
+					}
+					return;
+				}
+				if(this._useTransformTransition || this._useTopLeft){
+					var n = e.target;
+					if(n === this._scrollBarV || n === this._scrollBarH){
+						var cls = "mblScrollableScrollTo" + (n === this._scrollBarV ? "0" : "1");
+						if(domClass.contains(n, cls)){
+							domClass.remove(n, cls);
+						}else{
+							n.className = "";
+						}
+						return;
+					}
+				}
+				if(e.srcElement){
+					event.stop(e);
+				}
+			}
+			this.stopAnimation();
+			if(this._bounce){
+				var _this = this;
+				var bounce = _this._bounce;
+				setTimeout(function(){
+					_this.slideTo(bounce, 0.3, "ease-out");
+				}, 0);
+				_this._bounce = undefined;
+			}else{
+				this.hideScrollBar();
+				this.removeCover();
+				// WSH: reset startTime for scrollbar
+				this.startTime = 0;
+				// WSH: this really is dim reset
+				this._dim = this.getDim();
 			}
 		},
 		scrollToInitPos:function(){

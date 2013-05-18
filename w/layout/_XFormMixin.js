@@ -27,7 +27,9 @@ return declare("dlagua.w.layout._XFormMixin",[],{
 		this.xformTarget = href;
 		if(fluxProcessor) {
 			fluxProcessor.sendValue("xform-url",href);
-			fluxProcessor.dispatchEventType("main","load-xform");
+			setTimeout(function(){
+				fluxProcessor.dispatchEventType("main","load-xform");
+			},100);
 		}
 	},
 	xformUnloaded: function(ref) {

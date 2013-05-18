@@ -83,9 +83,9 @@ define([
 		_checkTruncated:function(val){
 			if(!val) return {};
 			var ar = [];
-			try {
+			if(typeof val == "string") {
 				ar = val.split("/");
-			} catch(e) {
+			} else {
 				return {};
 			}
 			var nar = ar.slice(0,this.maxDepth);

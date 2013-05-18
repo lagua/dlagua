@@ -61,7 +61,6 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 				target[name] = t;
 			}
 		}
-		return target;
 	}
 	
 	var NodeList = function(array){
@@ -148,7 +147,11 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 					if(node.domNode) excl.push();
 					if(node.containerNode) excl.push();
 					var instance = new m();
-					node = mixin(node, instance, excl);
+					if(node.mixin && typeof node.mixin == "function") {
+						node.mixin(instance, excl);
+					} else {
+						mixin(node, instance, excl);
+					}
 					if(instance.domNode) transform(node,instance.domNode);
 				});
 				node.__oriproto = oriproto;
@@ -163,6 +166,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 				var domNode = node.domNode;
 				registry.remove(node.id);
 				node = node.__oriproto;
+				node._attachPoints = [];
 				node.create(params,domNode);
 				return node;
 			});
@@ -173,8 +177,10 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			var self = this;
 			var handles = this.map(function(node){
 				var handle;
-				var listener = function(e){
-					mylistener(self,node,handle,e);
+				var listener = function(){
+					var args = Array.prototype.slice.call(arguments);
+					var e = args.pop();
+					mylistener(self,node,args,handle,e);
 				};
 				handle = on.parse(node, eventName, listener, function(target, type){
 					type = type.charAt(0).toUpperCase() + type.slice(1);

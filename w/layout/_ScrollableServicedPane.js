@@ -1,43 +1,23 @@
-//TODO:
-/* take apart ScrollablePane and _ServicedMixin
- * make services require plugin RPCs
- * move persvr to RPC
- * take out skip / autofire / timer and add param for plugin
- * dynamic loading of modules:
- * make JSON / ATOM / XML pluggable, require first
- */
 define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
-	"dojo/_base/array",
-	"dojo/_base/event",
-	"dojo/_base/window",
 	"dojo/_base/fx",
-	"dojo/on",
 	"dojo/request",
-	"dojo/query",
 	"dojo/dom",
 	"dojo/dom-construct",
 	"dojo/dom-geometry",
 	"dojo/dom-class",
 	"dojo/dom-style",
-	"dojo/dom-attr",
-	"dojo/aspect",
-	"dojo/Deferred",
 	"dlagua/x/mobile/Scrollable",
-	"dojox/mobile/sniff",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
-	"dlagua/c/rpc/FeedReader",
-	"./Container",
+	"dijit/layout/LayoutContainer",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
 	"dojox/mobile/parser",
 	"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,array,event,win,fx,on,request,query,dom,domConstruct,domGeometry,domClass,domStyle,domAttr,aspect,Deferred,Scrollable,has,ScrollableServicedPaneItem,FeedReader,Container,_TemplatedMixin,templateString){
-return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container, _TemplatedMixin],{
-	store:null,
-	stores:{},
+],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,Scrollable,ScrollableServicedPaneItem,LayoutContainer,_TemplatedMixin,templateString){
+return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutContainer, _TemplatedMixin],{
 	listitems:null,
 	itemnodesmap:null,
 	templateString:templateString,
@@ -45,24 +25,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 	hrProperty:"",
 	filter:"",
 	sort:"",
-	filterByItemProperties:"",
 	filters:null,
 	orifilters:null,
-	schema:null,
-	schemata:{},
-	_ch:null,
 	childrenReady:0,
 	selectedIndex:0,
 	selectedItem:null,
 	itemHeight:0,
 	template:"",
-	childTemplate:"",
 	templateModule:null,
 	scrollBar:true,
 	header:false,
 	footer:false,
-	snap:false,
-	query:"",
 	href:"",
 	content:"",
 	oldItem:null,
@@ -87,7 +60,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
 	height:"inherit",
-	_tplo:null,
 	startup: function(){
 		if(this._started){ return; }
 		this.listitems = [];
@@ -124,7 +96,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 			domStyle.set(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
 		}
-		this.init(params);
 		this.inherited(arguments);
 		if(this.count>this.maxCount) this.count = this.maxCount;
 		// wait for any pub/sub loaders
@@ -255,16 +226,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 		if(this.servicetype=="persvr") {
 			// find in _PervsMixin
 		} else if(this.servicetype=="atom") {
-        	var fr = new FeedReader();
-        	fr.read(item.service+"/"+item.path).then(lang.hitch(this,function(items){
-        		var total = items.length;
-        		this.total = total;
-				if(total===0 || isNaN(total)) {
-					this.onReady();
-				} else {
-					array.forEach(items,this.addItem,this);
-				}
-        	}));
+        	// find in _AtomMixin
 		} else {
 			if(item) {
 				this._initContent(item);
@@ -277,27 +239,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, Container,
 		// summary:
 		//		Destroy the ContentPane and its contents
 		if(this._loading) this.cancel();
-		this.inherited(arguments);
-	},
-	onFlickAnimationEnd:function(e){
-		if(e && e.srcElement){
-			event.stop(e);
-		}
-		this.stopAnimation();
-		if(this._bounce){
-			var _this = this;
-			var bounce = _this._bounce;
-			setTimeout(function(){
-				_this.slideTo(bounce, 0.3, "ease-out");
-			}, 0);
-			_this._bounce = undefined;
-		}else{
-			this.hideScrollBar();
-			this.removeCover();
-			this.startTime = 0;
-			// this really is dim reset
-			this._dim = this.getDim();
-		}
 		this.inherited(arguments);
 	},
 	layout:function(){

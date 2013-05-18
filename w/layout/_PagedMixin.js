@@ -23,6 +23,10 @@ define([
 		maxCount:Infinity,
 		pageSize:5,
 		total:Infinity,
+		filterByItemProperties:"",
+		childTemplate:"",
+		snap:false,
+		query:"",
 		pageButtons:true,
 		pageButtonPlacement:"HF", // prev in Header + next in Footer (default), or both in either Header or Footer
 		// defaultTimeout: Number
