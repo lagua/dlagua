@@ -27,7 +27,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 		var nodeList = new (NodeListCtor || this._NodeListCtor || nl)(a);
 		return parent ? nodeList._stash(parent) : nodeList;
 	};
-	
+	/*
 	function transform(widget,newdom) {
 		// TODO: apply rule-based transforms
 		// for now, just update the DOM from template:
@@ -47,22 +47,7 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			}
 		});
 	}
-	
-	function mixin(target, source, exclude){
-		var name, t;
-		// add props adding metadata for incoming functions skipping a constructor
-		for(name in source){
-			t = source[name];
-			if((t !== op[name] || !(name in op)) && name != cname && array.indexOf(exclude,name)==-1){
-				if(opts.call(t) == "[object Function]"){
-					// non-trivial function method => attach its name
-					t.nom = name;
-				}
-				target[name] = t;
-			}
-		}
-	}
-	
+	*/
 	var NodeList = function(array){
 		var isNew = this instanceof nl && has("array-extensible");
 		if(typeof array == "number"){
@@ -134,72 +119,32 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			return this;
 		},
 		// mixin decorators
-		extend: function() {
-			var mixins = arguments;
+		extend: function(mixins,params) {
 			var nodes = array.map(this,function(node){
-				var params = node.params || {};
-				var exclude = ["id","domNode","containerNode"];
-				for(var k in params) exclude.push(k);
-				if(node._started) node._started = false;
-				var oriproto = node.__proto__;
-				forEach(mixins,function(m){
-					var excl = lang.clone(exclude);
-					if(node.domNode) excl.push();
-					if(node.containerNode) excl.push();
-					var instance = new m();
-					if(node.mixin && typeof node.mixin == "function") {
-						node.mixin(instance, excl);
-					} else {
-						mixin(node, instance, excl);
-					}
-					if(instance.domNode) transform(node,instance.domNode);
-				});
-				node.__oriproto = oriproto;
+				if(node.extend && typeof node.extend == "function") {
+					node.extend(mixins,params);
+				}
 				return node;
 			});
 			return this._wrap(nodes);
 		},
-		base: function() {
-			var nodes = array.map(this,function(node){
-				if(!node.__oriproto) return node;
-				var params = node.params || {};
-				var domNode = node.domNode;
-				registry.remove(node.id);
-				node = node.__oriproto;
-				node._attachPoints = [];
-				node.create(params,domNode);
-				return node;
-			});
-			return this._wrap(nodes);
-		},
-		on: function(eventName, mylistener){
+		on: function(eventName, listener){
 			// pass NodeList as first argument for chaining
 			var self = this;
 			var handles = this.map(function(node){
-				var handle;
-				var listener = function(){
-					var args = Array.prototype.slice.call(arguments);
-					var e = args.pop();
-					mylistener(self,node,args,handle,e);
-				};
-				handle = on.parse(node, eventName, listener, function(target, type){
+				return on.parse(node, eventName, listener, function(target, type){
 					type = type.charAt(0).toUpperCase() + type.slice(1);
-					return aspect.after(target, 'on' + type, listener, true);
+					return node.own(aspect.after(target, 'on' + type, lang.hitch(node,listener), true))[0];
 				});
-				//handle = on(node, eventName, listener);
-				return handle;
 			});
-			handles.remove = function(){
-				for(var i = 0; i < handles.length; i++){
-					handles[i].remove();
-				}
-			};
 			this._handles = handles;
 			return this;
 		},
 		off:function(){
 			if(this._handles) {
-				this._handles.remove();
+				for(var i = 0; i < this._handles.length; i++){
+					this._handles[i].remove();
+				}
 				this._handles = null;
 			}
 		},
