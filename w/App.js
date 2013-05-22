@@ -162,7 +162,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		console.log("onItem",item)
 		var state = item.state || this.state;
 		var path = item.path;
-		var locale = item.locale;
+		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
 		var d = new Deferred();
@@ -221,7 +221,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				par = array.filter(par,function(item,index){
 					return par[index]!=stripar[index];
 				});
-				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+locale+(par.length ? "/" : "")+par.join("/");
+				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				dhash(hash);
@@ -256,6 +256,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/statechange",this.state);
 			}),
 			this.watch("locale",function(){
+				if(!this.locale) return;
 				dojo.locale = this.locale.replace("_","-");
 				if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 				this.localechanged = true;
