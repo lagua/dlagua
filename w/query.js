@@ -1,5 +1,5 @@
-define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(lang, array, aspect, on, has, loader, defaultEngine, domConstruct,domAttr,domClass, registry, _WidgetBase, df){
+define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-style", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
+	function(declare, lang, array, aspect, on, has, loader, defaultEngine, domConstruct,domAttr,domStyle,domClass, registry, _WidgetBase, df){
 	
 	"use strict";
 
@@ -134,72 +134,95 @@ define(["dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/h
 			return this;
 		},
 		// mixin decorators
-		extend: function() {
-			var mixins = arguments;
+		extend: function(mixins,params) {
 			var nodes = array.map(this,function(node){
-				var params = node.params || {};
-				var exclude = ["id","domNode","containerNode"];
-				for(var k in params) exclude.push(k);
-				if(node._started) node._started = false;
-				var oriproto = node.__proto__;
-				forEach(mixins,function(m){
-					var excl = lang.clone(exclude);
-					if(node.domNode) excl.push();
-					if(node.containerNode) excl.push();
-					var instance = new m();
-					if(node.mixin && typeof node.mixin == "function") {
-						node.mixin(instance, excl);
-					} else {
-						mixin(node, instance, excl);
-					}
-					if(instance.domNode) transform(node,instance.domNode);
-				});
-				node.__oriproto = oriproto;
-				return node;
-			});
-			return this._wrap(nodes);
-		},
-		base: function() {
-			var nodes = array.map(this,function(node){
-				if(!node.__oriproto) return node;
-				var params = node.params || {};
+				var ref = node.domNode.nextElementSibling;
+				var insertIndex = "before";
+				if(!ref) {
+					ref = node.domNode.parentNode;
+					insertIndex = "last";
+				}
+				params = lang.mixin(node.params || {}, params);
 				var domNode = node.domNode;
 				registry.remove(node.id);
-				node = node.__oriproto;
-				node._attachPoints = [];
-				node.create(params,domNode);
+				node.destroyRecursive(true);
+				var style = domNode.style;
+				domNode.innerHTML = "";
+				var Widget = declare(mixins);
+				node = new Widget(params,domNode);
+				node.placeAt(ref,insertIndex);
+				node.set("style",style);
+				node.startup();
 				return node;
-			});
+			},this);
 			return this._wrap(nodes);
+		},
+		set:function(param,data){
+			forEach(this,function(node){
+				node.set(param,data);
+			});
+			return this;
+		},
+		setDomStyle:function(){
+			var args = arguments;
+			forEach(this,function(node){
+				domStyle.set(node,args);
+			});
+			return this;
+		},
+		call:function(){
+			var args = Array.prototype.slice.call(arguments);
+			var f = args.shift();
+			forEach(this,function(node){
+				node[f].apply(node,args);
+			});
+			return this;
 		},
 		on: function(eventName, mylistener){
 			// pass NodeList as first argument for chaining
 			var self = this;
 			var handles = this.map(function(node){
-				var handle;
 				var listener = function(){
 					var args = Array.prototype.slice.call(arguments);
-					var e = args.pop();
-					mylistener(self,node,args,handle,e);
-				};
-				handle = on.parse(node, eventName, listener, function(target, type){
-					type = type.charAt(0).toUpperCase() + type.slice(1);
-					return aspect.after(target, 'on' + type, listener, true);
-				});
-				//handle = on(node, eventName, listener);
-				return handle;
-			});
-			handles.remove = function(){
-				for(var i = 0; i < handles.length; i++){
-					handles[i].remove();
+					args.push(self);
+					mylistener.apply(node,args);
 				}
-			};
+				return node.on(eventName,lang.hitch(node,listener));
+			});
+			this._handles = handles;
+			return this;
+		},
+		after: function(eventName, mylistener){
+			// pass NodeList as first argument for chaining
+			var self = this;
+			var handles = this.map(function(node){
+				var listener = function(){
+					var args = Array.prototype.slice.call(arguments);
+					args.push(self);
+					mylistener.apply(node,args);
+				}
+				return aspect.after(node,eventName,lang.hitch(node,listener),true);
+			});
+			this._handles = handles;
+			return this;
+		},
+		before: function(eventName, mylistener){
+			// pass NodeList as first argument for chaining
+			var self = this;
+			var handles = this.map(function(node){
+				var listener = function(){
+					var args = Array.prototype.slice.call(arguments);
+					args.push(self);
+					mylistener.apply(node,args);
+				}
+				return aspect.before(node,eventName,lang.hitch(node,listener),true);
+			});
 			this._handles = handles;
 			return this;
 		},
 		off:function(){
 			if(this._handles) {
-				this._handles.remove();
+				for(var i=0;i<this._handles.length;i++) this._handles[i].remove();
 				this._handles = null;
 			}
 		},
