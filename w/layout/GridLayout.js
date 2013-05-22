@@ -1,19 +1,22 @@
 define([
-"dojo/_base/declare",
-"dojo/_base/lang",
-"dojo/_base/array",
-"dojo/on",
-"dojo/sniff",
-"dojo/dom",
-"dojo/dom-geometry",
-"dojo/dom-class",
-"dojo/dom-construct",
-"dojo/dom-style",
-"dojox/mobile/IconMenu",
-"dijit/registry",
-"dijit/layout/_ContentPaneResizeMixin"
- ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domConstruct, domStyle, IconMenu, registry, _ContentPaneResizeMixin){
-	return declare("dlagua.x.mobile.GridLayout",[IconMenu,_ContentPaneResizeMixin],{
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/on",
+	"dojo/sniff",
+	"dojo/dom",
+	"dojo/dom-geometry",
+	"dojo/dom-class",
+	"dojo/dom-attr",
+	"dojo/dom-construct",
+	"dojo/dom-style",
+	"dijit/registry",
+	"dijit/_Contained",
+	"dijit/_Container",
+	"dijit/_WidgetBase",
+	"dijit/layout/_ContentPaneResizeMixin"
+ ], function(declare, lang, array, on, has, dom, domGeometry, domClass, domAttr, domConstruct, domStyle, registry, _Contained, _Container, _WidgetBase, _ContentPaneResizeMixin){
+	return declare("dlagua.w.layout.GridLayout",[_WidgetBase, _Container, _Contained,_ContentPaneResizeMixin],{
 		cols:0,
 		rows:0,
 		childItemClass: "mblGridItem",
@@ -25,17 +28,19 @@ define([
 		tileSize:2,
 		allowFill:false,
 		allowOverlap:false,
+		buildRendering: function(){
+			this.domNode = this.containerNode = this.srcNodeRef || domConstruct.create(this.tag);
+			domAttr.set(this.domNode, "role", "menu");
+			this.inherited(arguments);
+		},
 		startup: function(){
 			if(this._started){ return; }
 			this.initRows = this.rows;
 			this.inherited(arguments);
 		},
-		getSize:function(){
-			return domGeometry.position(this.domNode);
-		},
 		resize:function(){
 			this.inherited(arguments);
-			var viewport = this.getSize();
+			var viewport = domGeometry.position(this.domNode);
 			var gridSize = this.size;
 			this.set("cols",Math.floor(viewport.w / gridSize));
 			this.set("rows",Math.floor(viewport.h / gridSize));
@@ -144,6 +149,11 @@ define([
 			}
 			// reset DOM
 			this.resetChildren();
+			this.regions = {
+				leading:null,
+				center:null,
+				trailing:null
+			};
 			var children = lang.clone(this.gridChildren);
 			var matrix = this.calcMatrix(children);
 			if(matrix) {
@@ -193,6 +203,7 @@ define([
 				var c = children[i];
 				if(c.allowTileSize) {
 					children[i].colSpan = children[i].rowSpan = this.tileSize;
+					children[i].region = "trailing";
 					if(ignoreTier) children[i].tier = 1;
 				}
 			}
@@ -238,7 +249,7 @@ define([
 			if(matrix) {
 				matrix = this.updateMatrixRows(matrix);
 				matrix = this.resizeChildren(matrix,lang.clone(children),hasTiles);
-				if(!hasTiles) matrix = this.placeCenter(matrix,lang.clone(children));
+				matrix = this.placeCenter(matrix,lang.clone(children));
 			}
 			return matrix;
 		},
@@ -463,6 +474,8 @@ define([
 				var item = children[i];
 				colspan = item.colSpan;
 				rowspan = item.rowSpan;
+				var minCol = self.regions[item.region] ? self.regions[item.region] : 0;
+				if(minCol) colIdx = minCol;
 				// will it fit?
 				var fit = function(){
 					// stop trying if no more rows
@@ -479,7 +492,11 @@ define([
 					// check if seat is taken...
 					if(!inrange) {
 						if(colspan==1 && matrix[rowIdx] && matrix[rowIdx][colIdx]) {
-							updateColCount(1);
+							if(!minCol) {
+								updateColCount(1);
+							} else {
+								updateRowCount(1);
+							}
 							inrange = true;
 						} else {
 							range = matrix[rowIdx].slice(colIdx,colIdx+colspan);
@@ -487,7 +504,11 @@ define([
 								return cc!==0;
 							});
 							if(range.length>0) {
-								updateColCount(range.length);
+								if(!minCol) {
+									updateColCount(range.length);
+								} else {
+									updateRowCount(1);
+								}
 								inrange = true;
 							}
 						}
@@ -505,13 +526,14 @@ define([
 									while(matrix[h] && matrix[h][cc]===prev) {
 										h++;
 									}
-									updateColCount();
+									if(!minCol) updateColCount();
 									updateRowCount(h-rowIdx);
 									break;
 								}
 							}
 						}
 					}
+					/*
 					// if overlap not allowed and have height
 					if(!inrange && !self.allowOverlap && rowspan>1) {
 						// if block after or before me has 1 up
@@ -529,7 +551,7 @@ define([
 									}
 									if(h-rowIdx<rowspan) {
 										inrange = true;
-										updateColCount();
+										if(!minCol) updateColCount();
 										updateRowCount(h-rowIdx);
 										break;
 									}
@@ -537,12 +559,15 @@ define([
 							}
 						}
 					}
+					*/
 					if(inrange) {
 						return fit();
 					} else {
+						self.regions[item.region] = colIdx;
 						return true;
 					}
 				}
+				/*
 				if(this.allowFill) {
 					for(rc=emptyY;rc<nRows;rc++){
 						cc = matrix[rc] ? matrix[rc].indexOf(false) : -1;
@@ -555,6 +580,7 @@ define([
 					colIdx = emptyX;
 					rowIdx = emptyY;
 				}
+				*/
 				var oldRow = rowIdx;
 				var fits = fit();
 				// stuff didn't fit
@@ -624,6 +650,16 @@ define([
 			}
 			return col;
 		},
+		getBox:function(node){
+			var cs = domStyle.getComputedStyle(node);
+			var regions = ["Top","Right","Bottom","Left"];
+			var box = [0,0];
+			for(var i=0;i<4;i++){
+				box[i%2] += parseInt(cs["padding"+regions[i]],10);
+				box[i%2] += parseInt(cs["margin"+regions[i]],10);
+			}
+			return box;
+		},
 		matrixToDOM:function(matrix){
 			var nCols = this.cols;
 			var nRows = this.rows;
@@ -650,12 +686,14 @@ define([
 						var ih = h * rowspan;
 						item._placed = [rc,cc];
 						var widget = dom.byId(item.id);
+						var box = this.getBox(widget);
+						console.log(box)
 						domStyle.set(widget, {
-							width: iw + "px",
+							width: (iw - box[1]/2) + "px",
 							position: "absolute",
 							top: item._placed[0]*h+"px",
 							left: item._placed[1]*w+"px",
-							height: ih + "px"
+							height: (ih - box[0]) + "px"
 						});
 						domClass.toggle(widget, this.childItemClass + "FirstColumn", first);
 						domClass.toggle(widget, this.childItemClass + "LastColumn", last);
