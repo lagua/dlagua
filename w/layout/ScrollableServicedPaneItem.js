@@ -5,12 +5,10 @@ define([
 	"dojo/dom-style",
 	"dijit/_Widget",
 	"dijit/_Templated",
-	"dijit/_Contained",
-	"dlagua/w/layout/TemplaMixin"
-],function(declare,lang,domGeometry,domStyle,_Widget,_Templated,_Contained,TemplaMixin) {
-return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained, TemplaMixin], {
+	"dijit/_Contained"
+],function(declare,lang,domGeometry,domStyle,_Widget,_Templated,_Contained) {
+return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained], {
 	parent:null, //quickref to parent widget
-	data:null,
 	itemHeight:null,
 	marginBox:null,
 	parseOnLoad:true,
@@ -18,15 +16,6 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 	templateString: '<div style="height:${itemHeight};opacity:0;" data-dojo-attach-point="containerNode"></div>',
 	onLoad:function(){
 		// you know what to do...
-	},
-	startup:function(){
-		if(this._started) return;
-		this._started = true;
-		if(!this.data) {
-			this.onLoad();
-			return;
-		}
-		this._load().then(lang.hitch(this,this.onLoad));
 	},
 	resizeChildren: function(){
 		var box = this.marginBox;
@@ -37,14 +26,8 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 	},
 	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 		this._setContent(data || "");
-		setTimeout(lang.hitch(this,function(){
-			if(!this.containerNode) return;
-			this.marginBox = domGeometry.getMarginBox(this.containerNode);
-		}),1);
 	},
 	updateLayout:function() {
-		if(!this || !this.containerNode) return;
-		this.marginBox = domGeometry.getMarginBox(this.containerNode);
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
 	}
