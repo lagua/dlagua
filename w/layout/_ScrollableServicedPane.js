@@ -194,11 +194,9 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 		}
 		switch(this.servicetype) {
 			case "persvr":
-				// find in _PersvrMixin
-				break;
+			case "form":
 			case "atom":
-				if(!item.service) item.service = (this.service || "/atom/content");
-				this.rebuild(item);
+				// find in mixin
 				break;
 			default:
 				if(!item.service) item.service = "/xbrota/rest";
@@ -225,6 +223,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
 			// find in _PervsMixin
+		} else if(this.servicetype=="form") {
+			// find in _FormMixin
 		} else if(this.servicetype=="atom") {
         	// find in _AtomMixin
 		} else {
