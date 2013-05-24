@@ -8,11 +8,39 @@ define([
 	"dojo/dom-attr",
 	"dojo/Deferred",
 	"dlagua/c/store/JsonRest",
+	"dlagua/w/layout/ScrollableServicedPaneItem",
+	"dlagua/w/layout/TemplaMixin",
 	"dojo/store/Memory",
 	"dojo/store/Cache",
-	"dojox/json/ref"
-],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred,JsonRest,Memory,Cache,jsonref) {
+	"dojox/json/ref",
+	"rql/query",
+	"rql/parser"
+],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
 
+var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
+	startup:function(){
+		if(this._started) return;
+		this._started = true;
+		if(!this.data) {
+			this.onLoad();
+			return;
+		}
+		this._load().then(lang.hitch(this,this.onLoad));
+	},
+	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
+		this._setContent(data || "");
+		setTimeout(lang.hitch(this,function(){
+			if(!this.containerNode) return;
+			this.marginBox = domGeometry.getMarginBox(this.containerNode);
+		}),1);
+	},
+	updateLayout:function() {
+		if(!this || !this.containerNode) return;
+		this.marginBox = domGeometry.getMarginBox(this.containerNode);
+		this.inherited(arguments);
+	}
+});
+	
 return declare("dlagua.w.layout._PersvrMixin", [], {
 	store:null,
 	stores:{},
@@ -20,6 +48,11 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	schemata:{},
 	templateModule:"",
 	template:"",
+	query:"",
+	start:0,
+	count:25,
+	total:Infinity,
+	filterByItemProperties:"",
 	useItemChildren:false,
 	_tplo:null,
 	_fetchTpl: function(template) {
@@ -56,6 +89,52 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			d.resolve(true);
 		}
 		return d;
+	},
+	onFilters:function(){
+		if(!this.orifilters) {
+			this.orifilters = this.filters;
+		} else {
+			this.orifilters = lang.mixin(this.orifilters,this.filters);
+		}
+		this.filters = null;
+		var fa = new rqlQuery.Query();
+		var keys = {};
+		for(var k in this.orifilters){
+			if(this.orifilters[k].checked) {
+				var fo = rqlParser.parseQuery(this.orifilters[k].filter);
+				fo.walk(function(name,terms){
+					var k = terms[0];
+					var v;
+					if(terms.length>1) v = terms[1];
+					if(keys[k]) {
+						fa = fa.or();
+					}
+					if(v) {
+						fa = fa[name](k,v);
+					} else {
+						fa = fa[name](k);
+					}
+				});
+			}
+		}
+		if(this.orifilter) {
+			var oo = rqlParser.parseQuery(this.orifilter);
+			oo.walk(function(name,terms){
+				var k = terms[0];
+				var v;
+				if(terms.length>1) v = terms[1];
+				if(keys[k]) {
+					fa = fa.or();
+				}
+				if(v) {
+					fa = fa[name](k,v);
+				} else {
+					fa = fa[name](k);
+				}
+			});
+		}
+		this.filter = fa.toString();
+		this.forcedLoad();
 	},
 	loadFromItem:function(){
 		this.inherited(arguments);
@@ -131,6 +210,70 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				}));
 			}));
 		}
+	},
+	createQuery:function(){
+		var qo = this.query ? rqlParser.parseQuery(this.query) : new rqlQuery.Query();
+		if(this.filterByLocale) qo = qo.eq("locale",this.locale);
+		if(this.filter) {
+			// try to parse it first
+			var fo = rqlParser.parseQuery(this.filter);
+			fo.walk(function(name,terms){
+				var k = terms[0];
+				var v;
+				if(terms.length>1) v = terms[1];
+				if(v) {
+					if(typeof v == "string") v = v.replace("undefined","*");
+					qo = qo[name](k,v);
+				} else {
+					qo = qo[name](k);
+				}
+			});
+		}
+		if(this.filterByItemProperties) {
+			var ar = this.filterByItemProperties.split(",");
+			for(var i in ar) {
+				var k = ar[i];
+				if(k in this.currentItem) {
+					var v = this.currentItem[k];
+					qo = qo.eq(k,v);
+				}
+			}
+		}
+		if(this.filterById) {
+			qo = qo.eq(this.idProperty,this.filterById);
+		}
+		if(this.sort) {
+			qo = qo.sort(this.sort);
+		}
+		return "?"+qo.toString();
+	},
+	addItem:function(item,index,items,insertIndex) {
+		if(this._beingDestroyed) return;
+		var content = "";
+		var listItem = new ScrollableTemplatedPaneItem({
+			parent:this,
+			data:item,
+			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
+		});
+		this.listitems.push(listItem);
+		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
+			// as this can take a while, listItem may be destroyed in the meantime
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
+			// ref item may have been resolved now
+			var item = listItem.data;
+			var id = item[this.idProperty];
+			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
+			fx.fadeIn({node:listItem.containerNode}).play();
+			this.childrenReady++;
+			if(this.childrenReady == items.length) {
+				// wait for the margin boxes to be set
+				setTimeout(lang.hitch(this,function(){
+					this.onReady();
+				}),10);
+			}
+			this.itemnodesmap[id] = listItem;
+		}));
+		this.addChild(listItem,insertIndex);
 	},
 	parseTemplate: function(tpl){
 		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
