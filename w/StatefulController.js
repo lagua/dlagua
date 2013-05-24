@@ -6,7 +6,7 @@ define([
 	"dojo/io-query",
 	"dojo/topic",
 	"dojo/aspect",
-	"dlagua/c/Subscribable",
+	"dlagua/w/Subscribable",
 	"dlagua/w/Resolvable"
 ],function(declare,lang,array,Deferred,ioQuery,topic,aspect,Subscribable,Resolvable){
 	return declare("dlagua.w.StatefulController",[Subscribable,Resolvable],{
