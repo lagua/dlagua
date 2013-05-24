@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+	<title>ScrollablePane test</title>
+	<link rel="stylesheet" type="text/css" href="../../../dijit/themes/claro/claro.css" />
+	<link rel="stylesheet" type="text/css" href="../../../dforma/resources/Builder.css" />
+	<script type="text/javascript" src="../../../dojo/dojo.js" data-dojo-config="async: true"></script>
+	<style>
+		html, body {
+			margin:0;
+			padding:0;
+			height:100%;
+			overflow:hidden;
+		}
+		#scrollable {
+			height:100%;
+			overflow:hidden;
+		}
+	</style>
+	<script>
+	var resize;
+	require([
+	        "dojo/_base/declare",
+			"dijit/registry",
+			"dojo/window",
+			"dojo/on",
+			"dojo/ready",
+			"dlagua/w/layout/_ScrollableServicedPane",
+			"dlagua/w/layout/_FormMixin"
+		 ], function(declare,registry, win, on, ready, _SSP,_FormMixin){
+		
+			ready(function(){
+				var Widget = declare([_SSP,_FormMixin]);
+				var widget = new Widget({
+					servicetype:"form",
+					model:"Contact"
+				},"scrollable");
+				widget.startup();
+				
+				// window resize handle
+				var resizeTimeout;
+				resize = function(){
+					clearTimeout(resizeTimeout);
+			        // handle normal resize
+			        resizeTimeout = setTimeout(function() {
+			        	if(!widget) return;
+						var viewport = win.getBox();
+						widget.resize(viewport)
+			        }, 250);
+				}
+				on(window,"resize",resize);
+			});
+		 });
+	</script>
+</head>
+<body class="claro">
+	<div id="scrollable"></div>
+</body>
+</html>
