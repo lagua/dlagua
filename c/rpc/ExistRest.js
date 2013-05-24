@@ -6,7 +6,7 @@ define([
 	"dojo/when",
 	"dojo/io-query",
 	"dojo/topic",
-	"dlagua/c/Subscribable",
+	"dlagua/w/Subscribable",
 	"dlagua/c/store/PlainRest"
 ], function(declare, lang, request, Deferred, when, ioQuery, topic, Subscribable, PlainRest){
 	// module:
