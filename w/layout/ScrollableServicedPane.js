@@ -11,7 +11,7 @@ define([
 	"dlagua/w/layout/_ScrollableServicedPane",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/_PagedMixin",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ],function(declare,_SSP,_PersvrMixin,_PagedMixin,Subscribable){
 return declare("dlagua.w.layout.ScrollableServicedPane",[_SSP, _PersvrMixin, _PagedMixin, Subscribable],{
 
