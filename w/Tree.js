@@ -5,7 +5,7 @@ define([
 	"dojo/Deferred",
 	"dojo/promise/all",
 	"dijit/Tree",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ],function(declare,lang,array,Deferred,all,_Tree,Subscribable) {
 
 function shimmedPromise(/*Deferred|Promise*/ d){
