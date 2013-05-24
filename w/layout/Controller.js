@@ -5,7 +5,7 @@ define([
 	"dojo/topic",
 	"dijit/_Contained",
 	"dijit/layout/ScrollingTabController",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ], function(declare, lang, array, topic, _Contained, ScrollingTabController,Subscribable){
 	var Controller = declare("dlagua.w.layout.Controller", [_Contained, ScrollingTabController,Subscribable], {
 		// summary:
