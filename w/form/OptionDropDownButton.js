@@ -10,7 +10,7 @@ define([
 	"dijit/form/Button",
 	"dijit/form/Select",
 	"dijit/form/CheckBox",
-	"dlagua/c/Subscribable",
+	"dlagua/w/Subscribable",
 	"dforma/Group",
 	"dforma/Label"
 ],function(declare,lang,array,aspect,topic,request,TooltipDialog,DropDownButton,Button,Select,CheckBox,Subscribable,Group,Label){

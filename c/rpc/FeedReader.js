@@ -6,7 +6,7 @@ define([
 	"dojo/request",
 	"dojo/query",
 	"dojo/date/stamp",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ], function(declare,lang,array,Deferred,request,query,stamp,Subscribable) {
 
 return declare("dlagua.c.rpc.FeedReader",[Subscribable],{

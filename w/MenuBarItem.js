@@ -1,6 +1,6 @@
 define([
 	"dojo/_base/declare",
-	"dijit/MenuBarItem",
+	"dijit/MenuBarItem"
 ],function(declare,MenuBarItem) {
 	return declare("dlagua.w.MenuBarItem",[MenuBarItem],{
 		selected:false,

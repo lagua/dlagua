@@ -8,7 +8,7 @@ define([
 	"dojo/on",
 	"dojo/hash",
 	"dijit/layout/BorderContainer",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ],function(declare,lang,array,Deferred,Stateful,topic,on,dhash,BorderContainer,Subscribable){
 
 return declare("dlagua.w.App", [BorderContainer,Subscribable], {

@@ -7,7 +7,7 @@ define([
 	"rql/parser",
 	"rql/query",
 	"dijit/form/FilteringSelect",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ],function(declare,lang,topic,ioQuery,JsonRest,rqlParser,rqlQuery,FilteringSelect,Subscribable){
 var LocaleRest = declare("dlagua.c.store.LocaleRest",[JsonRest],{
 	locales:null,

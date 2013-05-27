@@ -2,7 +2,7 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/request",
-	"dlagua/c/Subscribable"
+	"dlagua/w/Subscribable"
 ], function(declare,lang,request,Subscribable) {
 	
 	return declare("dlagua.c.rpc.I18nService",[Subscribable],{
