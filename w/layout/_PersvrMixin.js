@@ -55,6 +55,49 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	filterByItemProperties:"",
 	useItemChildren:false,
 	_tplo:null,
+	startup:function(){
+		this.inherited(arguments);
+		this.own(
+			this.watch("filter",function(){
+				console.log(this.id,"reloading from filter",this.filter)
+				this.orifilter = this.filter;
+				this.forcedLoad();
+			}),
+			this.watch("filterById",this.forcedLoad),
+			this.watch("newData",function(){
+				array.forEach(this.newData,lang.hitch(this,function(item,i,items){
+					this.addItem(item,i,items,"first");
+					this.currentId = item[this.idProperty];
+				}));
+			}),
+			this.watch("filters",this.onFilters),
+			this.watch("sort",function(){
+				this.newsort = true;
+				this.forcedLoad();
+				this.newsort = false;
+			}),
+			this.watch("childTemplate",function(){
+				this.replaceChildTemplate();
+			})
+		);
+	},
+	replaceChildTemplate: function(child,templateDir) {
+		if(!templateDir) templateDir = this.templateDir;
+		var template = this.getTemplate(templateDir);
+		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
+			this.parseTemplate(tpl).then(function(tplo){
+				if(child && child!="childTemplate"){
+					child.applyTemplate(tplo.tpl,tplo.partials);
+				} else {
+					// FIXME: is this really permanent?
+					this._tplo = tplo;
+					array.forEach(this.listitems,function(li){
+						li.applyTemplate(tplo.tpl,tplo.partials);
+					});
+				}
+			});
+		}));
+	},
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
 		return request(require.toUrl(this.templateModule)+"/"+template);
