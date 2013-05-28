@@ -3,7 +3,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/dom-construct",
-	"dojox/json/ref"
+	"dlagua/x/json/ref"
 ],function(declare,lang,array,domConstruct,ref) {
 	return declare("dlagua.w.Resolvable",[],{
 		_childNodesMap:null,
@@ -28,7 +28,7 @@ define([
 						}
 					}
 					store.get(this[self.refAttribute]).then(function(item){
-						item._resolved = true;
+						parent._resolved = true;
 						item.__parent = parent;
 						callback(item,index,items);
 						parent.__onChildLoaded();
@@ -40,10 +40,10 @@ define([
 			var refNode = this.containerNode;
 			var insertIndex = "last";
 			if(typeof index == "number" && length > 0) {
-				if(!this._childNodesMap) this._childNodesMap = [];
-				for(var i=0;i<this._childNodesMap.length;i++) {
-					if(this._childNodesMap[i] && index<i) {
-						refNode = this._childNodesMap[i];
+				var children = this.getChildren();
+				for(var i=0;i<children.length;i++) {
+					if(children[i] && children[i].hasOwnProperty("index") && index<children[i].index) {
+						refNode = children[i].domNode;
 						insertIndex = "before";
 						break;
 					}
@@ -51,33 +51,24 @@ define([
 			}
 			console.log("place",widget.id,insertIndex,refNode)
 			domConstruct.place(widget.domNode, refNode, insertIndex);
-			if(typeof index == "number" && length > 0) {
-				console.log("update",widget.id,insertIndex,refNode)
-				this._childNodesMap[index] = widget.domNode;
-				if(this._childNodesMap.length == length) {
-					var reset = true;
-					for(var i=0;i<this._childNodesMap.length;i++) {
-						if(!this._childNodesMap[i]) reset = false;
-					}
-					if(reset) this._childNodesMap = [];
-				}
-			}
 			if(this._started && !widget._started){
 				widget.startup();
 			}
 		},
-		_addItem: function(item,index,items) {
+		_addItem: function(item,index,items,params) {
+			params = params || {};
 			console.log(item.name,index)
 			var self = this;
 			if(item._loadObject) {
 				this._loading = true;
-				item._loadObject(lang.hitch(this,this._addItem),index,items);
+				item._loadObject(lang.hitch(this,this._addItem),index,items,params);
 				return;
 			}
-			if(!this.childWidget) {
-				require([this.childWidgetType],lang.hitch(this,function(Widget){
-					this.childWidget = Widget;
-					this._addItem(item,index,items);
+			if(!this.childWidget && !params.childWidget) {
+				var childWidgetType = params.childWidgetType || this.childWidgetType;
+				require([childWidgetType],lang.hitch(this,function(Widget){
+					params.childWidget = Widget;
+					this._addItem(item,index,items,params);
 				}));
 				return;
 			}
@@ -86,10 +77,15 @@ define([
 			children = array.filter(children,function(child){
 				return !child.hidden;
 			});
-			var mbi = new this.childWidget({
+			params = lang.mixin(params,{
 				item:item,
 				label:item[this.labelAttr] || ""
 			});
+			if(typeof index == "number") params.index = index;
+			var Widget = params.childWidget || this.childWidget;
+			delete params.childWidget;
+			delete params.childWidgetType;
+			var mbi = new Widget(params);
 			this._itemNodesMap[item[this.idProperty]] = mbi;
 			this.addChild(mbi,index,items.length);
 		}
