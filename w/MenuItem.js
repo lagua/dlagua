@@ -1,9 +1,8 @@
 define([
 	"dojo/_base/declare",
-	"dijit/MenuItem",
-	"dlagua/w/Transformable"
-],function(declare,MenuItem,Transformable) {
-	return declare("dlagua.w.MenuItem",[MenuItem,Transformable],{
+	"dijit/MenuItem"
+],function(declare,MenuItem) {
+	return declare("dlagua.w.MenuItem",[MenuItem],{
 		selected:false,
 		item:null,
 		postCreate:function(){
