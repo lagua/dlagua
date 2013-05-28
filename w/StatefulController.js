@@ -45,6 +45,11 @@ define([
 			}));
 		},
 		getRoot:function(){
+			if(this.item) {
+				var d = new Deferred();
+				d.resolve([this.item]);
+				return d;
+			}
 			var q = ioQuery.objectToQuery({
 				locale:this.locale,
 				type:this.rootType
@@ -80,7 +85,7 @@ define([
 				this.set("currentId",newId);
 			}
 		},
-		_checkTruncated:function(val){
+		_checkTruncated:function(val,depth){
 			if(!val) return {};
 			var ar = [];
 			if(typeof val == "string") {
@@ -88,7 +93,7 @@ define([
 			} else {
 				return {};
 			}
-			var nar = ar.slice(0,this.maxDepth);
+			var nar = ar.slice(0,depth);
 			var truncated = (nar.length!=ar.length ? val : "");
 			var currentId = truncated ? nar.join("/") : val;
 			return {truncated:truncated,currentId:currentId};
@@ -108,13 +113,14 @@ define([
 			// preserve original currentId for reload top level on history.back
 			// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
 			// don't republish when truncated again
-			var checkOld = oldValue ? this._checkTruncated(oldValue) : {};
-			var check = this._checkTruncated(this.currentId);
+			var checkOld = oldValue ? this._checkTruncated(oldValue,this.depth) : {};
+			// start with depth=2
+			var check = this._checkTruncated(this.currentId,this.depth);
 			var currentId = check.currentId;
 			var truncated = check.truncated;
 			if(this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
 			console.log("MenuBar loading currentID ",currentId, truncated);
-			this.selectNode(this._itemNodesMap[currentId],truncated);
+			this.selectNode(this._itemNodesMap[currentId],truncated,this.depth);
 		},
 		startup: function(){
 			this.own(
