@@ -7,7 +7,7 @@ define([
 	return declare("dlagua.w.TreeController",[],{
 		_selectedNode:null,
 		maxDepth:2,
-		selectNode:function(node,truncated){
+		selectNode:function(node,truncated,depth){
 			console.log("TreeController selectNode ",truncated);
 			var p;
 			if(this._selectedNode) {
@@ -15,6 +15,10 @@ define([
 			}
 			this._selectedNode = node;
 			node.set("selected",true);
+			if(truncated && depth<this.maxDepth) {
+				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) node.popup._loadFromId("",null,truncated);
+				return;
+			}
 			var item = lang.mixin({},this._selectedNode.item);
 			// FIXME: dirty hack for subnav components:
 			// they will set the state if i am truncated
@@ -23,7 +27,8 @@ define([
 				//delete item.state;
 				item.__truncated = truncated;
 			}
-			topic.publish("/components/"+this.id,item);
+			var id = this.publishId ? this.publishId : this.id;
+			topic.publish("/components/"+id,item);
 		},
 		onReady:function(){
 			console.log("TreeController ready")
