@@ -92,46 +92,6 @@ define([
 				prevTrgt.appendChild(this.prevButton.domNode);
 				nextTrgt.appendChild(this.nextButton.domNode);
 			}
-			this.own(
-				this.watch("filter",function(){
-					console.log(this.id,"reloading from filter",this.filter)
-					this.orifilter = this.filter;
-					this.forcedLoad();
-				}),
-				this.watch("filterById",this.forcedLoad),
-				this.watch("newData",function(){
-					array.forEach(this.newData,lang.hitch(this,function(item,i,items){
-						this.addItem(item,i,items,"first");
-						this.currentId = item[this.idProperty];
-					}));
-				}),
-				this.watch("filters",this.onFilters),
-				this.watch("sort",function(){
-					this.newsort = true;
-					this.forcedLoad();
-					this.newsort = false;
-				}),
-				this.watch("childTemplate",function(){
-					this.replaceChildTemplate();
-				})
-			);
-		},
-		replaceChildTemplate: function(child,templateDir) {
-			if(!templateDir) templateDir = this.templateDir;
-			var template = this.getTemplate(templateDir);
-			this._fetchTpl(template).then(lang.hitch(this,function(tpl){
-				this.parseTemplate(tpl).then(function(tplo){
-					if(child && child!="childTemplate"){
-						child.applyTemplate(tplo.tpl,tplo.partials);
-					} else {
-						// FIXME: is this really permanent?
-						this._tplo = tplo;
-						array.forEach(this.listitems,function(li){
-							li.applyTemplate(tplo.tpl,tplo.partials);
-						});
-					}
-				});
-			}));
 		},
 		layout:function(){
 			this.inherited(arguments);
@@ -194,7 +154,7 @@ define([
 			this.slideTo({x:0,y:-y},0.3,"ease-out");
 		},
 		pageStore:function(py){
-			if(this._loading) return;
+			if(this._loading || this.servicetype!="persvr") return;
 			if(!py) py = this.getPos().y;
 			var dim = this._dim;
 			var len = this.listitems.length;
@@ -223,7 +183,7 @@ define([
 			}
 		},
 		setSelectedItem: function(index) {
-			if(this.selectedIndex==index) return;
+			if(this.selectedIndex==index || this.servicetype!="persvr") return;
 			this.selectedIndex = index;
 			var py = this.getPos().y;
 			var dim = this._dim;
@@ -267,7 +227,7 @@ define([
 			this.setSelectedItem(i);
 		},
 		onFlickAnimationEnd:function(e){
-			if(!this._bounce){
+			if(!this._bounce && this.servicetype=="persvr"){
 				this.checkSelectedItem();
 			}
 			this.inherited(arguments);
@@ -297,8 +257,8 @@ define([
 			return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 		},
 		onReady: function(){
-			if(this._beingDestroyed) return;
 			this.inherited(arguments);
+			if(this._beingDestroyed || this.servicetype!="persvr") return;
 			// if needed, get more stuff from the store
 			this.pageStore();
 			// select currentId for #anchor simulation
