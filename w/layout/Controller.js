@@ -5,8 +5,10 @@ define([
 	"dojo/topic",
 	"dijit/_Contained",
 	"dijit/layout/ScrollingTabController",
+	"dojo/store/JsonRest",
+	"dlagua/x/json/ref",
 	"dlagua/w/Subscribable"
-], function(declare, lang, array, topic, _Contained, ScrollingTabController,Subscribable){
+], function(declare, lang, array, topic, _Contained, ScrollingTabController,JsonRest,ref,Subscribable){
 	var Controller = declare("dlagua.w.layout.Controller", [_Contained, ScrollingTabController,Subscribable], {
 		// summary:
 		//		Set of buttons to select a page in a `dijit/layout/StackContainer`
@@ -14,7 +16,35 @@ define([
 		//		Monitors the specified StackContainer, and whenever a page is
 		//		added, deleted, or selected, updates itself accordingly.
 		"class":"dijitTabContainerTop-tabs",
-		
+		childrenAttr:"children",
+		refAttribute:"_ref",
+		resolve:function(data,store,rootcallback){
+			if(!data || !store) return;
+			ref.refAttribute = this.refAttribute;
+			var self = this;
+			return ref.resolveJson(data,{
+				loader:function(callback,index,items){
+					var parent = this.__parent;
+					if(!parent.__onChildLoaded) {
+						parent.__childrenLoaded = 0;
+						parent.__onChildLoaded = function(){
+							this.__childrenLoaded++;
+							if(this.__childrenLoaded==this[self.childrenAttr].length) {
+								delete this.__childrenLoaded;
+								delete this.__onChildLoaded;
+								if(rootcallback) rootcallback(this);
+							}
+						}
+					}
+					store.get(this[self.refAttribute]).then(function(item){
+						parent._resolved = true;
+						item.__parent = parent;
+						callback(item,index,items);
+						parent.__onChildLoaded();
+					});
+				}
+			});
+		},
 		constructor: function(mixin){
 			this.containerId = mixin.id;
 			this.inherited(arguments);
@@ -54,6 +84,7 @@ define([
 				// StackController needs to have the proper height... which means that the button needs
 				// to be marked as selected now.   See test_TabContainer_CSS.html for test.
 				this.onSelectChild(page);
+				this.selectChild(page);
 			}
 		},
 		
@@ -89,14 +120,23 @@ define([
 		_loadFromId:function(){
 			
 		},
-		_rebuild:function(){
+		_rebuild:function(prop,oldVal,newVal){
 			this.destroyDescendants();
-			children = this.currentItem.children;
+			children = newVal.children;
+			if(children && children.length && !newVal._resolved) {
+				var data = this.resolve(this.currentItem,new JsonRest({target:"/model/Page/"}),lang.hitch(this,function(root){
+					this._rebuild("",null,root);
+				}));
+				array.forEach(newVal.children,function(c,i,all){ c._loadObject(function(item){
+					children[i] = item;
+				}) });
+				return;
+			}
 			children = array.filter(children,function(c){
 				return !c.hidden;
 			});
 			if(!children.length) {
-				children = [this.currentItem];
+				children = [newVal];
 			}
 			this.onStartup({children:children});
 			this.getParent().layout();
