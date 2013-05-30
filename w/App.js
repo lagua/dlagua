@@ -175,6 +175,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			item.__truncated = false;
 		}
 		var fromHash = item.__fromHash;
+		var fromRoot = item.__fromRoot;
 		if(this.state!=state) {
 			console.log("changing state!")
 			this.set("state", state);
@@ -224,7 +225,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
-				dhash(hash);
+				if(!fromRoot) dhash(hash);
 				this.set("path",path);
 				this.set("pageid",item.id);
 				d.resolve(true);
