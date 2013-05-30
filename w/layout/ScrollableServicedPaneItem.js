@@ -2,14 +2,13 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
-	"dojo/dom-geometry",
 	"dojo/dom-style",
 	"dojo/html", // html._ContentSetter
 	"dojo/when",
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained"
-],function(declare,lang,array,domGeometry,domStyle,html,when,_Widget,_Templated,_Contained) {
+],function(declare,lang,array,domStyle,html,when,_Widget,_Templated,_Contained) {
 return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained], {
 	parent:null, //quickref to parent widget
 	itemHeight:null,
