@@ -12,7 +12,7 @@ define([
 		labelAttr:"title",
 		childWidget:MenuItem,
 		onItemClick:function(item) {
-			this.selectNode(item);
+			this.selectNode(item,null,null,true);
 			this.inherited(arguments);
 		}
 	});
