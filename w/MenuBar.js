@@ -22,7 +22,7 @@ define([
 					childWidget:PopupMenuBarItem,
 					popup:new DropDownMenu({
 						store:self.store,
-						item:item,
+						currentItem:item,
 						publishId:self.id,
 						depth:3,
 						maxDepth:self.maxDepth,
