@@ -18,8 +18,9 @@ define([
 					var parent = this.__parent;
 					if(!parent.__onChildLoaded) {
 						parent.__childrenLoaded = 0;
-						parent.__onChildLoaded = function(){
+						parent.__onChildLoaded = function(child,index){
 							this.__childrenLoaded++;
+							this[self.childrenAttr][index] = child;
 							if(this.__childrenLoaded==this[self.childrenAttr].length) {
 								delete this.__childrenLoaded;
 								delete this.__onChildLoaded;
@@ -28,10 +29,10 @@ define([
 						}
 					}
 					store.get(this[self.refAttribute]).then(function(item){
-						parent._resolved = true;
+						item.__resolved = true;
 						item.__parent = parent;
 						callback(item,index,items);
-						parent.__onChildLoaded();
+						parent.__onChildLoaded(item,index);
 					});
 				}
 			});
@@ -49,7 +50,7 @@ define([
 					}
 				}
 			}
-			console.log("place",widget.id,insertIndex,refNode)
+			//console.log("place",widget.id,insertIndex,refNode)
 			domConstruct.place(widget.domNode, refNode, insertIndex);
 			if(this._started && !widget._started){
 				widget.startup();
@@ -57,7 +58,7 @@ define([
 		},
 		_addItem: function(item,index,items,params) {
 			params = params || {};
-			console.log(item.name,index)
+			//console.log(item.name,index)
 			var self = this;
 			if(item._loadObject) {
 				this._loading = true;
