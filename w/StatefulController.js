@@ -14,6 +14,8 @@ define([
 		locale:"en_us",
 		rootType:"content",
 		currentId:"",
+		currentItem:null,
+		loadOnCreation:true,
 		maxDepth:2,
 		_loading:false,
 		_itemNodesMap:null,
@@ -22,7 +24,7 @@ define([
 		_lh:null,
 		_bh:null,
 		idProperty:"path",
-		rebuild:function(){
+		rebuild:function(forceFirst){
 			if(this._loading) {
 				if(this.localeChanged) return;
 				console.log("not loaded, deferring rebuild")
@@ -37,17 +39,32 @@ define([
 			this._selectedNode = null;
 			this._loading = true;
 			this.getRoot().then(lang.hitch(this,function(res){
-				var data = this.resolve(res[0],this.store,lang.hitch(this,function(root){
-					this._loading = false;
+				var root = res[0];
+				var children = [];
+				var childrenResolved = false;
+				var loadRoot = false;
+				if(root[this.childrenAttr] && root[this.childrenAttr].length) {
+					var data = this.resolve(root,this.store,lang.hitch(this,function(root){
+						if(forceFirst) this.currentId = root.children[0].path;
+						this.onReady();
+					}));
+					children = data.children;
+					childrenResolved = array.every(children,function(_){ return _.__resolved==true });
+				} else {
+					loadRoot = true;
+					children = [root];
+				}
+				array.forEach(children,this._addItem,this);
+				if(loadRoot || childrenResolved) {
+					if(forceFirst) this.currentId = loadRoot ? root.path : root.children[0].path;
 					this.onReady();
-				}));
-				array.forEach(data.children,this._addItem,this);
+				}
 			}));
 		},
 		getRoot:function(){
-			if(this.item) {
+			if(this.currentItem) {
 				var d = new Deferred();
-				d.resolve([this.item]);
+				d.resolve([this.currentItem]);
 				return d;
 			}
 			var q = ioQuery.objectToQuery({
@@ -61,7 +78,7 @@ define([
 			// user should always see a menu item selected
 			console.log("loading default",this._loading,this._lh)
 			if(this._loading) {
-				console.log("not loaded, deferring _loadDefault")
+				console.log(this.id,"not loaded, deferring _loadDefault")
 				if(!this._lh) this._lh = aspect.after(this,"onReady",this._loadDefault);
 				return;
 			}
@@ -100,42 +117,54 @@ define([
 		},
 		_loadFromId:function(prop,oldValue,newValue){
 			if(this._loading) {
-				console.log("not loaded, deferring loadFromId")
+				console.log(this.id,"not loaded, deferring loadFromId")
 				var args = arguments;
 				if(!this._lh) this._lh = aspect.after(this,"onReady",lang.hitch(this,function(){
-					this._loadFromId(args);
+					this._loadFromId.apply(this,args);
 				}));
 				return;
 			}
 			if(this._lh) this._lh.remove();
 			this._lh = null;
-			if(!this.currentId) return;
+			if(!this.currentId && !newValue) {
+				this.onReady();
+				return;
+			}
 			// preserve original currentId for reload top level on history.back
 			// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
 			// don't republish when truncated again
 			var checkOld = oldValue ? this._checkTruncated(oldValue,this.depth) : {};
 			// start with depth=2
-			var check = this._checkTruncated(this.currentId,this.depth);
+			var check = this._checkTruncated(this.currentId || newValue,this.depth);
 			var currentId = check.currentId;
 			var truncated = check.truncated;
 			if(this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
-			console.log("MenuBar loading currentID ",currentId, truncated);
+			console.log(this.id,"loading currentID ",currentId, truncated);
 			this.selectNode(this._itemNodesMap[currentId],truncated,this.depth);
+		},
+		_loadFromItem:function(prop,oldVal,newVal) {
+			this.rebuild(!!oldVal);
 		},
 		startup: function(){
 			this.own(
-				this.watch("currentId",this._loadFromId),
+				this.watch("currentItem",this._loadFromItem),
+				aspect.after(this,"onReady",lang.hitch(this,function(){
+					if(this.currentId && !this._lh) this._loadFromId("",null,this.currentId);
+				})),
 				this.watch("locale", function() {
 					this.localeChanged = true;
 					this.rebuild();
-				}),
-				aspect.after(this,"onReady",lang.hitch(this,this._loadFromId))
+				})
 			);
-			this.rebuild();
+			if(this.loadOnCreation) {
+				this.rebuild();
+				this.own(this.watch("currentId",this._loadFromId));
+			}
 			this.inherited(arguments);
 		},
 		onReady:function(){
-			console.log("StatefulController ready")
+			this._loading = false;
+			console.log("StatefulController",this.id,"ready")
 			if(this.localeChanged){
 				this.localeChanged = false;
 				this._loadDefault();
