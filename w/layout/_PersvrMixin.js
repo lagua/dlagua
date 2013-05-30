@@ -2,8 +2,11 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
+	"dojo/_base/fx",
 	"dojo/query",
 	"dojo/request",
+	"dojo/aspect",
+	"dojo/dom-geometry",
 	"dojo/dom-construct",
 	"dojo/dom-attr",
 	"dojo/Deferred",
@@ -15,7 +18,7 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(declare,lang,array,query,request,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
+],function(declare,lang,array,fx,query,request,aspect,domGeometry,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 	startup:function(){
