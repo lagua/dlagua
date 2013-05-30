@@ -1,16 +1,14 @@
 define([
 	"dojo/_base/array",
 	"dojo/_base/json",
-	"dojo/_base/kernel", 
 	"dojo/_base/lang",
-	"dojo/date/stamp",
-	"dojox"
+	"dojo/date/stamp"
 ],
-function(array, djson, dojo, lang, stamp, dojox){
+function(array, djson, lang, stamp){
 
-lang.getObject("json", true, dojox);
+lang.getObject("dlagua.x.json", true);
 
-return dojox.json.ref = {
+var ref = {
 	// summary:
 	//		Adds advanced JSON {de}serialization capabilities to the base json library.
 	//		This enhances the capabilities of dojo.toJson and dojo.fromJson,
@@ -119,7 +117,7 @@ return dojox.json.ref = {
 					val=it[i];
 					if((typeof val =='object') && val && !(val instanceof Date) && i != '__parent'){
 						ref=val[refAttribute] || (idAsRef && val[idAttribute]);
-						if(it != reWalk && (!ref || !val.__parent)){
+						if(it != reWalk && (!ref || !val.__parent) && !(val instanceof Array)){
 							val.__parent = parent ? parent : target;
 						}
 						if(ref){ // a reference was found
@@ -332,7 +330,7 @@ return dojox.json.ref = {
 					}
 				}
 				return "{" + output.join("," + sep) + newLine + _indentStr + "}";
-			}else if(typeof it == "function" && dojox.json.ref.serializeFunctions){
+			}else if(typeof it == "function" && ref.serializeFunctions){
 				return it.toString();
 			}
 	
@@ -357,4 +355,7 @@ return dojox.json.ref = {
 	_useRefs: false,
 	serializeFunctions: false
 };
+
+dlagua.x.json.ref = ref;
+return ref;
 });
