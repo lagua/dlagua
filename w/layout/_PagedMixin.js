@@ -3,17 +3,14 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/_base/window",
-	"dojo/_base/event",
-	"dojo/_base/fx",
 	"dojo/topic",
-	"dojo/aspect",
 	"dojo/on",
 	"dojo/keys",
 	"dojo/dom-class",
 	"dijit/typematic",
 	"dijit/form/Button",
 	"dojox/timing"
-],function(declare,lang,array,win,event,fx,topic,aspect,on,keys,domClass,typematic,Button,timing) {
+],function(declare,lang,array,win,topic,on,keys,domClass,typematic,Button,timing) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
