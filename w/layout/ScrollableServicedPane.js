@@ -9,11 +9,12 @@
 define([
 	"dojo/_base/declare",
 	"dlagua/w/layout/_ScrollableServicedPane",
+	"dlagua/w/layout/_FormMixin",
 	"dlagua/w/layout/_PersvrMixin",
 	"dlagua/w/layout/_PagedMixin",
 	"dlagua/w/Subscribable"
-],function(declare,_SSP,_PersvrMixin,_PagedMixin,Subscribable){
-return declare("dlagua.w.layout.ScrollableServicedPane",[_SSP, _PersvrMixin, _PagedMixin, Subscribable],{
+],function(declare,_SSP,_FormMixin,_PersvrMixin,_PagedMixin,Subscribable){
+return declare("dlagua.w.layout.ScrollableServicedPane",[_SSP, _FormMixin, _PersvrMixin, _PagedMixin, Subscribable],{
 
 });
 
