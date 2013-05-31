@@ -8,13 +8,34 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dforma/Builder",
 	"dforma/jsonschema",
+	"dojox/mobile/i18n",
 	"dojo/store/Memory",
-	"dojo/store/Cache",
-	"dojox/json/ref"
-],function(declare,lang,array,fx,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,Memory,Cache,jsonref) {
+	"dojo/store/Cache"
+],function(declare,lang,array,fx,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Cache) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,Builder],{
-}) ;
+});
+
+function traverse(obj,func, parent) {
+	for (i in obj){
+		func.apply(obj,[i,obj[i],parent]);
+		if (obj[i] instanceof Object && !(obj[i] instanceof Array)) {
+			traverse(obj[i],func, i);
+		} else if(obj[i] instanceof Array) {
+			array.forEach(obj[i],function(o){
+				traverse(o,func, i);
+			});
+		}
+	}
+};
+function replaceNlsRecursive(obj,nls){
+	traverse(obj, function(key, value, parent){
+		if(typeof value == "string" && value.indexOf("{")>-1){
+			this[key] = lang.replace(value,nls);
+		}
+	});
+	return obj;
+};
 	
 return declare("dlagua.w.layout._FormMixin", [], {
 	store:null,
@@ -91,58 +112,29 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	rebuild:function(){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
-			this._getSchema().then(lang.hitch(this,function(){
+			this._getSchema().then(lang.hitch(this,function(schema){
 				var self = this;
+				var common = i18n.load("dforma","common");
+				// TODO:
+				// - assign schema url
+				// - get domain nls
+				// - provide global / persistent stores
+				var formbundle = i18n.load(this.domain,this.formbundle);
+				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
 				var listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
-					store:new Memory(),
-					hideOptional:false,
-					allowOptionalDeletion:false,
-					allowFreeKey:false,
-					cancel: function(){
-						myDialog.hide();
+					store:Observable(new Memory({
+						identifier: "id"
+					})),
+					data:{
+						controls:jsonschema.schemaToControls(schema)
 					},
 					submit: function(){
 						if(!this.validate()) return;
-						var data = this.get("value");
-						var schema = this.get("controllerWidget").item.schema;
-						for(var k in data) {
-							if(!schema.properties[k]) continue;
-							// it may be a group
-							// make all booleans explicit
-							if(schema.properties[k].type=="boolean") {
-								if(dojo.isArray(data[k])) {
-									if(data[k].length==0) {
-										data[k] = false;
-									} else if(data[k].length<2) {
-										data[k] = data[k][0];
-									}
-								}
-							} else {
-								if(schema.properties[k].type=="integer") data[k] = parseInt(data[k],10);
-								if(schema.properties[k].type=="float") data[k] = parseFloat(data[k],10);
-								if(!data[k]) delete data[k];
-							}
-						}
-						//var valid = jsonschema.validate(data,schema);
-						//console.log(valid)
-						// submit data
-						this.store.put(data);
-						domConstruct.create("div",{
-							innerHTML:JSON.stringify(data,2)
-						},"data");
-					}
+						var data = this.store.query();
+						console.log(data)
+					}					
 				});
-				var control = listItem.toControl("id",[this.schema],null,{
-					controllerType:"group",
-					selectFirst:true
-				});
-				listItem.rebuild({
-					controls:[control],
-				  	submit:{
-				  		label:"Add"
-				  	}
-				})
 				this.listitems.push(listItem);
 				this.addChild(listItem);
 				this.itemnodesmap[0] = listItem;
