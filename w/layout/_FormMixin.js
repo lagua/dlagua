@@ -10,8 +10,9 @@ define([
 	"dforma/jsonschema",
 	"dojox/mobile/i18n",
 	"dojo/store/Memory",
+	"dojo/store/Observable",
 	"dojo/store/Cache"
-],function(declare,lang,array,fx,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Cache) {
+],function(declare,lang,array,fx,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Observable,Cache) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,Builder],{
 });
@@ -44,6 +45,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	schemata:{},
 	schemaModel:"Class",
 	refAttribute:"_ref",
+	formBundle:"form",
+	dojoModule:"",
 	_getSchema:function(){
 		var d = new Deferred;
 		// prevent getting schema again
@@ -112,14 +115,15 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	rebuild:function(){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
-			this._getSchema().then(lang.hitch(this,function(schema){
+			this._getSchema().then(lang.hitch(this,function(){
 				var self = this;
 				var common = i18n.load("dforma","common");
 				// TODO:
 				// - assign schema url
 				// - get domain nls
 				// - provide global / persistent stores
-				var formbundle = i18n.load(this.domain,this.formbundle);
+				var schema = lang.clone(this.schema);
+				var formbundle = i18n.load(this.dojoModule,this.formBundle);
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
 				var listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
