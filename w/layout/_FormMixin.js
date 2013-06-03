@@ -3,6 +3,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/_base/fx",
+	"dojo/aspect",
 	"dojo/Deferred",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
@@ -12,7 +13,7 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Observable",
 	"dojo/store/Cache"
-],function(declare,lang,array,fx,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Observable,Cache) {
+],function(declare,lang,array,fx,aspect,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Observable,Cache) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,Builder],{
 });
@@ -130,6 +131,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					store:Observable(new Memory({
 						identifier: "id"
 					})),
+					label:schema.title,
 					data:{
 						controls:jsonschema.schemaToControls(schema)
 					},
@@ -137,10 +139,20 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						if(!this.validate()) return;
 						var data = this.store.query();
 						console.log(data)
-					}					
+					}
 				});
+				this.own(aspect.after(listItem,"layout",function(){
+					setTimeout(function(){
+						self._dim = self.getDim();
+						self.slideTo({x:0,y:0}, 0.3, "ease-out");
+						if(self.useScrollBar) {
+							self.showScrollBar();
+						}
+					},100);
+				},true));
 				this.listitems.push(listItem);
 				this.addChild(listItem);
+				if(schema.description) listItem.footerNode.innerHTML = schema.description;
 				this.itemnodesmap[0] = listItem;
 				fx.fadeIn({
 					node:listItem.containerNode,
