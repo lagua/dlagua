@@ -97,11 +97,12 @@ return declare("dlagua.w.layout.TemplaMixin", [], {
 			if(children) {
 				// we need a new schema for the children to resolve their xuris..
 				// it must be in schema.links, but we should be sure that we get the correct schema
+				var schemalinks = schema.links || [];
 				item.__childrenDone = 0;
 				for(var c in children) {
 					var cschemaUri;
-					for(var i=0;i<schema.links.length;i++){
-						var link = schema.links[i];
+					for(var i=0;i<schemalinks.length;i++){
+						var link = schemalinks[i];
 						if(link.rel==c) {
 							cschemaUri = link.href.split("/")[1];
 							break;
