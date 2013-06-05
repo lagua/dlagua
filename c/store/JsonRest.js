@@ -1,5 +1,5 @@
 define(["dojo/_base/declare","dojo/_base/lang","dojo/request", "dojo/store/JsonRest"], function(declare,lang,request,JsonRest) {
-	return declare("dlagua/c/store/JsonRest", [JsonRest],{
+	return declare("dlagua.c.store.JsonRest", [JsonRest],{
 		schemaUri:"",
 		hrProperty:"",
 		idProperty:"id",
