@@ -9,13 +9,16 @@ define([
 		maxDepth:2,
 		selectNode:function(node,truncated,depth,fromTreeRoot){
 			if(!node) return;
-			console.log("TreeController selectNode ",truncated);
+			console.log(this.id, "TreeController selectNode ",truncated);
 			if(this._selectedNode) {
 				this._selectedNode.set("selected",false);
 			}
 			this._selectedNode = node;
 			node.set("selected",true);
-			if(this.currentItem && node.item == this.currentItem) return;
+			if(this.currentItem && node.item == this.currentItem) {
+				console.warn("escaping on same item")
+				return;
+			}
 			if(truncated && depth<this.maxDepth) {
 				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
 					node.popup._loadFromId("",null,truncated);
