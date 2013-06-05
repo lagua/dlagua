@@ -10,10 +10,11 @@ define([
 	"dforma/Builder",
 	"dforma/jsonschema",
 	"dojox/mobile/i18n",
+	"dlagua/c/store/LocalStore",
 	"dojo/store/Memory",
 	"dojo/store/Observable",
 	"dojo/store/Cache"
-],function(declare,lang,array,fx,aspect,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,Memory,Observable,Cache) {
+],function(declare,lang,array,fx,aspect,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,LocalStore,Memory,Observable,Cache) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,Builder],{
 });
@@ -46,6 +47,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	schemata:{},
 	schemaModel:"Class",
 	refAttribute:"_ref",
+	localStorage:true,
+	persistentStorage:false,
 	formBundle:"form",
 	dojoModule:"",
 	_getSchema:function(){
@@ -97,13 +100,22 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.orifilter = this.filter = item.filter;
 			if(!this.store) {
-				this.store = new JsonRest({
-					target:target,
-					schemaUri:schemaUri
-				});
+				if(item.localStorage) {
+					this.store = new Observable(new LocalStore({
+						identifier: "id",
+						persistent:this.persistentStorage,
+						target:target,
+						schemaUri:schemaUri
+					}));
+				} else {
+					this.store = new Observable(new JsonRest({
+						target:target,
+						schemaUri:schemaUri
+					}));
+				}
 				if(this.stores) {
 					if(!this.stores[target]) {
-						this.stores[target] = new Cache(this.store, new Memory());
+						this.stores[target] = this.store;//new Cache(this.store, new Memory());
 					}
 				}
 			} else {
@@ -128,10 +140,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
 				var listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
-					store:Observable(new Memory({
-						identifier: "id"
-					})),
+					store:this.store,
 					label:schema.title,
+					hint:schema.description,
 					data:{
 						controls:jsonschema.schemaToControls(schema)
 					},
@@ -152,7 +163,6 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				},true));
 				this.listitems.push(listItem);
 				this.addChild(listItem);
-				if(schema.description) listItem.footerNode.innerHTML = schema.description;
 				this.itemnodesmap[0] = listItem;
 				fx.fadeIn({
 					node:listItem.containerNode,
