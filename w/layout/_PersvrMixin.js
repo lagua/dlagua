@@ -6,7 +6,6 @@ define([
 	"dojo/query",
 	"dojo/request",
 	"dojo/aspect",
-	"dojo/dom-geometry",
 	"dojo/dom-construct",
 	"dojo/dom-attr",
 	"dojo/Deferred",
@@ -18,30 +17,9 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(declare,lang,array,fx,query,request,aspect,domGeometry,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
+],function(declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
-	startup:function(){
-		if(this._started) return;
-		this._started = true;
-		if(!this.data) {
-			this.onLoad();
-			return;
-		}
-		this._load().then(lang.hitch(this,this.onLoad));
-	},
-	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
-		this._setContent(data || "");
-		setTimeout(lang.hitch(this,function(){
-			if(!this.containerNode) return;
-			this.marginBox = domGeometry.getMarginBox(this.containerNode);
-		}),1);
-	},
-	updateLayout:function() {
-		if(!this || !this.containerNode) return;
-		this.marginBox = domGeometry.getMarginBox(this.containerNode);
-		this.inherited(arguments);
-	}
 });
 	
 return declare("dlagua.w.layout._PersvrMixin", [], {
