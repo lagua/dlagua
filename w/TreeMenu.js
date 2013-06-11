@@ -155,6 +155,8 @@ define([
 			if(item.hidden) return "dijitTreeRowHidden";
 		},
 		_pubItem:function(pubitem){
+			if(this.oldItem==pubitem) return;
+			this.oldItem = pubitem;
 			var item = {};
 			var parent = pubitem.__parent;
 			for(var k in pubitem) {
@@ -183,20 +185,18 @@ define([
 				item.__truncated = this._truncated;
 				this._truncated = false;
 			}
-			this.oldItem = item;
 			console.log("treemenu publishes",item)
 			topic.publish("/components/"+this.id,item);
 		},
 		_checkTruncate:function(path){
 			var depth = this.currentItem.__depth ? this.currentItem.__depth : 2;
-			console.log("TreeMenu _checkTruncate",path)
+			console.log("TreeMenu _checkTruncate",path);
 			this.selectNodeByField(path,"path",true,depth-1).then(lang.hitch(this,function(result){
 				if(result) {
 					if(!this.selectedItem) return;
 					var item = this.selectedItem;
-					var node = this.getNodesByItem(item)[0];
+					var node = item && this.getNodesByItem(item)[0];
 					if(!node) return;
-					//this.onClick(item, node);
 					// model is to LOAD the CONTENT from NOT the nav model!
 					this.onClick(item,node);
 					var tree = this;
