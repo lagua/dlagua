@@ -3,10 +3,13 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/_base/fx",
+	"dojo/request",
 	"dojo/aspect",
+	"dojo/hash",
 	"dojo/Deferred",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
+	"dlagua/w/layout/TemplaMixin",
 	"dforma/Builder",
 	"dforma/jsonschema",
 	"dojox/mobile/i18n",
@@ -14,9 +17,9 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Observable",
 	"dojo/store/Cache"
-],function(declare,lang,array,fx,aspect,Deferred,JsonRest,ScrollableServicedPaneItem,Builder,jsonschema,i18n,LocalStore,Memory,Observable,Cache) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,LocalStore,Memory,Observable,Cache) {
 
-var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,Builder],{
+var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
 
 function traverse(obj,func, parent) {
@@ -51,36 +54,10 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	persistentStorage:false,
 	formBundle:"form",
 	dojoModule:"",
-	_getSchema:function(){
-		var d = new Deferred;
-		// prevent getting schema again
-		if(this.schemata[this.store.schemaUri]) {
-			this.schemaUri = this.store.schemaUri;
-			var schema = this.schema = this.schemata[this.schemaUri];
-			for(var k in schema.properties) {
-				if(schema.properties[k].primary) this.idProperty = k;
-				if(schema.properties[k].hrkey) this.hrProperty = k;
-			}
-			this.store.idProperty = this.idProperty;
-			d.resolve(true);
-			return d;
-		}
-		if(!this.schemaUri || this.schemaUri!=this.store.schemaUri) {
-			this.schemaUri = this.store.schemaUri;
-			this.store.getSchema(this.store.schemaUri,{useXDomain:(this.useXDomain)}).then(lang.hitch(this,function(schema){
-				this.schema = schema;
-				this.schemata[this.schemaUri] = schema;
-				for(var k in schema.properties) {
-					if(schema.properties[k].primary) this.idProperty = k;
-					if(schema.properties[k].hrkey) this.hrProperty = k;
-				}
-				this.store.idProperty = this.idProperty;
-				d.resolve(true);
-			}));
-		} else {
-			d.resolve(true);
-		}
-		return d;
+	externalStore:false,
+	postCreate:function(){
+		this.inherited(arguments);
+		if(this.store) this.externalStore = true;
 	},
 	loadFromItem:function(){
 		this.inherited(arguments);
@@ -99,35 +76,36 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.orifilter = this.filter = item.filter;
-			if(!this.store) {
-				if(item.localStorage) {
-					this.store = new Observable(new LocalStore({
-						identifier: "id",
-						persistent:this.persistentStorage,
-						target:target,
-						schemaUri:schemaUri
-					}));
-				} else {
-					this.store = new Observable(new JsonRest({
-						target:target,
-						schemaUri:schemaUri
-					}));
-				}
-				if(this.stores) {
-					if(!this.stores[target]) {
-						this.stores[target] = this.store;//new Cache(this.store, new Memory());
+			if(!this.stores[target]) {
+				if(!this.externalStore) {
+					if(item.localStorage) {
+						this.store = new Observable(new LocalStore({
+							identifier: "id",
+							persistent:this.persistentStorage,
+							target:target,
+							schemaUri:schemaUri
+						}));
+					} else {
+						this.store = new Observable(new JsonRest({
+							target:target,
+							schemaUri:schemaUri
+						}));
 					}
+				} else {
+					this.store.target = target;
+					this.store.schemaUri = schemaUri;
 				}
+				this.stores[target] = this.store;//new Cache(this.store, new Memory());
 			} else {
-				this.store.target = target;
-				this.store.schemaUri = schemaUri;
+				this.store = this.stores[target];
 			}
 			this.rebuild(item);
 		}
 	},
-	rebuild:function(){
+	rebuild:function(item){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
+			console.log("schemauri",this.store.schemaUri)
 			this._getSchema().then(lang.hitch(this,function(){
 				var self = this;
 				var common = i18n.load("dforma","common");
@@ -148,8 +126,37 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					},
 					submit: function(){
 						if(!this.validate()) return;
-						var data = this.store.query();
-						console.log(data)
+						var data = this.get("value");
+						if(schema.links) {
+							array.forEach(schema.links,function(link){
+								if(!data[link.rel]) data[link.rel] = [];
+								var localStore = self.stores[link.href];
+								if(localStore) {
+									var localdata = localStore.query();
+									data[link.rel] = data[link.rel].concat(localdata);
+								}
+							});
+						}
+						if(item.action) {
+							if(item.action.charAt(0)=="#") {
+								hash(item.action);
+							} else {
+								var method = item.method || "post";
+								request[method](item.action,{
+									handleAs:"json",
+									headers:{
+										"Content-Type":"application/json",
+										"Accept":"application/json"
+									}
+								});
+							}
+						} else {
+							this.store.put(data);
+							listItem.containerNode = listItem.domNode;
+							listItem.mixeddata = data;
+							self.replaceChildTemplate(listItem);
+							listItem.layout();
+						}
 					}
 				});
 				this.own(aspect.after(listItem,"layout",function(){
