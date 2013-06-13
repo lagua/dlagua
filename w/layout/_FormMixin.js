@@ -7,17 +7,13 @@ define([
 	"dojo/aspect",
 	"dojo/hash",
 	"dojo/Deferred",
-	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
 	"dforma/Builder",
 	"dforma/jsonschema",
 	"dojox/mobile/i18n",
-	"dlagua/c/store/LocalStore",
-	"dojo/store/Memory",
-	"dojo/store/Observable",
-	"dojo/store/Cache"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,LocalStore,Memory,Observable,Cache) {
+	"dlagua/c/store/FormData"
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -60,6 +56,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		if(this.store) this.externalStore = true;
 	},
 	loadFromItem:function(){
+		if(this.servicetype=="form" && this.listitems && this.listitems[0]) {
+			this.listitems[0].cancel && this.listitems[0].cancel();
+		}
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
@@ -78,19 +77,14 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			if(item.filter) this.orifilter = this.filter = item.filter;
 			if(!this.stores[target]) {
 				if(!this.externalStore) {
-					if(item.localStorage) {
-						this.store = new Observable(new LocalStore({
-							identifier: "id",
-							persistent:this.persistentStorage,
-							target:target,
-							schemaUri:schemaUri
-						}));
-					} else {
-						this.store = new Observable(new JsonRest({
-							target:target,
-							schemaUri:schemaUri
-						}));
-					}
+					this.store = new FormData({
+						local:this.localStorage,
+						identifier: "id",
+						persistent:this.persistentStorage,
+						model:model,
+						schemaModel:schemaModel,
+						service:item.service
+					});
 				} else {
 					this.store.target = target;
 					this.store.schemaUri = schemaUri;
@@ -133,6 +127,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 								var localStore = self.stores[link.href];
 								if(localStore) {
 									var localdata = localStore.query();
+									localStore.clear && localStore.clear();
 									data[link.rel] = data[link.rel].concat(localdata);
 								}
 							});
