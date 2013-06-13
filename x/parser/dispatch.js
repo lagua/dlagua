@@ -1,5 +1,12 @@
-define(["dojo/_base/lang","dojo/on","dijit/form/Button","dojox/uuid/generateRandomUuid","dlagua/c/string/toProperCase"
-], function(lang,on,Button,generateRandomUuid) {
+define([
+	"dojo/_base/lang",
+	"dojo/on",
+	"dojo/aspect",
+	"dijit/form/Button",
+	"dojox/uuid/generateRandomUuid",
+	"dlagua/c/store/FormData",
+	"dlagua/c/string/toProperCase"
+], function(lang,on,aspect,Button,generateRandomUuid,FormData) {
 
 var dispatch = lang.getObject("dlagua.x.parser.dispatch", true);
 
@@ -22,7 +29,7 @@ var button = function(val,options) {
 		}
 	},10);
 	return '<span id="'+id+'"></span>';
-}
+};
 
 var flux = function(val,options) {
 	var text;
@@ -40,10 +47,28 @@ var flux = function(val,options) {
 			}
 		}
 	});
-}
+};
+
+var form = function(val,options) {
+	var text;
+	var ref = this.ref;
+	var data = options.data;
+	var action = options.action;
+	delete options.data;
+	delete options.action;
+	if(!ref.stores[target]){
+		ref.stores[target] = new FormData(options);
+	}
+	return button(val,{
+		onClick:function(){
+			ref.stores[target].put(data);
+			hash(target);
+		}
+	});
+};
 
 dispatch.button = button;
-dispatch.flux = flux;
+dispatch.flux = form;
 
 return dispatch;
 });
