@@ -16,6 +16,9 @@ define([
 					accept:"application/json"
 				}
     		});
+		},
+		clear:function(){
+			this.data = [];
 		}
 	});
 
