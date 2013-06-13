@@ -146,7 +146,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 			break;
 		}
 	},
-	loadFromItem: function() {
+	_allowLoad:function(){
 		if(this._beingDestroyed || !this.currentItem) return;
 		if(!this.currentItem.locale) this.currentItem.locale = this.locale;
 		console.log("reload?",this.id,this.reload)
@@ -169,6 +169,10 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 				if(!reload) return;
 			}
 		}
+		return true;
+	},
+	loadFromItem: function() {
+		if(!this._allowLoad()) return;
 		if(this._loading) {
 			console.warn("Aborting SSP loading!")
 			this.cancel();
