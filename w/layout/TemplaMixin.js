@@ -104,7 +104,8 @@ return declare("dlagua.w.layout.TemplaMixin", [], {
 					for(var i=0;i<schemalinks.length;i++){
 						var link = schemalinks[i];
 						if(link.rel==c) {
-							cschemaUri = link.href.split("/")[1];
+							var par = link.href.split("/");
+							while(par.length && !cschemaUri) cschemaUri = par.pop();
 							break;
 						}
 					}
