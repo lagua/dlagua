@@ -59,6 +59,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		if(this.servicetype=="form" && this.listitems && this.listitems[0]) {
 			this.listitems[0].cancel && this.listitems[0].cancel();
 		}
+		if(!this._allowLoad()) return;
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
@@ -78,9 +79,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			if(!this.stores[target]) {
 				if(!this.externalStore) {
 					this.store = new FormData({
-						local:this.localStorage,
+						local:item.localStorage,
 						identifier: "id",
-						persistent:this.persistentStorage,
+						persistent:item.persistentStorage,
 						model:model,
 						schemaModel:schemaModel,
 						service:item.service
@@ -148,9 +149,15 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						} else {
 							this.store.put(data);
 							listItem.containerNode = listItem.domNode;
-							listItem.mixeddata = data;
-							self.replaceChildTemplate(listItem);
-							listItem.layout();
+							listItem.data = data;
+							listItem._load().then(function(){
+								var form = {};
+								for(var k in formbundle) {
+									form[k] = formbundle[k];
+								}
+								self.replaceChildTemplate(listItem,"",form);
+								listItem.layout();
+							});
 						}
 					}
 				});
