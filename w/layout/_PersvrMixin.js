@@ -62,11 +62,11 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			})
 		);
 	},
-	replaceChildTemplate: function(child,templateDir) {
+	replaceChildTemplate: function(child,templateDir,partials) {
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
 		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
-			this.parseTemplate(tpl).then(function(tplo){
+			this.parseTemplate(tpl,partials).then(function(tplo){
 				if(child && child!="childTemplate"){
 					child.applyTemplate(tplo.tpl,tplo.partials);
 				} else {
@@ -161,6 +161,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		this.forcedLoad();
 	},
 	loadFromItem:function(){
+		if(!this._allowLoad()) return;
 		this.inherited(arguments);
 		if(this.servicetype=="persvr") {
 			var item = lang.mixin({},this.currentItem);
@@ -299,7 +300,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		}));
 		this.addChild(listItem,insertIndex);
 	},
-	parseTemplate: function(tpl){
+	parseTemplate: function(tpl,partials){
 		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
 		var div = domConstruct.create("div",{
 			innerHTML:tpl
@@ -312,7 +313,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		});
 		var types = [];
 		// look for nesting
-		var partials = {};
+		var partials = partials || {};
 		var partialcount = 0;
 		var getNode = function(node){
 			var type = domAttr.get(node,"data-templa-type");
