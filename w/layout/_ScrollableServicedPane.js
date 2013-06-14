@@ -177,7 +177,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 			console.warn("Aborting SSP loading!")
 			this.cancel();
 		} else {
-			console.warn("reload!",this.id,n);
+			console.warn("reload!",this.id);
 		}
 		// resetters
 		this._loading = true;
