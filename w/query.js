@@ -172,7 +172,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 		},
 		placeAt:function(refNode,insertIndex){
 			forEach(this,function(node){
-				domConstruct.place(node,refNode,insertIndex);
+				domConstruct.place(node.domNode,refNode,insertIndex);
 			});
 			return this;
 		},
