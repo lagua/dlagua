@@ -25,7 +25,7 @@ define([
 					labelAttr:this.labelAttr
 				});
 				this.own(aspect.after(this,"selectNode",function(node){
-					if(dd!=node.popup && dd._selectedNode) {
+					if(node && dd!=node.popup && dd._selectedNode) {
 						dd._selectedNode.set("selected",false);
 						dd._selectedNode = null;
 					}
