@@ -164,9 +164,15 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			return this;
 		},
 		setDomStyle:function(){
-			var args = arguments;
+			var args = Array.prototype.slice.call(arguments);
 			forEach(this,function(node){
-				domStyle.set(node,args);
+				domStyle.set.apply(domStyle,[node.domNode].concat(args));
+			});
+			return this;
+		},
+		subscribe:function(channel,options){
+			forEach(this,function(node){
+				node.subscribe && node.subscribe(channel,options);
 			});
 			return this;
 		},
@@ -280,11 +286,18 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 	
 	var w = lang.getObject("dlagua.w", true);
 	
+	var findWidgetNode = function(node){
+		if(!node.hasAttribute("id")) return node;
+		var widget = registry._hash[node.getAttribute("id")];
+		return widget ? widget.domNode : node;
+	};
+	
 	var query = function(q) {
 		var nodelist = defaultEngine(q);
 		var widgetlist = [];
 		array.forEach(nodelist,function(node){
-			var widget = registry.byNode(node);
+			var widgetnode = node.hasAttribute("widgetid") ? node : findWidgetNode(node);
+			var widget = registry.byNode(widgetnode);
 			if(!widget) {
 				widget = new _WidgetBase({
 					id:node.id
