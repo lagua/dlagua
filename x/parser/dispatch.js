@@ -1,5 +1,12 @@
-define(["dojo/_base/lang","dojo/on","dijit/form/Button","dojox/uuid/generateRandomUuid","dlagua/c/string/toProperCase"
-], function(lang,on,Button,generateRandomUuid) {
+define([
+	"dojo/_base/lang",
+	"dojo/on",
+	"dojo/hash",
+	"dijit/form/Button",
+	"dojox/uuid/generateRandomUuid",
+	"dlagua/c/store/FormData",
+	"dlagua/c/string/toProperCase"
+], function(lang,on,hash,Button,generateRandomUuid,FormData) {
 
 var dispatch = lang.getObject("dlagua.x.parser.dispatch", true);
 
@@ -22,7 +29,7 @@ var button = function(val,options) {
 		}
 	},10);
 	return '<span id="'+id+'"></span>';
-}
+};
 
 var flux = function(val,options) {
 	var text;
@@ -40,10 +47,32 @@ var flux = function(val,options) {
 			}
 		}
 	});
-}
+};
+
+var form = function(val,options) {
+	var text;
+	var ref = this.ref;
+	var data = options.values;
+	var action = options.action;
+	var service = options.service || "/persvr/";
+	var target = service+options.model+"/";
+	delete options.values;
+	delete options.action;
+	delete options._ref;
+	if(!ref.stores[target]){
+		ref.stores[target] = new FormData(options);
+	}
+	return button(val,{
+		onClick:function(){
+			var id = ref.stores[target].put(data);
+			ref.stores[target].selectedId = id;
+			hash(action);
+		}
+	});
+};
 
 dispatch.button = button;
-dispatch.flux = flux;
+dispatch.flux = form;
 
 return dispatch;
 });

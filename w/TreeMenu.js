@@ -55,6 +55,7 @@ define([
 		_loadFromItem:function(prop,oldValue,newValue){
 			console.log("TreeMenu loading currentItem ",this.currentItem)
 			var reload;
+			this.oldItem = null;
 			var n = this.currentItem;
 			var o = this.model.root;
 			for(var k in this.currentItem) {
