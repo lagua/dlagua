@@ -198,7 +198,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 			case "atom":
 				// find in mixin
 				break;
-			default:
+			case "page":
 				if(!item.service) item.service = "/xbrota/rest";
 				this.rebuild(item);
 				break;
@@ -227,7 +227,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 			// find in _FormMixin
 		} else if(this.servicetype=="atom") {
         	// find in _AtomMixin
-		} else {
+		} else if(this.servicetype=="page") {
 			if(item) {
 				this._initContent(item);
 			} else {
