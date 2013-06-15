@@ -13,8 +13,8 @@ define([
 	"dijit/layout/LayoutContainer",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
-	"dojox/mobile/parser",
-	"dojox/mobile",
+	//"dojox/mobile/parser",
+	//"dojox/mobile",
 	"dojox/mobile/compat"
 ],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,Scrollable,ScrollableServicedPaneItem,LayoutContainer,_TemplatedMixin,templateString){
 return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutContainer, _TemplatedMixin],{
