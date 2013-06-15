@@ -99,8 +99,8 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/request", "dojo/store/uti
 			var results = request(this.target + (query || ""),{
 				headers: headers
 			});
-			results.total = results.then(function(){
-				var range = results.ioArgs.xhr.getResponseHeader("Content-Range");
+			results.total = results.response.then(function(response){
+				var range = response.getHeader("Content-Range");
 				return range && (range=range.match(/\/(.*)/)) && +range[1];
 			});
 			return QueryResults(results);
