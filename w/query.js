@@ -170,6 +170,12 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			});
 			return this;
 		},
+		placeAt:function(refNode,insertIndex){
+			forEach(this,function(node){
+				domConstruct.place(node,refNode,insertIndex);
+			});
+			return this;
+		},
 		subscribe:function(channel,options){
 			forEach(this,function(node){
 				node.subscribe && node.subscribe(channel,options);
