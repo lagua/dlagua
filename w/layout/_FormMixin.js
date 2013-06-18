@@ -7,13 +7,14 @@ define([
 	"dojo/aspect",
 	"dojo/hash",
 	"dojo/Deferred",
+	"dojo/dom-class",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
 	"dforma/Builder",
 	"dforma/jsonschema",
 	"dojox/mobile/i18n",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -111,17 +112,21 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				var schema = lang.clone(this.schema);
 				var formbundle = i18n.load(this.dojoModule,this.formBundle);
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
+				var submit = schema.submit ? schema.submit : (formbundle.buttonSubmit ? formbundle.buttonSubmit : "");
 				var listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
 					store:this.store,
 					label:schema.title,
 					hint:schema.description,
 					data:{
-						controls:jsonschema.schemaToControls(schema)
+						controls:jsonschema.schemaToControls(schema),
+						submit:submit ? {label: submit} : {}
 					},
 					submit: function(){
 						if(!this.validate()) return;
 						var data = this.get("value");
+						domClass.toggle(this.buttonNode,"dijitHidden",true);
+						this.set("message",formbundle.submitMessage);
 						if(schema.links) {
 							array.forEach(schema.links,function(link){
 								if(!data[link.rel]) data[link.rel] = [];
