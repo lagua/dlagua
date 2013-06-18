@@ -55,7 +55,9 @@ return declare("dlagua.c.templa.Mixin",[Stateful],{
 			text = render(text);
 			var ar = text.split("|");
 			var val = ar[0];
-			var props = (ar.length>1 ? djson.fromJson(ar[1]) : {});
+			var pstr = ar.length>1 ? ar[1] : "{}";
+			if(pstr.charAt(0)!="{") pstr = "{"+pstr+"}";
+			var props = djson.fromJson(pstr);
 			for(var k in props) {
 				if(k==val) return props[k];
 			}
