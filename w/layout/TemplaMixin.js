@@ -105,7 +105,8 @@ define([
 						for(var i=0;i<schemalinks.length;i++){
 							var link = schemalinks[i];
 							if(link.rel==c) {
-								var par = link.href.split("/");
+								var href = link.href.split("?")[0];
+								var par = href.split("/");
 								while(par.length && !cschemaUri) cschemaUri = par.pop();
 								break;
 							}
