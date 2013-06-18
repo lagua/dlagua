@@ -18,8 +18,9 @@
 	position:absolute;
 	z-index:3;
 }
-.dlaguaScrollableServicedPaneItem {
+.dlaguaScrollableServicedPane-child {
 	margin-right:13px;
+	padding: 5px;
 }
 
 .mblScrollBarWrapper { 
