@@ -14,6 +14,7 @@ define([
 lang.getObject("dlagua.c.date.locale", true);
 
 var format = function(val,options) {
+	if(!options.autoupdate && val==="") return val;
 	var date;
 	var txt = "", oritxt = "";
 	if(options.selector=="time") {
