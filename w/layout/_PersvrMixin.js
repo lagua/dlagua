@@ -1,4 +1,5 @@
 define([
+	"require",
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
@@ -17,11 +18,11 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
+],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
-	
+
 return declare("dlagua.w.layout._PersvrMixin", [], {
 	store:null,
 	stores:{},

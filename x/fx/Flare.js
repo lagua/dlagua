@@ -1,4 +1,5 @@
 define([
+"require",
 "dojo/_base/declare",
 "dojo/_base/lang",
 "dojo/_base/window",
@@ -7,7 +8,7 @@ define([
 "dojo/on",
 "dojo/dom-construct",
 "dojo/dom-geometry"
-],function(declare,lang,win,fx,easing,on,domConstruct,domGeometry) {
+],function(require,declare,lang,win,fx,easing,on,domConstruct,domGeometry) {
 	return declare("dlagua.x.fx.Flare",[],{
 		postCreate: function(){
 			// summary:

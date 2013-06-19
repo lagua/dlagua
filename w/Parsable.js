@@ -1,10 +1,11 @@
 define([
+	"require",
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/dom",
 	"dijit/_WidgetBase",
 	"dijit/_TemplatedMixin"
-],function(declare,lang,dom,_WidgetBase,_TemplatedMixin){
+],function(require,declare,lang,dom,_WidgetBase,_TemplatedMixin){
 return declare("dlagua.w.Parsable",[_WidgetBase,_TemplatedMixin],{
 	postscript:function(params,refNode){
 		if(!params) return;

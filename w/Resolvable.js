@@ -1,10 +1,11 @@
 define([
+	"require",
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/dom-construct",
 	"dlagua/x/json/ref"
-],function(declare,lang,array,domConstruct,ref) {
+],function(require,declare,lang,array,domConstruct,ref) {
 	return declare("dlagua.w.Resolvable",[],{
 		_childNodesMap:null,
 		childrenAttr:"children",

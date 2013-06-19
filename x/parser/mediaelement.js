@@ -1,4 +1,5 @@
 define([
+	"require",
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/on",
@@ -6,7 +7,7 @@ define([
 	"dojox/uuid/generateRandomUuid",
 	"dojo/has",
 	"dojo/_base/sniff"
-], function(lang,array,on,topic,generateRandomUuid,has) {
+], function(require,lang,array,on,topic,generateRandomUuid,has) {
 
 lang.getObject("dlagua.x.parser.mediaelement", true);
 
