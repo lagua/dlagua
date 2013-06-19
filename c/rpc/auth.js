@@ -16,7 +16,6 @@ define([
 		var sessionParam = params.sessionParam;
 		var json = true;
 		var token;
-		var authMsg;
 		var authDialog;
 		var form;
 		var hasSessParam;
@@ -54,7 +53,7 @@ define([
 			return d;
 		};
 		var doAuth = function(data) {
-			authMsg.innerHTML = "";
+			form.set("message","");
 			var passwd = Aes.Ctr.encrypt(data.passwd, token, 256);
 			var req = {
 				"id":"call-id",
@@ -66,7 +65,7 @@ define([
 				authDialog.hide();
 				d.resolve(auth);
 			},function(err){
-				authMsg.innerHTML = err;
+				form.set("message",err);
 			});
 		};
 		
@@ -110,10 +109,7 @@ define([
 				}
 			}).placeAt(authDialog.containerNode);
 			authDialog.show();
-			var fc = form.getChildren();
-			var maingroup = fc.length ? fc[0] : null;
-			authMsg = maingroup.messageNode;
-			if(errmsg) authMsg.innerHTML = errmsg;
+			if(errmsg) form.set("message",errmsg);
 		};
 		
 		var req = {
