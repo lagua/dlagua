@@ -19,13 +19,6 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 	onLoad:function(){
 		// you know what to do...
 	},
-	resizeChildren: function(){
-		var box = this.marginBox;
-		domStyle.set(this.containerNode.firstChild, {
-			width: box.w +'px',
-			height: box.h + 'px'
-		});
-	},
 	_setContent: function(/*String|DocumentFragment*/ cont, /*Boolean*/ isFakeContent){
 		// summary:
 		//		Insert the content into the container node
@@ -88,7 +81,7 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 					// Call resize() on each of my child layout widgets,
 					// or resize() on my single child layout widget...
 					// either now (if I'm currently visible) or when I become visible
-					//self._scheduleLayout();
+					self.resize();
 				}
 				//self._onLoadHandler(cont);
 			}
@@ -120,7 +113,19 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 	_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 		this._setContent(data || "");
 	},
-	updateLayout:function() {
+	layoutChildren: function(){
+		var children = this.getChildren(),
+			widget,
+			i = 0;
+		while(widget = children[i++]){
+			if(widget.resize){
+				widget.resize();
+			}
+		}
+	},
+	resize:function() {
+		this.inherited(arguments);
+		this.layoutChildren();
 		var parent = (this.parent || this.getParent());
 		if(parent && parent.useScrollBar) parent.showScrollBar();
 	}
