@@ -5,14 +5,13 @@ define([
 	"dojo/dom-geometry",
 	"dojo/request",
 	"dojo/Deferred",
-	"dojo/html",
 	"dojo/date/stamp",
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained",
 	"mustache/mustache",
 	"dlagua/c/templa/Mixin"
-],function(declare,lang,array,domGeometry,request,Deferred,html,stamp,_Widget,_Templated,_Contained,Mustache,Mixin) {
+],function(declare,lang,array,domGeometry,request,Deferred,stamp,_Widget,_Templated,_Contained,Mustache,Mixin) {
 
 	return declare("dlagua.w.layout.TemplaMixin", [], {
 		resolveProperties:null,
@@ -247,56 +246,9 @@ define([
 				this.marginBox = domGeometry.getMarginBox(this.containerNode);
 			}),1);
 		},
-		updateLayout:function() {
-			if(!this || !this.containerNode) return;
-			this.marginBox = domGeometry.getMarginBox(this.containerNode);
+		resize:function() {
 			this.inherited(arguments);
-		},
-		_setContent: function(/*String|DocumentFragment*/ cont, /*Boolean*/ isFakeContent){
-			// summary:
-			//		Insert the content into the container node
-
-			// first get rid of child widgets
-			this.destroyDescendants();
-
-			// html.set will take care of the rest of the details
-			// we provide an override for the error handling to ensure the widget gets the errors
-			// configure the setter instance with only the relevant widget instance properties
-			// NOTE: unless we hook into attr, or provide property setters for each property,
-			// we need to re-configure the ContentSetter with each use
-			var setter = this._contentSetter;
-			if(! (setter && setter instanceof html._ContentSetter)){
-				setter = this._contentSetter = new html._ContentSetter({
-					node: this.containerNode,
-					_onError: lang.hitch(this, this._onError),
-					onContentError: lang.hitch(this, function(e){
-						// fires if a domfault occurs when we are appending this.errorMessage
-						// like for instance if domNode is a UL and we try append a DIV
-						var errMess = this.onContentError(e);
-						try{
-							this.containerNode.innerHTML = errMess;
-						}catch(e){
-							console.error('Fatal '+this.id+' could not change content due to '+e.message, e);
-						}
-					})/*,
-					_onError */
-				});
-			}
-
-			var setterParams = lang.mixin({
-				cleanContent: this.cleanContent,
-				extractContent: this.extractContent,
-				parseContent: this.parseOnLoad,
-				parserScope: this.parserScope,
-				startup: false,
-				dir: this.dir,
-				lang: this.lang
-			}, this._contentSetterParams || {});
-
-			setter.set( (lang.isObject(cont) && cont.domNode) ? cont.domNode : cont, setterParams );
-
-			// setter params must be pulled afresh from the ContentPane each time
-			delete this._contentSetterParams;
+			if(this.containerNode) this.marginBox = domGeometry.getMarginBox(this.containerNode);
 		},
 		onLoad:function(){}
 	});
