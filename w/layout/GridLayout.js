@@ -297,13 +297,24 @@ define([
 				return
 			}
 			if(matrices.length==3) {
-				//matrix = this.placeCenter(matrix,lang.clone(children));
+				matrices[0] = this.expandCenter(matrices[0],regions["center"].children,matrices[1][0].length+matrices[2][0].length);
 				matrix = [];
 				for(var rc=0;rc<this.rows;rc++){
 					matrix[rc] = matrices[1][rc].concat(matrices[0][rc],matrices[2][rc]);
 				}
 				return matrix;
 			}
+		},
+		expandCenter:function(matrix,children,taken /* by other regions */){
+			var empty = this.cols-taken;
+			var len = matrix[0].length;
+			for(var rc=0;rc<matrix.length;rc++) {
+				var index = matrix[rc][0];
+				for(var c = len; c<empty; c++) {
+					matrix[rc][c] = index;
+				}
+			}
+			return matrix;
 		},
 		getFree:function(matrix,mincol,minrow,maxcol,maxrow){
 			var freeCols = 0, freeRows = 0;
