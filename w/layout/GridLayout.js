@@ -111,6 +111,7 @@ define([
 				this.printMatrix(matrix);
 				this.sortChildren(matrix);
 				this.matrixToDOM(matrix);
+				this._layoutChildren();
 			}
 		},
 		addChild:function(widget,insertIndex){
@@ -156,6 +157,7 @@ define([
 				this.printMatrix(matrix);
 				this.sortChildren(matrix);
 				this.matrixToDOM(matrix);
+				this._layoutChildren();
 			}
 		},
 		resizeFit:function(children,maxcols,maxrows){
