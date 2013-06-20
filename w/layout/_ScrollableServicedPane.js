@@ -10,14 +10,14 @@ define([
 	"dojo/dom-style",
 	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
-	"dijit/layout/LayoutContainer",
+	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
 	//"dojox/mobile/parser",
 	//"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,Scrollable,ScrollableServicedPaneItem,LayoutContainer,_TemplatedMixin,templateString){
-return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutContainer, _TemplatedMixin],{
+],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWidget, _TemplatedMixin],{
 	listitems:null,
 	itemnodesmap:null,
 	templateString:templateString,
@@ -257,7 +257,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, LayoutCont
 		}
 		this.resetScrollBar();
 		this.onTouchEnd();
-		var _this = this;
+		this.layoutChildren();
+	},
+	layoutChildren: function(){
+		var children = this.getChildren(),
+			widget,
+			i = 0;
+		while(widget = children[i++]){
+			if(widget.resize){
+				widget.resize();
+			}
+		}
 	},
 	_initContent: function(item) {
 		// setcontent = false will not set the content here
