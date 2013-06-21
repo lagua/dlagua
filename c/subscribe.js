@@ -2,12 +2,12 @@ dojo.provide("dlagua.c.subscribe");
 
 dlagua.c.subscribe = function(/*String*/ topic, context, params){
 	if(!params) params = {};
-	var filter=(params.filter && persvr.rql && persvr.rql.Parser && persvr.rql.Array ? persvr.rql.Parser.parseQuery(params.filter) : null);
+	var filter=(params.filter && rql && rql.Parser && rql.Array ? rql.Parser.parseQuery(params.filter) : null);
 	var refProperty = params.refProperty;
 	var subscrmethd = function(item,olditem) {
 		if(filter) {
 			var ar = [item];
-			var res = persvr.rql.Array.executeQuery(filter,{},ar);
+			var res = rql.Array.executeQuery(filter,{},ar);
 			if(!res.length) {
 				console.log("filtered:",this.id,params.filter,item);
 				return;
@@ -29,4 +29,4 @@ dlagua.c.subscribe = function(/*String*/ topic, context, params){
 		}
 	};
 	return dojo.subscribe(topic, context, subscrmethd);
-};	
+};
