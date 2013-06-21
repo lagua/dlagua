@@ -175,18 +175,18 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.inherited(arguments);
 	},
 	onFilters:function(){
-		if(!persvr.rql) return;
+		if(!rql) return;
 		if(!this.orifilters) {
 			this.orifilters = this.filters;
 		} else {
 			this.orifilters = dojo.mixin(this.orifilters,this.filters);
 		}
 		this.filters = null;
-		var fa = new persvr.rql.Query.Query();
+		var fa = new rql.Query.Query();
 		var keys = {};
 		for(var k in this.orifilters){
 			if(this.orifilters[k].checked) {
-				var fo = persvr.rql.Parser.parseQuery(this.orifilters[k].filter);
+				var fo = rql.Parser.parseQuery(this.orifilters[k].filter);
 				fo.walk(function(name,terms){
 					var k = terms[0];
 					var v;
@@ -203,7 +203,7 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 			}
 		}
 		if(this.orifilter) {
-			var oo = persvr.rql.Parser.parseQuery(this.orifilter);
+			var oo = rql.Parser.parseQuery(this.orifilter);
 			oo.walk(function(name,terms){
 				var k = terms[0];
 				var v;
@@ -550,12 +550,12 @@ dojo.declare("dlagua.w.layout.ScrollableServicedPane",[dijit.layout._LayoutWidge
 		this.pageStore(py);
 	},
 	createQuery:function(){
-		if(!persvr.rql) return;
-		var qo = this.query ? persvr.rql.Parser.parseQuery(this.query) : new persvr.rql.Query.Query();
+		if(!rql) return;
+		var qo = this.query ? rql.Parser.parseQuery(this.query) : new rql.Query.Query();
 		if(this.filterByLocale) qo = qo.eq("locale",this.locale);
 		if(this.filter) {
 			// try to parse it first
-			var fo = persvr.rql.Parser.parseQuery(this.filter);
+			var fo = rql.Parser.parseQuery(this.filter);
 			fo.walk(function(name,terms){
 				var k = terms[0];
 				var v;

@@ -44,8 +44,8 @@ dojo.declare("dlagua.w.form.LocalePicker", [dijit.form.FilteringSelect,dlagua.c.
 				var query = args.query;
 				if(typeof query == "object"){ // can be null, but that is ignore by for-in
 					query = dojo.delegate(query); // don't modify the original
-					if(persvr.rql) {
-						var qo = persvr.rql.Parser.parseQuery(dojo.objectToQuery(query));
+					if(rql) {
+						var qo = rql.Parser.parseQuery(dojo.objectToQuery(query));
 						for(var i in qo){
 							if(typeof required == "string"){
 								qo[i] = RegExp("^" + dojo.regexp.escapeString(required, "*?").replace(/\*/g, '.*').replace(/\?/g, '.') + "$", args.queryOptions && args.queryOptions.ignoreCase ? "mi" : "m");
