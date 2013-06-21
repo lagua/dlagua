@@ -49,7 +49,7 @@ define([
 						this.onReady();
 					}));
 					children = data.children;
-					childrenResolved = array.every(children,function(_){ return _.__resolved==true });
+					childrenResolved = array.every(children,function(_){ return !_._loadObject || _.__resolved==true });
 				} else {
 					loadRoot = true;
 					children = [root];
