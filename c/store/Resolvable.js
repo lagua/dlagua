@@ -4,7 +4,7 @@ define(["dojo/_base/declare","dojo/_base/lang","dojo/Deferred","dojo/store/JsonR
 		getChildren:function(item){
 			var d = new Deferred();
 			d.resolve(item[this.childrenAttr]);
-			return d.
+			return d;
 		}
 	});
 });
