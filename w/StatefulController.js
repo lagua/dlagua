@@ -143,7 +143,7 @@ define([
 			this.selectNode(this._itemNodesMap[currentId],truncated,this.depth);
 		},
 		_loadFromItem:function(prop,oldVal,newVal) {
-			this.rebuild(!!oldVal);
+			this.rebuild(!!oldVal || newVal && newVal.__fromRoot);
 		},
 		startup: function(){
 			this.own(
