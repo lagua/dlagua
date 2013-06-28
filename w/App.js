@@ -83,7 +83,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var item = {
 			state:state,
 			locale:locale,
-			path:path
+			path:path,
+			__fromHash:true
 		};
 		return item;
 	},
@@ -160,7 +161,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	onItem: function(){
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
-		var state = item.state || this.state;
+		var state = item.state || "initial";
 		var path = item.path;
 		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
@@ -225,8 +226,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
-				if(!fromRoot) dhash(hash);
-				this.set("path",path);
+				if(!fromRoot) {
+					dhash(hash);
+					this.set("path",path);
+				} else {
+					this.path = path;
+				}
 				this.set("pageid",item.id);
 				d.resolve(true);
 			} else {
@@ -238,11 +243,6 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	},
 	startup: function(){
 		console.log("app startup called");
-		var hash = dhash() || this.defaultHash;
-		if(hash) {
-			var item = this.hashToItem(hash);
-			this.infer(item.path);
-		}
 		topic.subscribe("/dojo/hashchange", lang.hitch(this,function(hash){
 			if(this.changeFromApp) {
 				this.changeFromApp = false;
@@ -288,7 +288,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		);
 		this.inherited(arguments);
 		this.resize();
-		// set the has AFTER all children were started
+		// set the hash AFTER all children were started
+		//var hash = dhash() || this.defaultHash;
+		//if(hash) {
+		//	var item = this.hashToItem(hash);
+		//	this.infer(item.path);
+		//}
 		var hash = dhash();
 		if(!hash) {
 			if(this.defaultHash) dhash(this.defaultHash);
