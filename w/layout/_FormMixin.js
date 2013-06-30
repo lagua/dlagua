@@ -12,9 +12,10 @@ define([
 	"dlagua/w/layout/TemplaMixin",
 	"dforma/Builder",
 	"dforma/jsonschema",
+	"rql/js-array",
 	"dojox/mobile/i18n",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,i18n,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,jsArray,i18n,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -175,6 +176,17 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						}
 					},100);
 				},true));
+				if(schema.condition) {
+					var data = this.getLocalData(schema.condition.links || schema.links);
+					var result = jsArray.executeQuery(schema.condition.query,{},[data]);
+					// if there are no results for this query, display a message
+					if(!result.length) {
+						listItem.set("message",schema.condition.message);
+						domClass.add(listItem.containerNode,"dijitHidden");
+						domClass.add(listItem.hintNode,"dijitHidden");
+						domClass.add(listItem.buttonNode,"dijitHidden");
+					}
+				}
 				this.listitems.push(listItem);
 				this.addChild(listItem);
 				this.itemnodesmap[0] = listItem;
@@ -186,6 +198,20 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				}).play();
 			}));
 		}
+	},
+	getLocalData:function(links){
+		var data = {};
+		if(links) {
+			array.forEach(links,function(link){
+				if(!data[link.rel]) data[link.rel] = [];
+				var localStore = this.stores[link.href];
+				if(localStore) {
+					var localdata = localStore.query();
+					data[link.rel] = data[link.rel].concat(localdata);
+				}
+			},this);
+		}
+		return data;
 	}
 });
 
