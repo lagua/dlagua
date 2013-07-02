@@ -153,6 +153,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 								});
 							}
 						} else {
+							if(!data.locale) data.locale = item.locale;
 							this.store.put(data);
 							listItem.containerNode = listItem.domNode;
 							listItem.data = data;
