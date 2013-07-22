@@ -55,8 +55,8 @@ var Tree = declare("dlagua.w.Tree",[_Tree, Subscribable],{
 		var self = this;
 		if(!returnfield) returnfield = field;
 		var m = this.model;
-		var val = m.getValue(item,field);
-		var rval = m.getValue(item,returnfield);
+		var val = item && item[field];
+		var rval = item && item[returnfield];
 		if(array.indexOf(buildme,rval)==-1) buildme.push(rval);
 		if(val == lookfor) {
 			this._found = item;
