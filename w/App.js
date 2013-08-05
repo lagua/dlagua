@@ -27,7 +27,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	stateMap:null,
 	replaced:[],
 	fromHash:false,
-	infer:function(path,servicetype,depth,fromHash,truncated){
+	infer:function(path,servicetype,depth,fromHash,truncated,oldValue){
 		var d = new Deferred();
 		var inferred = {};
 		inferred.__view = false;
@@ -158,7 +158,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		}
 		return reset;
 	},
-	onItem: function(){
+	onItem: function(oldValue,newValue){
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
 		var state = item.state || "initial";
@@ -169,6 +169,8 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var d = new Deferred();
 		if(!item.__fromHash) item.__fromHash = false;
 		if(!item.__view) item.__view = false;
+		var resethash = item.__reset;
+		delete item.__reset;
 		if(item.__truncated) {
 			this.path = path;
 			path = item.__truncated;
@@ -179,11 +181,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var fromRoot = item.__fromRoot;
 		if(this.state!=state) {
 			console.log("changing state!")
+			var oldValue = lang.mixin({},this.currentItem);
 			this.set("state", state);
 			this.rebuild().then(lang.hitch(this,function(){
 				this.resize();
 				// reset item to trigger stuff below
-				d = this.onItem();
+				d = this.onItem(oldValue,this.currentItem);
 			}));
 			return d;
 		}
@@ -198,7 +201,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		}
 		// only change from item, block the hash subscription
 		// let slip the next call
-		this.infer(path,servicetype,depth,fromHash,item.__truncated).then(lang.hitch(this,function(){
+		this.infer(path,servicetype,depth,fromHash,item.__truncated,oldValue).then(lang.hitch(this,function(){
 			var reset = [];
 			if(localechanged) {
 				this.set("locale",locale);
@@ -225,9 +228,13 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				});
 				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
 				var chash = dhash();
-				if(!fromHash && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
+				if(!fromHash && !fromRoot && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				if(!fromRoot) {
-					dhash(hash);
+					if(!resethash) {
+						dhash(hash);
+					} else {
+						window.location.replace("#"+hash);
+					}
 					this.set("path",path);
 				} else {
 					this.path = path;
@@ -265,8 +272,9 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			}),
 			// use this to force locale for locale-unaware navigation or no nav
 			this.watch("newlocale",function(){
+				var oldValue = lang.mixin({},this.currentItem);
 				this.currentItem.locale = this.newlocale;
-				this.onItem();
+				this.onItem(oldValue,this.currentItem);
 			}),
 			this.watch("path",function(){
 				topic.publish("/app/pathchange",this.path);
@@ -279,8 +287,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			}),
 			// all navigation components:
 			this.watch("currentItem",function(prop,oldValue,newValue){
-				console.log(oldValue,newValue)
-				this.onItem();
+				this.onItem(oldValue,newValue);
 			}),
 			on(window,"onresize",lang.hitch(this,function(){
 				this.resize();
