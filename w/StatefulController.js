@@ -24,7 +24,7 @@ define([
 		_lh:null,
 		_bh:null,
 		idProperty:"path",
-		rebuild:function(forceFirst){
+		rebuild:function(forceView){
 			if(this._loading) {
 				if(this.localeChanged) return;
 				console.log("not loaded, deferring rebuild")
@@ -39,13 +39,20 @@ define([
 			this._selectedNode = null;
 			this._loading = true;
 			this.getRoot().then(lang.hitch(this,function(res){
-				var root = res[0];
+				var root = this.root = res[0];
 				var children = [];
 				var childrenResolved = false;
 				var loadRoot = false;
 				if(root[this.childrenAttr] && root[this.childrenAttr].length) {
 					var data = this.resolve(root,this.store,lang.hitch(this,function(root){
-						if(forceFirst) this.currentId = root.children[0].path;
+						if(forceView) {
+							for(i=0;i<root.children.length;i++) {
+								var view = root.children[i].path.split("/").pop();
+								if(view==forceView) break;
+							}
+							if(i==root.children.length) i=0;
+							this.currentId = root.children[i].path;
+						}
 						this.onReady();
 					}));
 					children = data.children;
@@ -56,7 +63,18 @@ define([
 				}
 				array.forEach(children,this._addItem,this);
 				if(loadRoot || childrenResolved) {
-					if(forceFirst) this.currentId = loadRoot ? root.path : root.children[0].path;
+					if(forceView) {
+						if(loadRoot) {
+							this.currentId = root.path;
+						} else {
+							for(i=0;i<root.children.length;i++) {
+								var view = root.children[i].path.split("/").pop();
+								if(view==forceView) break;
+							}
+							if(i==root.children.length) i=0;
+							this.currentId = root.children[i].path;
+						}
+					}
 					this.onReady();
 				}
 			}));
@@ -116,6 +134,7 @@ define([
 			return {truncated:truncated,currentId:currentId};
 		},
 		_loadFromId:function(prop,oldValue,newValue){
+			if(!this.loadOnCreation && !this.currentItem) return;
 			if(this._loading) {
 				console.log(this.id,"not loaded, deferring loadFromId")
 				var args = arguments;
@@ -138,16 +157,30 @@ define([
 			var check = this._checkTruncated(this.currentId || newValue,this.depth);
 			var currentId = check.currentId;
 			var truncated = check.truncated;
-			if(this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) return;
+			var node = this._itemNodesMap[currentId];
+			if(!node || (this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated))) {
+				var children = this.getChildren();
+				var t = array.some(children,function(c){
+					if(c.popup && c.popup._loadFromId) {
+						return c.popup._loadFromId(prop,oldValue,newValue);
+					}
+				});
+				//if(!t) topic.publish("/components/"+this.id,this.root);
+				return;
+			}
 			console.log(this.id,"loading currentID ",currentId, truncated);
-			this.selectNode(this._itemNodesMap[currentId],truncated,this.depth);
+			this.selectNode(node,truncated,this.depth);
+			return true;
 		},
 		_loadFromItem:function(prop,oldVal,newVal) {
-			this.rebuild(!!oldVal || newVal && newVal.__fromRoot);
+			var view = newVal && newVal.__view;
+			if(!view && !this.loadOnCreation) view = true;
+			this.rebuild(view);
 		},
 		startup: function(){
 			this.own(
 				this.watch("currentItem",this._loadFromItem),
+				this.watch("currentId",this._loadFromId),
 				aspect.after(this,"onReady",lang.hitch(this,function(){
 					if(this.currentId && !this._lh) this._loadFromId("",null,this.currentId);
 				})),
@@ -158,7 +191,6 @@ define([
 			);
 			if(this.loadOnCreation) {
 				this.rebuild();
-				this.own(this.watch("currentId",this._loadFromId));
 			}
 			this.inherited(arguments);
 		},
