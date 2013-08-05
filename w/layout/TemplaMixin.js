@@ -38,6 +38,7 @@ define([
 			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 			var schema = (parent && parent.schema ? parent.schema : this.schema);
 			if(!schema) {
+				this.mixeddata = this.data;
 				d.resolve();
 				return d;
 			}
