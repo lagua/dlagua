@@ -7,17 +7,24 @@ define([
 ],function(declare,lang,topic,FilteringSelect,Subscribable){
 
 	return declare("dlagua.w.form.PublishSelect",[FilteringSelect,Subscribable],{
-		onMouseUp:function(){
+		startup:function(){
+			this.own(
+				this.watch("currentId",function(){
+					var id = this.currentId.split("/").pop();
+					this.set("value",id);
+				})
+			);
 			this.inherited(arguments);
+		},
+		onMouseUp:function(){
 			if(this.toSelect) {
 				dijit.selectInputText(this.focusNode);
 				this.toSelect = false;
 			}
 		},
 		onChange:function(){
-			this.inherited(arguments);
 			if(this.value && this.displayedValue.length>1) {
-				topic.publish("/components/"+self.id,this.selected);
+				topic.publish("/components/"+this.id,this.item);
 			}
 		}
 	});
