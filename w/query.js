@@ -1,5 +1,5 @@
-define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/_loader", "dojo/selector/_loader!default", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-style", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(declare, lang, array, aspect, on, has, loader, defaultEngine, domConstruct,domAttr,domStyle,domClass, registry, _WidgetBase, df){
+define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/lite", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-style", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
+	function(declare, lang, array, aspect, on, has, defaultEngine, domConstruct,domAttr,domStyle,domClass, registry, _WidgetBase, df){
 	
 	"use strict";
 
@@ -170,6 +170,13 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			});
 			return this;
 		},
+		addDomClass:function(){
+			var args = Array.prototype.slice.call(arguments);
+			forEach(this,function(node){
+				domClass.add.apply(domClass,[node.domNode].concat(args));
+			});
+			return this;
+		},
 		placeAt:function(refNode,insertIndex){
 			forEach(this,function(node){
 				domConstruct.place(node.domNode,refNode,insertIndex);
@@ -278,7 +285,10 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			return this; // dojo/NodeList
 		},
 		filter: function(/*String|Function*/ filter){
-			return this._wrap(df.filter(this, filter), this); // dojo/NodeList
+			if(typeof filter == "string"){ // inline'd type check
+				return this._wrap(df.filter(this, filter), this); // dojo/NodeList
+			}
+			return this._wrap(array.filter(this, filter), this);	// dojo/NodeList
 		},
 		at: function(/*===== index =====*/){
 			var t = new this._NodeListCtor(0);
@@ -298,8 +308,8 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 		return widget ? widget.domNode : node;
 	};
 	
-	var query = function(q) {
-		var nodelist = defaultEngine(q);
+	var query = function(q,context) {
+		var nodelist = defaultEngine(q,context);
 		var widgetlist = [];
 		array.forEach(nodelist,function(node){
 			var widgetnode = node.hasAttribute("widgetid") ? node : findWidgetNode(node);
