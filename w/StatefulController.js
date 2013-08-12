@@ -38,6 +38,24 @@ define([
 			this.containerNode.innerHTML = "";
 			this._selectedNode = null;
 			this._loading = true;
+			var setCurrentId = lang.hitch(this,function(root){
+				var i = 0;
+				if(this.currentId) {
+					var car = this.currentId.split("/");
+					var clast = car.pop();
+					var crest = car.join("/");
+					for(i=0;i<root.children.length;i++) {
+						var par = root.children[i].path.split("/")
+						var view = par.pop();
+						var rest = par.join("/");
+						if(crest==rest) {
+							if(clast == view) break;
+						} else if(view==forceView) break;
+					}
+					if(i==root.children.length) i = 0;
+				}
+				this.currentId = root.children[i].path;
+			});
 			this.getRoot().then(lang.hitch(this,function(res){
 				var root = this.root = res[0];
 				var children = [];
@@ -46,12 +64,7 @@ define([
 				if(root[this.childrenAttr] && root[this.childrenAttr].length) {
 					var data = this.resolve(root,this.store,lang.hitch(this,function(root){
 						if(forceView) {
-							for(i=0;i<root.children.length;i++) {
-								var view = root.children[i].path.split("/").pop();
-								if(view==forceView) break;
-							}
-							if(i==root.children.length) i=0;
-							this.currentId = root.children[i].path;
+							setCurrentId(root);
 						}
 						this.onReady();
 					}));
@@ -67,12 +80,7 @@ define([
 						if(loadRoot) {
 							this.currentId = root.path;
 						} else {
-							for(i=0;i<root.children.length;i++) {
-								var view = root.children[i].path.split("/").pop();
-								if(view==forceView) break;
-							}
-							if(i==root.children.length) i=0;
-							this.currentId = root.children[i].path;
+							setCurrentId(root);
 						}
 					}
 					this.onReady();
@@ -154,22 +162,41 @@ define([
 			// don't republish when truncated again
 			var checkOld = oldValue ? this._checkTruncated(oldValue,this.depth) : {};
 			// start with depth=2
-			var check = this._checkTruncated(this.currentId || newValue,this.depth);
+			var check = this._checkTruncated(newValue || this.currentId,this.depth);
 			var currentId = check.currentId;
 			var truncated = check.truncated;
 			var node = this._itemNodesMap[currentId];
-			if(!node || (this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated))) {
-				var children = this.getChildren();
-				var t = array.some(children,function(c){
-					if(c.popup && c.popup._loadFromId) {
-						return c.popup._loadFromId(prop,oldValue,newValue);
-					}
-				});
-				//if(!t) topic.publish("/components/"+this.id,this.root);
+			var child;
+			if(node && truncated && this.depth<this.maxDepth) {
+				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
+					child = node.popup._loadFromId(prop,oldValue,newValue);
+				}
+				if(child) return child;
+			}
+			var force = (checkOld.truncated && truncated && this._compareTruncated(checkOld.truncated,truncated));
+			if(!force && this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) {
 				return;
 			}
 			console.log(this.id,"loading currentID ",currentId, truncated);
 			this.selectNode(node,truncated,this.depth);
+			return node;
+		},
+		_compareTruncated:function(oldValue,newValue){
+			// this is special func to see if we came from a deeper path
+			// that was partly in my data but somehow not picked by
+			// sub navigation, otherwise it would have had the same depth
+			var oa = oldValue.split("/");
+			var na = newValue.split("/");
+			var ol = oa.length;
+			var nl = na.length;
+			var n,o;
+			// ignore truncated exceeding limit
+			if(nl>this.depth+1 || nl == ol) return false;
+			var np = na.slice(0,this.depth).join("/");
+			var op = oa.slice(0,this.depth).join("/");
+			np = na.slice(this.depth,this.depth+1);
+			op = oa.slice(this.depth,this.depth+1);
+			if(np==op) return false;
 			return true;
 		},
 		_loadFromItem:function(prop,oldVal,newVal) {
