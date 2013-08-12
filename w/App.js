@@ -166,7 +166,13 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
+		if(this.d && !this.d.isResolved()) {
+			console.warn("CANCELING INFER")
+			this.d.cancel();
+			delete this.d;
+		}
 		var d = new Deferred();
+		if(!this.d) this.d = d;
 		if(!item.__fromHash) item.__fromHash = false;
 		if(!item.__view) item.__view = false;
 		var resethash = item.__reset;
@@ -202,6 +208,10 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		// only change from item, block the hash subscription
 		// let slip the next call
 		this.infer(path,servicetype,depth,fromHash,item.__truncated,oldValue).then(lang.hitch(this,function(){
+			if(d.isCanceled()) {
+				console.warn("INFER CANCELED!")
+				return;
+			}
 			var reset = [];
 			if(localechanged) {
 				this.set("locale",locale);
@@ -245,6 +255,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/pagechange",item);
 				d.resolve(true);
 			}
+			delete this.d;
 		}));
 		return d;
 	},
