@@ -215,7 +215,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			top:0
 		});
 		if(this.useScrollBar) {
-			this.scrollToInitPos();
+			this.scrollTo({x:0,y:0});
 		}
 		if(this.loadingAnimation && this.footer) {
 			domClass.add(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
