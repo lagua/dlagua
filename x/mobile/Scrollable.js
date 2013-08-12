@@ -724,10 +724,6 @@ define([
 				// WSH: this really is dim reset
 				this._dim = this.getDim();
 			}
-		},
-		scrollToInitPos:function(){
-			if(this._scrollBarV) domStyle.set(this._scrollBarV, "top", 0);
-			if(this._scrollBarH) domStyle.set(this._scrollBarH, "left", 0);
 		}
 	});
 });
