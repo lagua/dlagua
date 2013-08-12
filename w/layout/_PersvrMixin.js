@@ -178,19 +178,14 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.orifilter = this.filter = item.filter;
-			if(!this.store) {
+			if(!this.stores[target]) {
 				this.store = new JsonRest({
 					target:target,
 					schemaUri:schemaUri
 				});
-				if(this.stores) {
-					if(!this.stores[target]) {
-						this.stores[target] = new Cache(this.store, new Memory());
-					}
-				}
+				this.stores[target] = new Cache(this.store, new Memory());
 			} else {
-				this.store.target = target;
-				this.store.schemaUri = schemaUri;
+				this.store = this.stores[target];
 			}
 			this.rebuild(item);
 		}
