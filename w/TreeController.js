@@ -6,7 +6,6 @@ define([
 ],function(declare,lang,array,topic){
 	return declare("dlagua.w.TreeController",[],{
 		_selectedNode:null,
-		maxDepth:2,
 		selectNode:function(node,truncated,depth,fromTreeRoot){
 			if(!node) return;
 			console.log(this.id, "TreeController selectNode ",truncated);
@@ -17,12 +16,6 @@ define([
 			node.set("selected",true);
 			if(this.currentItem && node.item == this.currentItem) {
 				console.warn("escaping on same item")
-				return;
-			}
-			if(truncated && depth<this.maxDepth) {
-				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
-					node.popup._loadFromId("",null,truncated);
-				}
 				return;
 			}
 			var item = lang.mixin({},this._selectedNode.item);
