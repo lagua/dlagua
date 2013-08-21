@@ -176,6 +176,13 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				this.sort = this.filter = this.orifilter = "";
 				this.filters = this.orifilters = null;
 			}
+			this.start = 0;
+			if(item.count) {
+				this._oricount = this.count;
+				this.count = item.count;
+			} else if(this._oricount) {
+				this.count = this._oricount;
+			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.orifilter = this.filter = item.filter;
 			if(!this.stores[target]) {
@@ -370,6 +377,30 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			});
 		}
 		return d;
+	},
+	getModel:function(){
+		return this.model || this.currentItem.model;
+	},
+	getTemplate:function(templateDir){
+		var xtemplate = "";
+		var item = this.currentItem;
+		if(!item) return;
+		if(!templateDir) templateDir = this.templateDir;
+		if(!this.childTemplate && item[this.templateProperty]) {
+			var tpath = item[this.templateProperty];
+			if(this.templateProperty=="path" && this.filterById) {
+				var ar = tpath.split("/");
+				var i;
+				for(i=0;i<ar.length;i++){
+					if(ar[i]==this.filterById) {
+						break;
+					}
+				}
+				tpath = ar.splice(0,i).join("/");
+			}
+			xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
+		}
+		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	}
 });
 
