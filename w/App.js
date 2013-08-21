@@ -249,12 +249,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				} else {
 					this.path = path;
 				}
-				this.set("pageid",item.id);
 				d.resolve(true);
 			} else {
 				topic.publish("/app/pagechange",item);
 				d.resolve(true);
 			}
+			this.set("pageid",item.id);
 			delete this.d;
 		}));
 		return d;
