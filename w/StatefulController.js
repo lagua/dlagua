@@ -35,7 +35,7 @@ define([
 			this._bh = null;
 			this.destroyDescendants();
 			this._itemNodesMap = {};
-			this.containerNode.innerHTML = "";
+			//this.containerNode.innerHTML = "";
 			this._selectedNode = null;
 			this._loading = true;
 			var setCurrentId = lang.hitch(this,function(root){
