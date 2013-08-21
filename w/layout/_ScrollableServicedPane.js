@@ -181,8 +181,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		}
 		// resetters
 		this._loading = true;
-		this.start = 0;
-		this.total = 0;
 		this.reload = false;
 		//this.idProperty = this.hrProperty = "";
 		this.childrenReady = 0;
@@ -211,12 +209,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	rebuild:function(item) {
 		this.currentService = item.service;
 		this.destroyDescendants();
-		domStyle.set(this.containerNode,{
-			top:0
-		});
-		if(this.useScrollBar) {
-			this.scrollTo({x:0,y:0});
-		}
+		this.scrollTo({x:0,y:0});
 		if(this.loadingAnimation && this.footer) {
 			domClass.add(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
