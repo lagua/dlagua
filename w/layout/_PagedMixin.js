@@ -180,8 +180,7 @@ define([
 			}
 		},
 		setSelectedItem: function(index) {
-			if(this.selectedIndex==index || this.servicetype!="persvr") return;
-			this.selectedIndex = index;
+			if(this.servicetype!="persvr") return;
 			var py = this.getPos().y;
 			var dim = this._dim;
 			var len = this.listitems.length;
@@ -199,10 +198,12 @@ define([
 				if(dy==1 || dy==-1) dy = 0;
 				if(dy!=0 && !this._bounce) this._bounce = {x:0,y:-y};
 			}
+			this.pageStore(py);
+			if(this.selectedIndex==index) return;
+			this.selectedIndex = index;
 			this.selectedItem = this.listitems[index];
 			console.log("selectedItem",this.selectedItem);
 			if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].data);
-			this.pageStore(py);
 		},
 		checkSelectedItem: function(){
 			// get proximate item
@@ -229,30 +230,6 @@ define([
 			}
 			this.inherited(arguments);
 		},
-		getModel:function(){
-			return this.model || this.currentItem.model;
-		},
-		getTemplate:function(templateDir){
-			var xtemplate = "";
-			var item = this.currentItem;
-			if(!item) return;
-			if(!templateDir) templateDir = this.templateDir;
-			if(!this.childTemplate && item[this.templateProperty]) {
-				var tpath = item[this.templateProperty];
-				if(this.templateProperty=="path" && this.filterById) {
-					var ar = tpath.split("/");
-					var i;
-					for(i=0;i<ar.length;i++){
-						if(ar[i]==this.filterById) {
-							break;
-						}
-					}
-					tpath = ar.splice(0,i).join("/");
-				}
-				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
-			}
-			return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
-		},
 		onReady: function(){
 			this.inherited(arguments);
 			if(this._beingDestroyed || this.servicetype!="persvr") return;
@@ -264,5 +241,4 @@ define([
 			}
 		}
 	});
-
 });
