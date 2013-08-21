@@ -176,7 +176,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				this.sort = this.filter = this.orifilter = "";
 				this.filters = this.orifilters = null;
 			}
-			this.start = 0;
+			this.start = this.total = 0;
 			if(item.count) {
 				this._oricount = this.count;
 				this.count = item.count;
