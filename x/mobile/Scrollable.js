@@ -63,8 +63,8 @@ define([
 			if(domClass.contains(this.containerNode, "mblScrollableScrollTo2")){
 				this.abort();
 			}else{ // reset scrollbar class especially for reseting fade-out animation
-				if(this._scrollBarNodeV){ this._scrollBarNodeV.className = ""; }
-				if(this._scrollBarNodeH){ this._scrollBarNodeH.className = ""; }
+				if(this._scrollBarNodeV){ this._scrollBarNodeV.className = "mblScrollBar"; }
+				if(this._scrollBarNodeH){ this._scrollBarNodeH.className = "mblScrollBar"; }
 			}
 			this.touchStartX = e.touches ? e.touches[0].pageX : e.clientX;
 			this.touchStartY = e.touches ? e.touches[0].pageY : e.clientY;
@@ -92,7 +92,7 @@ define([
 		onTouchMove: function(e){
 			// summary:
 			//		User-defined function to handle touchMove events.
-			if(this._locked){ return; }
+			if(this._locked || this.locked){ return; }
 			var x = e.touches ? e.touches[0].pageX : e.clientX;
 			var y = e.touches ? e.touches[0].pageY : e.clientY;
 			var dx = x - this.touchStartX;
@@ -402,6 +402,7 @@ define([
 					domStyle.set(bar, dir == "V" ? {width: "8px", marginLeft:"3px"} : {height: "8px", marginTop:"3px"});
 					self["_scrollBarNode" + dir] = bar;
 				}
+				bar.className = "mblScrollBar";
 				return bar;
 			};
 			if(force) {
