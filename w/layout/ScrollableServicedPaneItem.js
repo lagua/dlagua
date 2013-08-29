@@ -127,7 +127,7 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 		this.inherited(arguments);
 		this.layoutChildren();
 		var parent = (this.parent || this.getParent());
-		if(parent && parent.useScrollBar) parent.showScrollBar();
+		if(parent && parent.containerNode && parent.useScrollBar) parent.showScrollBar();
 	}
 });
 
