@@ -34,7 +34,8 @@ define([
 			topic.publish("/components/"+id,item);
 		},
 		onReady:function(){
-			console.log("TreeController ready")
+			console.log("TreeController ready");
+			this.inherited(arguments);
 		}
 	});
 });
