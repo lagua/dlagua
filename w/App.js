@@ -254,7 +254,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/pagechange",item);
 				d.resolve(true);
 			}
-			this.set("pageid",item.id);
+			this.set("pageid",item.id || -1);
 			delete this.d;
 		}));
 		return d;
