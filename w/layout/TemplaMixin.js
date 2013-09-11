@@ -37,11 +37,6 @@ define([
 			var md = new Deferred();
 			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 			var schema = (parent && parent.schema ? parent.schema : this.schema);
-			if(!schema) {
-				this.mixeddata = this.data;
-				d.resolve();
-				return d;
-			}
 			var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
 			this._mixinRecursive(lang.clone(this.data),schema,resolveProps,new Mixin(),md);
 			md.then(lang.hitch(this,function(data){
