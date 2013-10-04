@@ -142,7 +142,7 @@ define([
 			return {truncated:truncated,currentId:currentId};
 		},
 		_loadFromId:function(prop,oldValue,newValue){
-			if(!this.loadOnCreation && !this.currentItem) return;
+			if((!this.loadOnCreation && !this.currentItem) || oldValue==newValue) return;
 			if(this._loading) {
 				console.log(this.id,"not loaded, deferring loadFromId")
 				var args = arguments;
@@ -171,7 +171,11 @@ define([
 				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
 					child = node.popup._loadFromId(prop,oldValue,newValue);
 				}
-				if(child) return child;
+				if(child) {
+					// this means a selection is made, so select me too
+					this.selectNode(node,truncated,this.depth);
+					return child;
+				}
 			}
 			var force = (checkOld.truncated && truncated && this._compareTruncated(checkOld.truncated,truncated));
 			if(!force && this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) {
@@ -199,8 +203,22 @@ define([
 			if(np==op) return false;
 			return true;
 		},
-		_loadFromItem:function(prop,oldVal,newVal) {
-			var view = newVal && newVal.__view;
+		_loadFromItem:function(prop,oldValue,newValue) {
+			if(oldValue) {
+				var same = true;
+				for(var k in newValue) {
+					if(newValue[k] instanceof Object || k.substr(0,2) == "__") continue;
+					if(oldValue.hasOwnProperty(k) && oldValue[k] !== newValue[k]) {
+						same = false;
+						break;
+					}
+				}
+				if(same) {
+					console.warn("StatefulController", this.id, "escaping on same item")
+					return;
+				}
+			}
+			var view = newValue && newValue.__view;
 			if(!view && !this.loadOnCreation) view = true;
 			this.rebuild(view);
 		},
