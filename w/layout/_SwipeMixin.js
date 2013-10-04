@@ -70,8 +70,8 @@ define([
 			}
 			return d;
 		},
-		loadFromItem:function(){
-			if(!this._allowLoad()) return;
+		loadFromItem:function(prop,oldValue,newValue){
+			if(!this._allowLoad(oldValue,newValue)) return;
 			if(this._loading) {
 				console.warn("Aborting SSP loading!")
 				this.cancel();
@@ -245,12 +245,10 @@ define([
 			this.slideTo({x:0,x:-x},0.3,"ease-out");
 		},
 		selectItemByCurrentId: function(prop,oldVal,newVal){
-			if(this._beingDestroyed || !newVal) return;
+			if(this._beingDestroyed || !newVal || oldVal==newVal) return;
 			var item = this.itemnodesmap[newVal];
+			if(!item) return;
 			this.currentId = null;
-			if(!item) {
-				return;
-			}
 			if(this.selectedItem && this.selectedItem == item) return;
 			//item.scrollTo({x:0,y:0});
 			var index = item.getIndexInParent();
@@ -273,7 +271,7 @@ define([
 			//this.selectedItem.scrollTo({x:0,y:0});
 			console.log("selectedItem",this.selectedItem);
 			if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].currentItem);
-			this.selectedItem.loadFromItem();
+			//this.selectedItem.loadFromItem();
 		},
 		checkSelectedItem: function(){
 			// get proximate item
@@ -307,7 +305,7 @@ define([
 			this.layout();
 			// select currentId for #anchor simulation
 			if(this.currentId) {
-				this.selectItemByCurrentId();
+				this.selectItemByCurrentId("currentId",null,this.currentId);
 			}
 		}
 	});
