@@ -146,12 +146,29 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			break;
 		}
 	},
-	_allowLoad:function(){
+	_allowLoad:function(oldValue,newValue){
 		if(this._beingDestroyed || !this.currentItem) return;
 		if(!this.currentItem.locale) this.currentItem.locale = this.locale;
+		/*
+		 * TODO: should this be generic 'escape on same item' check?
+		if(oldValue) {
+				var same = true;
+				for(var k in newValue) {
+					if(newValue[k] instanceof Object || k.substr(0,2) == "__") continue;
+					if(oldValue.hasOwnProperty(k) && oldValue[k] !== newValue[k]) {
+						same = false;
+						break;
+					}
+				}
+				if(same) {
+					console.warn("StatefulController", this.id, "escaping on same item")
+					return;
+				}
+			}
+		 */
 		console.log("reload?",this.id,this.reload)
-		var o = this.oldItem;
-		var n = this.currentItem;
+		var o = oldValue;
+		var n = newValue;
 		var allowdepth = parseInt(this.allowedLoadDepth);
 		if(allowdepth && allowdepth!=n.__depth) return;
 		if(!this.reload) {
@@ -171,8 +188,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		}
 		return true;
 	},
-	loadFromItem: function() {
-		if(!this._allowLoad()) return;
+	loadFromItem: function(prop,oldValue,newValue) {
+		if(!this._allowLoad(oldValue,newValue)) return;
 		if(this._loading) {
 			console.warn("Aborting SSP loading!")
 			this.cancel();
@@ -244,10 +261,10 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			this.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		}
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
-		if(this.header) {
+		/*if(this.header) {
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
-		}
+		}*/
 		this.resetScrollBar();
 		this.onTouchEnd();
 		this.layoutChildren();
