@@ -161,18 +161,18 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 	onItem: function(oldValue,newValue){
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
-		var state = item.state || "initial";
+		var state = item.state;
 		var path = item.path;
 		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
 		var servicetype = item.type || (model ? "persvr" : "");
-		if(this.d && !this.d.isResolved()) {
-			console.warn("CANCELING INFER")
-			this.d.cancel();
-			delete this.d;
-		}
+		//if(this.d && !this.d.isResolved()) {
+		//	console.warn("CANCELING INFER")
+		//	this.d.cancel();
+			//delete this.d;
+		//}
 		var d = new Deferred();
-		if(!this.d) this.d = d;
+		//if(!this.d) this.d = d;
 		if(!item.__fromHash) item.__fromHash = false;
 		if(!item.__view) item.__view = false;
 		var resethash = item.__reset;
@@ -185,9 +185,9 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		}
 		var fromHash = item.__fromHash;
 		var fromRoot = item.__fromRoot;
-		if(this.state!=state) {
+		if(state && this.state!=state) {
 			console.log("changing state!")
-			var oldValue = lang.mixin({},this.currentItem);
+			//var oldValue = lang.mixin({},this.currentItem);
 			this.set("state", state);
 			this.rebuild().then(lang.hitch(this,function(){
 				this.resize();
@@ -196,6 +196,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 			}));
 			return d;
 		}
+		if(!state) state = "initial";
 		var localechanged = this.localechanged || (locale != this.locale);
 		this.localechanged = false;
 		var typechanged = (!fromHash && servicetype!="" && this.servicetype!=servicetype);
@@ -207,7 +208,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		}
 		// only change from item, block the hash subscription
 		// let slip the next call
-		this.infer(path,servicetype,depth,fromHash,item.__truncated,oldValue).then(lang.hitch(this,function(){
+		return this.infer(path,servicetype,depth,fromHash,item.__truncated,oldValue).then(lang.hitch(this,function(){
 			if(d.isCanceled()) {
 				console.warn("INFER CANCELED!")
 				return;
@@ -254,10 +255,10 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/app/pagechange",item);
 				d.resolve(true);
 			}
-			this.set("pageid",item.id || -1);
-			delete this.d;
+			if(item.id) this.set("pageid",item.id);
+			//delete this.d;
 		}));
-		return d;
+		//return d;
 	},
 	startup: function(){
 		console.log("app startup called");
