@@ -43,9 +43,9 @@ define([
 			this.inherited(arguments);
 			clearTimeout(resizeTimeout);
 	        // handle normal resize
-	        resizeTimeout = setTimeout(lang.hitch(this,function() {
+	        //resizeTimeout = setTimeout(lang.hitch(this,function() {
 	        	this.refresh();
-	        }),250);
+	        //}),250);
 		},
 		sortBy: function(ar,keys){
 			var terms = [];
@@ -113,6 +113,16 @@ define([
 				this.matrixToDOM(matrix);
 				this._layoutChildren();
 			}
+		},
+		_layoutChildren: function(){
+			// Override _ContentPaneResizeMixin._layoutChildren because even when there's just a single layout child
+			// widget, sometimes we don't want to size it explicitly (i.e. to pass a dim argument to resize())
+
+			array.forEach(this.getChildren(), function(widget){
+				if(widget.resize){
+					widget.resize(widget._borderBox);
+				}
+			});
 		},
 		addChild:function(widget,insertIndex){
 			this.inherited(arguments);
@@ -725,6 +735,13 @@ define([
 							left: item._placed[1]*w+"px",
 							height: (ih - box[0]) + "px"
 						});
+						var borderBox = {
+							w:(iw - box[1]/2),
+							t:item._placed[0]*h,
+							l:item._placed[1]*w,
+							h:ih - box[0]
+						};
+						registry.byId(item.id)._borderBox = borderBox;
 						domClass.toggle(widget, this.childItemClass + "FirstColumn", first);
 						domClass.toggle(widget, this.childItemClass + "LastColumn", last);
 						domClass.toggle(widget, this.childItemClass + "FirstRow", rc === 0);
