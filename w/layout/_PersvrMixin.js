@@ -15,10 +15,11 @@ define([
 	"dlagua/w/layout/TemplaMixin",
 	"dojo/store/Memory",
 	"dojo/store/Cache",
+	"dojo/store/Observable",
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,jsonref,rqlQuery,rqlParser) {
+],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
@@ -62,6 +63,41 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				this.replaceChildTemplate();
 			})
 		);
+		if(this.store) {
+			this.template = this.getTemplate();
+			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+					this._tplo = tplo;
+					this.store.open().then(lang.hitch(this,function(){
+						this.store = new Observable(this.store);
+						
+						var results = this.store.query();
+						results.forEach(lang.hitch(this,this.addItem));
+						
+					    this.own(
+						    results.observe(lang.hitch(this,function(item, removed, inserted){
+							    if(removed > -1){ // existing object removed
+							    	this.itemnodesmap[item.id].destroyRecursive();
+									delete this.itemnodesmap[item.id];
+							    }
+							    if(inserted > -1){ // new or updated object inserted
+							    	this.addItem(item,0,this.listitems,"first");
+									this.currentId = item.id;
+							    }
+						    })),
+						    this.watch("newItem",function(name,oldItem,item){
+								this.store.add(item);
+								this.newItem = null;
+							}),
+						    this.watch("removeItem",function(name,oldId,id){
+								this.store.remove(id);
+								this.removeItem = null;
+							})
+						);
+					}));
+				}));
+			}));
+		}
 	},
 	replaceChildTemplate: function(child,templateDir,partials) {
 		if(!templateDir) templateDir = this.templateDir;
@@ -161,8 +197,8 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		this.filter = fa.toString();
 		this.forcedLoad();
 	},
-	loadFromItem:function(){
-		if(!this._allowLoad()) return;
+	loadFromItem:function(prop,oldValue,newValue){
+		if(!this._allowLoad(oldValue,newValue)) return;
 		this.inherited(arguments);
 		if(this.servicetype=="persvr") {
 			var item = lang.mixin({},this.currentItem);
@@ -383,24 +419,28 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	},
 	getTemplate:function(templateDir){
 		var xtemplate = "";
-		var item = this.currentItem;
-		if(!item) return;
-		if(!templateDir) templateDir = this.templateDir;
-		if(!this.childTemplate && item[this.templateProperty]) {
-			var tpath = item[this.templateProperty];
-			if(this.templateProperty=="path" && this.filterById) {
-				var ar = tpath.split("/");
-				var i;
-				for(i=0;i<ar.length;i++){
-					if(ar[i]==this.filterById) {
-						break;
+		var locale = this.locale;
+		if(!this.childTemplate) {
+			var item = this.currentItem;
+			if(!item) return;
+			if(item.locale) locale = item.locale;
+			if(!templateDir) templateDir = this.templateDir;
+			if(item[this.templateProperty]) {
+				var tpath = item[this.templateProperty];
+				if(this.templateProperty=="path" && this.filterById) {
+					var ar = tpath.split("/");
+					var i;
+					for(i=0;i<ar.length;i++){
+						if(ar[i]==this.filterById) {
+							break;
+						}
 					}
+					tpath = ar.splice(0,i).join("/");
 				}
-				tpath = ar.splice(0,i).join("/");
+				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
 			}
-			xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
 		}
-		return item.locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
+		return locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	}
 });
 
