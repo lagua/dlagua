@@ -57,11 +57,11 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		this.inherited(arguments);
 		if(this.store) this.externalStore = true;
 	},
-	loadFromItem:function(){
+	loadFromItem:function(prop,oldValue,newValue){
 		if(this.servicetype=="form" && this.listitems && this.listitems[0]) {
 			this.listitems[0].cancel && this.listitems[0].cancel();
 		}
-		if(!this._allowLoad()) return;
+		if(!this._allowLoad(oldValue,newValue)) return;
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
