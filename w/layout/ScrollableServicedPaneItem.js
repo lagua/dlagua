@@ -124,6 +124,7 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 		}
 	},
 	resize:function() {
+		if(this._beingDestroyed) return;
 		this.inherited(arguments);
 		this.layoutChildren();
 		var parent = (this.parent || this.getParent());
