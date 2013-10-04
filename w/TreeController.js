@@ -14,11 +14,18 @@ define([
 			}
 			this._selectedNode = node;
 			node.set("selected",true);
-			if(this.currentItem && node.item == this.currentItem) {
-				console.warn("escaping on same item")
-				return;
+			var item = lang.mixin({},node.item);
+			if(this.currentItem) {
+				var same = true;
+				for(var k in item) {
+					if(item[k] instanceof Object || k.substr(0,2) == "__") continue;
+					if(this.currentItem[k] && item[k] !== this.currentItem[k]) {
+						same = false;
+						break;
+					}
+				}
+				if(same) return;	
 			}
-			var item = lang.mixin({},this._selectedNode.item);
 			// FIXME: dirty hack for subnav components:
 			// they will set the state if i am truncated
 			// BUT if there is no subnav to pick it up, nothing will happen
