@@ -236,10 +236,10 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	rebuild:function(){
 		this.inherited(arguments);
 		if(this.servicetype=="persvr") {
-			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-					this._tplo = tplo;
-					this._getSchema().then(lang.hitch(this,function(){
+			this._getSchema().then(lang.hitch(this,function(){
+				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+						this._tplo = tplo;
 						var q = this.createQuery();
 						var start = this.start;
 						this.start += this.count;
