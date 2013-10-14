@@ -39,30 +39,6 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	useItemChildren:false,
 	_tplo:null,
 	startup:function(){
-		this.inherited(arguments);
-		this.own(
-			this.watch("filter",function(){
-				console.log(this.id,"reloading from filter",this.filter)
-				this.orifilter = this.filter;
-				this.forcedLoad();
-			}),
-			this.watch("filterById",this.forcedLoad),
-			this.watch("newData",function(){
-				array.forEach(this.newData,lang.hitch(this,function(item,i,items){
-					this.addItem(item,i,items,"first");
-					this.currentId = item[this.idProperty];
-				}));
-			}),
-			this.watch("filters",this.onFilters),
-			this.watch("sort",function(){
-				this.newsort = true;
-				this.forcedLoad();
-				this.newsort = false;
-			}),
-			this.watch("childTemplate",function(){
-				this.replaceChildTemplate();
-			})
-		);
 		if(this.store) {
 			this.template = this.getTemplate();
 			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
@@ -98,6 +74,30 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				}));
 			}));
 		}
+		this.inherited(arguments);
+		this.own(
+			this.watch("filter",function(){
+				console.log(this.id,"reloading from filter",this.filter)
+				this.orifilter = this.filter;
+				this.forcedLoad();
+			}),
+			this.watch("filterById",this.forcedLoad),
+			this.watch("newData",function(){
+				array.forEach(this.newData,lang.hitch(this,function(item,i,items){
+					this.addItem(item,i,items,"first");
+					this.currentId = item[this.idProperty];
+				}));
+			}),
+			this.watch("filters",this.onFilters),
+			this.watch("sort",function(){
+				this.newsort = true;
+				this.forcedLoad();
+				this.newsort = false;
+			}),
+			this.watch("childTemplate",function(){
+				this.replaceChildTemplate();
+			})
+		);
 	},
 	replaceChildTemplate: function(child,templateDir,partials) {
 		if(!templateDir) templateDir = this.templateDir;

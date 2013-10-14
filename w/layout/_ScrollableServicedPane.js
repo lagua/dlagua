@@ -261,10 +261,10 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			this.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		}
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
-		/*if(this.header) {
+		if(this.header) {
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
-		}*/
+		}
 		this.resetScrollBar();
 		this.onTouchEnd();
 		this.layoutChildren();
