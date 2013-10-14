@@ -43,6 +43,7 @@ define([
 				_.domNode.style.width = w+"px";
 				_.layout();
 			});
+			this.scrollToItem(this.selectedIndex);
 		},
 		isScrollable:function(){
 			return false;
