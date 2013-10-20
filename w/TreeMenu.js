@@ -55,7 +55,6 @@ define([
 		_loadFromItem:function(prop,oldValue,newValue){
 			console.log("TreeMenu loading currentItem ",this.currentItem)
 			var reload;
-			this.oldItem = null;
 			var n = this.currentItem;
 			var o = this.model.root;
 			for(var k in this.currentItem) {
@@ -156,32 +155,19 @@ define([
 			if(item.hidden) return "dijitTreeRowHidden";
 		},
 		_pubItem:function(pubitem){
-			if(this.oldItem==pubitem) return;
-			this.oldItem = pubitem;
-			var item = {};
-			var parent = pubitem.__parent;
-			for(var k in pubitem) {
-				if(!lang.isObject(pubitem[k]) && !lang.isArray(pubitem[k])) item[k] = pubitem[k];
-			}
-			// list/view model in submenu:
-			// publish parent with item path as truncated (like in bare dlagua.app without submenu)
-			// the depth needs to be of the parent item (or of nested models)
-			if(parent && parent.model && item.model && parent.model==item.model) {
-				var id = item.id
-				var path = item.path;
-				item = {};
-				for(var k in parent) {
-					if(!lang.isObject(parent[k]) && !lang.isArray(parent[k])) item[k] = parent[k];
+			var item = lang.mixin({},pubitem);
+			if(this.oldItem) {
+				var same = true;
+				for(var k in item) {
+					if(item[k] instanceof Object || k.substr(0,2) == "__") continue;
+					if(this.oldItem[k] && item[k] !== this.oldItem[k]) {
+						same = false;
+						break;
+					}
 				}
-				item.__view = id;
-				item.__truncated = path;
-				this._truncated = false;
-				console.log("treemenu publishes root")
-				topic.publish("/components/"+this.id,item);
-				return;
-			} else {
-				item.__view = false;
+				if(same) return;
 			}
+			this.oldItem = item;
 			if(this._truncated) {
 				item.__truncated = this._truncated;
 				this._truncated = false;
