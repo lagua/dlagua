@@ -10,6 +10,7 @@ define([
 			if(!node) return;
 			console.log(this.id, "TreeController selectNode ",truncated);
 			if(this._selectedNode) {
+				if(truncated && node == this._selectedNode) return;
 				this._selectedNode.set("selected",false);
 			}
 			this._selectedNode = node;
