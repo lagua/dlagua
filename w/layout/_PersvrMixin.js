@@ -295,7 +295,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		}
 		if(this.filterByItemProperties) {
 			var ar = this.filterByItemProperties.split(",");
-			for(var i in ar) {
+			for(var i=0;i<ar.length;i++) {
 				var k = ar[i];
 				if(k in this.currentItem) {
 					var v = this.currentItem[k];
