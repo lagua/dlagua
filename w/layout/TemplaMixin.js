@@ -48,6 +48,7 @@ define([
 		_mixinRecursive: function(item,schema,resolveProps,mu_mixin,d,skipX) {
 			if(!d) d = new Deferred();
 			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var refattr = parent.refAttribute || "$ref";
 			item.__onChildDone = function(){
 				if(this.__childrenDone) this.__childrenDone--;
 				if(!this.__childrenDone || this.__childrenDone == 0) {
@@ -78,7 +79,7 @@ define([
 					} else if(k.substr(0,2)!="__" && val && lang.isObject(val)) {
 						if(val instanceof Date) {
 							item[k] = stamp.toISOString(val);
-						} else if(!val["$ref"]) {
+						} else if(!val[refattr]) {
 							// simply mixin this object
 							item[k].ref = parent;
 							item[k].node = this;
@@ -160,6 +161,7 @@ define([
 		resolveLinks: function(data,schema,resolveProps,skipX){
 			var d = new Deferred();
 			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var refattr = parent.refAttribute || "$ref";
 			if(!schema || data.__resolved) {
 				d.resolve(data);
 				return d;
@@ -190,7 +192,7 @@ define([
 			if(!skipX) total += cntx;
 			if(total>0) {
 				array.forEach(toResolve, function(rel){
-					var link = data[rel]["$ref"];
+					var link = data[rel][refattr];
 					// TODO make store xdomain capable
 					parent.store.query(link).then(function(res){
 						data[rel] = res;
