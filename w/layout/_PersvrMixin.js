@@ -209,8 +209,12 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			var schemaUri = item.service+"Class/"+model;
 			// reset if triggered by currentItem
 			if(arguments.length>0) {
-				this.sort = this.filter = this.orifilter = "";
-				this.filters = this.orifilters = null;
+				if(this.orisort) this.sort = this.orisort;
+				this.orisort = "";
+				if(this.orifilter) this.filter = this.orifilter;
+				this.orifilter = "";
+				if(this.orifilters) this.filters = this.orifilters;
+				this.orifilters = null;
 			}
 			this.start = this.total = 0;
 			if(item.count) {
