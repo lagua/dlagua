@@ -203,7 +203,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var depth = item.__depth = item.path.split("/").length;
 		var depthchanged = (this.depth!=depth);
 		var pathchanged = (this.path!=path);
-		if(!fromHash && this.meta.inferred) {
+		if(this.meta.inferred) {
 			this.meta.inferred = item;
 		}
 		// only change from item, block the hash subscription

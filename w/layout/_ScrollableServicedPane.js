@@ -279,6 +279,12 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			}
 		}
 	},
+	_setHeaderLabelAttr:function(val) {
+		this.headerLabelNode.innerHTML = val;
+	},
+	_setFooterLabelAttr:function(val) {
+		this.footerLabelNode.innerHTML = val;
+	},
 	_initContent: function(item) {
 		// setcontent = false will not set the content here
 		var self = this;
