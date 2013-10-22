@@ -39,6 +39,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	useItemChildren:false,
 	_tplo:null,
 	startup:function(){
+		if(this._started) return;
 		if(this.store) {
 			this.template = this.getTemplate();
 			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
