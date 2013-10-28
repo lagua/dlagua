@@ -38,6 +38,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	filterByItemProperties:"",
 	useItemChildren:false,
 	_tplo:null,
+	partials:"",
 	startup:function(){
 		if(this._started) return;
 		if(this.store) {
@@ -45,8 +46,8 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
 					this._tplo = tplo;
-					this.store.open().then(lang.hitch(this,function(){
-						this.store = new Observable(this.store);
+					var openStore = lang.hitch(this,function(){
+						this.store = this.stores[this.store.target] = new Observable(this.store);
 						
 						var results = this.store.query();
 						results.forEach(lang.hitch(this,this.addItem));
@@ -71,8 +72,13 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 								this.removeItem = null;
 							})
 						);
-					}));
-				}));
+					});
+					if(this.store.open) {
+						this.store.open().then(openStore);
+					} else { 
+						openStore();
+					}
+				})); 
 			}));
 		}
 		this.inherited(arguments);
@@ -243,7 +249,14 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		if(this.servicetype=="persvr") {
 			this._getSchema().then(lang.hitch(this,function(){
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+					var partials = {};
+					if(this.partials) {
+						array.forEach(this.partials.split(","),function(_){
+							var a =_.split("=");
+							partials[a[0]] = a[1];
+						});
+					}
+					this.parseTemplate(tpl,partials).then(lang.hitch(this,function(tplo){
 						this._tplo = tplo;
 						var q = this.createQuery();
 						var start = this.start;
