@@ -330,6 +330,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			// ref item may have been resolved now
 			var item = listItem.data;
+			if(item.name) listItem.set("id","dlaguaSSPItem_"+item.name);
 			var id = item[this.idProperty];
 			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
 			fx.fadeIn({node:listItem.containerNode}).play();

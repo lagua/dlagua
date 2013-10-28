@@ -250,12 +250,13 @@ define([
 			this._setContent(data || "");
 			setTimeout(lang.hitch(this,function(){
 				if(!this.containerNode) return;
-				this.marginBox = domGeometry.getMarginBox(this.containerNode);
+				this.marginBox = this.data.hidden ? {l:0,t:0,w:0,h:0} : domGeometry.getMarginBox(this.containerNode);
 			}),1);
 		},
 		resize:function() {
 			this.inherited(arguments);
-			if(this.containerNode) this.marginBox = domGeometry.getMarginBox(this.containerNode);
+			if(!this.containerNode) return;
+			this.marginBox = this.data.hidden ? {l:0,t:0,w:0,h:0} : domGeometry.getMarginBox(this.containerNode);
 		},
 		onLoad:function(){}
 	});

@@ -43,9 +43,9 @@ define([
 			this.inherited(arguments);
 			clearTimeout(resizeTimeout);
 	        // handle normal resize
-	        //resizeTimeout = setTimeout(lang.hitch(this,function() {
+	        resizeTimeout = setTimeout(lang.hitch(this,function() {
 	        	this.refresh();
-	        //}),250);
+	        }),250);
 		},
 		sortBy: function(ar,keys){
 			var terms = [];
@@ -115,9 +115,6 @@ define([
 			}
 		},
 		_layoutChildren: function(){
-			// Override _ContentPaneResizeMixin._layoutChildren because even when there's just a single layout child
-			// widget, sometimes we don't want to size it explicitly (i.e. to pass a dim argument to resize())
-
 			array.forEach(this.getChildren(), function(widget){
 				if(widget.resize){
 					widget.resize(widget._borderBox);
@@ -285,6 +282,10 @@ define([
 				var mc = regions[r].cols, mr = regions[r].rows;
 				var rchildren = regions[r].children;
 				var prog = regions[r].prog;
+				// not gonna fit
+				if(mr>this.rows) {
+					prog = "tile";
+				}
 				if(prog=="default") {
 					matrix = this.calcRegion(rchildren,mc,mr);
 				} else if(prog=="resize"){
@@ -304,15 +305,15 @@ define([
 					matrices.push(matrix);
 				}
 			}
-			if(cols > this.cols) {
-				console.log("nofit")
-				return
-			}
+			if(cols > this.cols) return;
 			if(matrices.length==3) {
 				matrices[0] = this.expandCenter(matrices[0],regions["center"].children,matrices[1][0].length+matrices[2][0].length);
 				matrix = [];
 				for(var rc=0;rc<this.rows;rc++){
-					matrix[rc] = matrices[1][rc].concat(matrices[0][rc],matrices[2][rc]);
+					var h = matrices[0][rc];
+					var t  = matrices[2][rc];
+					console.log(h,t)
+					matrix[rc] = matrices[1][rc].concat(h,t);
 				}
 				return matrix;
 			}
@@ -371,23 +372,8 @@ define([
 				if(freeBelow.length>0) {
 					matrix = this.fillEmpty(matrix,freeBelow[0],freeBelow[1],freeBelow[2],freeBelow[3],c.index);
 					if(freeBelow[3]>re) matrix = this.moveBlock(matrix,freeBelow[0],freeBelow[1],freeBelow[2],freeBelow[3],cs,re);
-					//var col = this.columnFromMatrix(matrix,ce);
 				}
 			}
-			/*for(var i=0;i<children.length;i++) {
-				c = children[i];
-				if((hasTiles && c.allowTileSize) || c.preventResize) continue;
-				row = this.getRowByIndex(matrix,c.index);
-				cs = row[1];
-				rs = row[0];
-				ce = matrix[rs].lastIndexOf(c.index);
-				re = this.columnFromMatrix(matrix,ce).lastIndexOf(c.index);
-				var freeAfter = this.getFree(matrix,cs,rs,this.cols,re+1);
-				if(freeAfter.length>0) {
-					matrix = this.fillEmpty(matrix,freeAfter[0],freeAfter[1],freeAfter[2],freeAfter[3],c.index);
-					if(freeAfter[2]>ce+1) matrix = this.moveBlock(matrix,freeAfter[0],freeAfter[1],freeAfter[2],freeAfter[3],ce+1,rs);
-				}
-			}*/
 			return matrix;
 		},
 		filterBy:function(children,region,matrix) {
@@ -551,79 +537,19 @@ define([
 							}
 						}
 					}
-					/*
-					// if block before me same region but other tier
-					if(!inrange) {
-						range = matrix[rowIdx] ? matrix[rowIdx].slice(0,colIdx) : [];
-						for(cc=0;cc<range.length;cc++){
-							if(range[cc]) {
-								var prev = range[cc];
-								var prevItem = self.getChildByIndex(prev,children);
-								if(prevItem.region==item.region && prevItem.tier<item.tier) {
-									inrange = true;
-									var h = rowIdx;
-									while(matrix[h] && matrix[h][cc]===prev) {
-										h++;
-									}
-									updateColCount();
-									updateRowCount(h-rowIdx);
-									break;
-								}
-							}
-						}
-					}
-					*/
-					/*
-					// if overlap not allowed and have height
-					if(!inrange && !self.allowOverlap && rowspan>1) {
-						// if block after or before me has 1 up
-						// and less down than me
-						range = matrix[rowIdx] ? matrix[rowIdx].slice(0,maxcols) : [];
-						for(cc=0;cc<range.length;cc++){
-							if(range[cc]===item.index) continue;
-							if(range[cc]) {
-								var nxt = range[cc];
-								var up = matrix[rowIdx-1] ? matrix[rowIdx-1][cc] : false;
-								if(nxt && up && up===nxt) {
-									var h = rowIdx;
-									while(matrix[h] && matrix[h][cc]===nxt) {
-										h++;
-									}
-									if(h-rowIdx<rowspan) {
-										inrange = true;
-										updateColCount();
-										updateRowCount(h-rowIdx);
-										break;
-									}
-								}
-							}
-						}
-					}
-					*/
 					if(inrange) {
 						return fit();
 					} else {
 						return true;
 					}
 				}
-				/*
-				if(this.allowFill) {
-					for(rc=emptyY;rc<maxrows;rc++){
-						cc = matrix[rc] ? matrix[rc].indexOf(false) : -1;
-						if(cc>-1) {
-							emptyY = rc;
-							emptyX = cc;
-							break;
-						}
-					}
-					colIdx = emptyX;
-					rowIdx = emptyY;
-				}
-				*/
 				var oldRow = rowIdx;
 				var fits = fit();
 				// stuff didn't fit
-				if(!fits) return;
+				if(!fits) {
+					console.log("no fit")
+					return;
+				}
 				// update matrix
 				for(cc = colIdx; cc<colIdx+colspan; cc++) {
 					for(rc=rowIdx;rc<rowIdx+rowspan;rc++) {
@@ -632,10 +558,10 @@ define([
 					}
 				}
 				updateColCount(colspan);
-				updateRowCount(rowspan-1);
+				//updateRowCount(rowspan-1);
 				if(colIdx>=maxcols) {
 					updateColCount();
-					updateRowCount();
+					updateRowCount(rowspan);
 				}
 			}
 			return matrix;
@@ -728,19 +654,19 @@ define([
 						var widget = dom.byId(item.id);
 						var box = this.getBox(widget);
 						console.log(box)
-						domStyle.set(widget, {
-							width: (iw - box[1]/2) + "px",
-							position: "absolute",
-							top: item._placed[0]*h+"px",
-							left: item._placed[1]*w+"px",
-							height: (ih - box[0]) + "px"
-						});
 						var borderBox = {
 							w:(iw - box[1]/2),
 							t:item._placed[0]*h,
 							l:item._placed[1]*w,
 							h:ih - box[0]
 						};
+						domStyle.set(widget, {
+							position: "absolute",
+							width: borderBox.w+"px",
+							top: borderBox.t+"px",
+							left: borderBox.l+"px",
+							height: borderBox.h+"px"
+						});
 						registry.byId(item.id)._borderBox = borderBox;
 						domClass.toggle(widget, this.childItemClass + "FirstColumn", first);
 						domClass.toggle(widget, this.childItemClass + "LastColumn", last);

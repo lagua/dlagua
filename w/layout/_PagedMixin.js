@@ -7,10 +7,11 @@ define([
 	"dojo/on",
 	"dojo/keys",
 	"dojo/dom-class",
+	"dojo/dom-geometry",
 	"dijit/typematic",
 	"dijit/form/Button",
 	"dojox/timing"
-],function(declare,lang,array,win,topic,on,keys,domClass,typematic,Button,timing) {
+],function(declare,lang,array,win,topic,on,keys,domClass,domGeometry,typematic,Button,timing) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
@@ -144,8 +145,12 @@ define([
 			if(this.itemHeight) { 
 				y = this.itemHeight*n;
 			} else {
-				for(var i=0; i<Math.min(n,len); i++) {
+				/*for(var i=0; i<Math.min(n,len); i++) {
 					y += this.listitems[i].marginBox.h;
+				}*/
+				if(this.listitems[n]) {
+					var mg = domGeometry.getMarginExtents(this.listitems[n].domNode);
+					y = this.listitems[n].marginBox.t + mg.t;
 				}
 			}
 			this.slideTo({x:0,y:-y},0.3,"ease-out");
@@ -189,9 +194,10 @@ define([
 				if(this.itemHeight) { 
 					y = this.itemHeight*index;
 				} else {
-					for(var i=0; i<Math.min(index,len); i++) {
-						y += this.listitems[i].marginBox.h;
-					}
+					//for(var i=0; i<Math.min(index,len); i++) {
+					//	y += this.listitems[i].marginBox.h;
+					//}
+					y = this.listitems[index] && this.listitems[i].marginBox.t;
 				}
 				var dy = y+py;
 				// FIXME: for border, but margin may differ
@@ -218,7 +224,7 @@ define([
 			for(;i<len;i++) {
 				y1 = (h ? y-0.5*h : y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h));
 				y2 = (h ? y+0.5*h : y+(0.5*li[i].marginBox.h));
-				if(-py>=y1 && -py<y2) break;
+				if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
 				y += (h ? h : li[i].marginBox.h);
 			}
 			if(i>=len) i=0;
@@ -233,6 +239,7 @@ define([
 		onReady: function(){
 			this.inherited(arguments);
 			if(this._beingDestroyed || this.servicetype!="persvr") return;
+			this.resize();
 			// if needed, get more stuff from the store
 			this.pageStore();
 			// select currentId for #anchor simulation
