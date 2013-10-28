@@ -231,7 +231,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 					target:target,
 					schemaUri:schemaUri
 				});
-				this.stores[target] = new Cache(this.store, new Memory());
+				this.stores[target] = this.store;// new Cache(this.store, new Memory());
 			} else {
 				this.store = this.stores[target];
 			}
