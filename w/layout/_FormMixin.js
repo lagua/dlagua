@@ -12,10 +12,11 @@ define([
 	"dlagua/w/layout/TemplaMixin",
 	"dforma/Builder",
 	"dforma/jsonschema",
+	"rql/query",
 	"rql/js-array",
 	"dojox/mobile/i18n",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,jsArray,i18n,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -111,9 +112,30 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				// - get domain nls
 				// - provide global / persistent stores
 				var schema = lang.clone(this.schema);
-				var formbundle = i18n.load(this.dojoModule,this.formBundle);
+				var formbundle = this.dojoModule ? i18n.load(this.dojoModule,this.formBundle) : {};
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
 				var submit = schema.submit ? schema.submit : (formbundle.buttonSubmit ? formbundle.buttonSubmit : "");
+				if(item.search) {
+					var oldHash = hash();
+					if(oldHash.indexOf("/?")>-1) {
+						var ha = oldHash.split("/?");
+						var q = new rqlQuery.Query(ha.pop());
+						oldHash = ha.pop();
+						self.query = q.toString();
+						self.set("currentItem",lang.mixin(item,{
+							type:"persvr",
+							model:item.targetModel
+						}));
+						var _rh = aspect.after(self,"onReady",function(){
+							_rh.remove();
+							if(!this.total) {
+								alert("no results");
+								hash(oldHash);
+							}
+						});
+						return;
+					}
+				}
 				var listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
 					store:this.store,
@@ -126,6 +148,17 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					submit: function(){
 						if(!this.validate()) return;
 						var data = this.get("value");
+						for(var k in data) {
+							// it may be a group
+							// make all booleans explicit
+							if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
+								if(data[k].length==0) {
+									data[k] = false;
+								} else if(data[k].length<2) {
+									data[k] = data[k][0];
+								}
+							}
+						}
 						domClass.toggle(this.buttonNode,"dijitHidden",true);
 						this.set("message",formbundle.submitMessage);
 						if(schema.links) {
@@ -139,13 +172,40 @@ return declare("dlagua.w.layout._FormMixin", [], {
 								}
 							});
 						}
-						if(item.action) {
-							if(item.action.charAt(0)=="#") {
-								hash(item.action);
+						if(item.search) {
+							var q = new rqlQuery.Query();
+							array.forEach(item.search.split(","),function(_){
+								var a = _.split(":");
+								if(a.length==1) {
+									q = q.search(_,data.q,data.r);
+								} else if(data[a[0]]){
+									q = q.search(a[1],data.q,data.r);
+								}
+							});
+							if(q.args.length>1) q.name = "or";
+							self.query = q.toString();
+							var oldHash = hash();
+							hash(oldHash+"/?"+self.query);
+							self.set("currentItem",lang.mixin(item,{
+								type:"persvr",
+								model:item.targetModel
+							}));
+							var _rh = aspect.after(self,"onReady",function(){
+								_rh.remove();
+								if(!this.total) {
+									alert("no results");
+									hash(oldHash);
+								}
+							});
+						} else if(item.action) {
+							var action = item.action;
+							if(action.charAt(0)=="#") {
+								hash(action);
 							} else {
 								var method = item.method || "post";
-								request[method](item.action,{
+								request(action,{
 									handleAs:"json",
+									method:method,
 									headers:{
 										"Content-Type":"application/json",
 										"Accept":"application/json"
