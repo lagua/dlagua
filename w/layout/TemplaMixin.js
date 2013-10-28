@@ -139,14 +139,22 @@ define([
 			}));
 			return d;
 		},
-		getSchema:function(schemaUri){
+		getSchema:function(model){
+			var schemaUri = "/persvr/Class/"+model;
 			var d = new Deferred();
 			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
 			if(parent.schemata && parent.schemata[schemaUri]) {
 				var schema = parent.schemata[schemaUri];
-				d.resolve(schema);
+				if(schema.__request) {
+					schema.__request.then(function(res){
+						parent.schemata[schemaUri] = res;
+						d.resolve(res);
+					});
+				} else {
+					d.resolve(schema);
+				}
 			} else {
-				request("/persvr/Class/"+schemaUri,{
+				var req = request(schemaUri,{
 					handleAs:"json",
 					headers:{
 						"Accept":"application/json"
@@ -155,6 +163,7 @@ define([
 					parent.schemata[schemaUri] = res;
 					d.resolve(res);
 				});
+				parent.schemata[schemaUri] = {__request:req};
 			}
 			return d;
 		},
