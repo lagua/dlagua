@@ -9,9 +9,6 @@ define([
 ], function(declare, lang, Stateful, topic, rqlParser, rqlArray, Destroyable) {
 
 return declare("dlagua.w.Subscribable", [Stateful,Destroyable], {
-	destroyRecursive:function(){
-		this.destroy();
-	},
 	subscribe: function(t, params){
 		if(!params) params = {};
 		var method;
