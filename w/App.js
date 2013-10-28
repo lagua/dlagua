@@ -321,7 +321,9 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 				topic.publish("/dojo/hashchange",hash);
 			},100);
 		}
-	}
+		this.onReady();
+	},
+	onReady:function(){}
 });
 
 });
