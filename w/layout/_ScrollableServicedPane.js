@@ -8,6 +8,7 @@ define([
 	"dojo/dom-geometry",
 	"dojo/dom-class",
 	"dojo/dom-style",
+	"dojo/parser",
 	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dijit/layout/_LayoutWidget",
@@ -16,7 +17,7 @@ define([
 	//"dojox/mobile/parser",
 	//"dojox/mobile",
 	"dojox/mobile/compat"
-],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWidget, _TemplatedMixin],{
 	listitems:null,
 	itemnodesmap:null,
@@ -60,6 +61,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
 	height:"inherit",
+	_containerInitTop:0,
 	startup: function(){
 		if(this._started){ return; }
 		this.listitems = [];
@@ -75,6 +77,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		var self = this;
 		var node, params = {};
 		if(this.header) {
+			this._containerInitTop = domGeometry.getPadExtents(this.containerNode).t;
 			node = dom.byId(this.fixedHeader);
 			if(node.parentNode == this.domNode){ // local footer
 				this.isLocalHeader = true;
@@ -263,7 +266,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
 		if(this.header) {
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
-			this.containerNode.style.paddingTop = this.fixedHeaderHeight + "px";
+			this.containerNode.style.paddingTop = this.fixedHeaderHeight + this._containerInitTop + "px";
 		}
 		this.resetScrollBar();
 		this.onTouchEnd();
@@ -281,9 +284,11 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	},
 	_setHeaderLabelAttr:function(val) {
 		this.headerLabelNode.innerHTML = val;
+		parser.parse(this.headerLabelNode);
 	},
 	_setFooterLabelAttr:function(val) {
 		this.footerLabelNode.innerHTML = val;
+		parser.parse(this.footerLabelNode);
 	},
 	_initContent: function(item) {
 		// setcontent = false will not set the content here

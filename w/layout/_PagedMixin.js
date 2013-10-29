@@ -64,18 +64,14 @@ define([
 						altKey: false, 
 						shiftKey: false, 
 						metaKey: false
-					}, this, function(){
-						this.skip(1);
-					}, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					}, this, this.skipNext, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
 					typematic.addListener(this.prevButton, this.domNode, {
 						keyCode: keys.UP_ARROW, 
 						ctrlKey: false, 
 						altKey: false, 
 						shiftKey: false, 
 						metaKey: false
-					}, this, function(){
-						this.skip(-1);
-					}, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					}, this, this.skipPrev, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
 					this.watch("focused",function(){
 						if(this.focused) {
 							try{ this.domNode.focus(); }catch(e){/*quiet*/}
@@ -116,9 +112,13 @@ define([
 			var index = item.getIndexInParent();
 			this.scrollToItem(index);
 		},
-		skip:function(dir) {
-			var nxt = this.selectedIndex+dir;
-			this.scrollToItem(nxt);
+		skipPrev:function(cnt) {
+			console.log(cnt,this.selectedIndex-1)
+			if(cnt>-1) this.scrollToItem(this.selectedIndex-1);
+		},
+		skipNext:function(cnt) {
+			console.log(cnt,this.selectedIndex+1)
+			if(cnt>-1) this.scrollToItem(this.selectedIndex+1);
 		},
 		_stopFiring: function(){
 			this.MOUSE_UP.remove();
@@ -142,16 +142,9 @@ define([
 			var len = this.listitems.length;
 			if(n>=len || n<0) return;
 			var y = 0;
-			if(this.itemHeight) { 
-				y = this.itemHeight*n;
-			} else {
-				/*for(var i=0; i<Math.min(n,len); i++) {
-					y += this.listitems[i].marginBox.h;
-				}*/
-				if(this.listitems[n]) {
-					var mg = domGeometry.getMarginExtents(this.listitems[n].domNode);
-					y = this.listitems[n].marginBox.t + mg.t;
-				}
+			var top = this.header ? this.fixedHeaderHeight + this._containerInitTop : 0;
+			if(this.listitems[n]) {
+				y = this.listitems[n].marginBox.t - top;
 			}
 			this.slideTo({x:0,y:-y},0.3,"ease-out");
 		},
@@ -189,16 +182,9 @@ define([
 			var py = this.getPos().y;
 			var dim = this._dim;
 			var len = this.listitems.length;
+			var top = this.header ? this.fixedHeaderHeight + this._containerInitTop : 0;
 			if(this.snap) {
-				var y = 0;
-				if(this.itemHeight) { 
-					y = this.itemHeight*index;
-				} else {
-					//for(var i=0; i<Math.min(index,len); i++) {
-					//	y += this.listitems[i].marginBox.h;
-					//}
-					y = this.listitems[index] && this.listitems[i].marginBox.t;
-				}
+				var y = this.listitems[index] && this.listitems[index].marginBox.t - top;
 				var dy = y+py;
 				// FIXME: for border, but margin may differ
 				if(dy==1 || dy==-1) dy = 0;
@@ -208,7 +194,7 @@ define([
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
 			this.selectedItem = this.listitems[index];
-			console.log("selectedItem",this.selectedItem);
+			console.log("selectedItem",index,this.selectedItem);
 			if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].data);
 		},
 		checkSelectedItem: function(){
@@ -219,13 +205,12 @@ define([
 			var len = li.length;
 			if(!len) return;
 			var y=0, y1=0, y2=0, i=0;
-			var h = this.itemHeight;
 			// won't work for inline items
 			for(;i<len;i++) {
-				y1 = (h ? y-0.5*h : y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h));
-				y2 = (h ? y+0.5*h : y+(0.5*li[i].marginBox.h));
+				y1 = y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h);
+				y2 = y+(0.5*li[i].marginBox.h);
 				if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
-				y += (h ? h : li[i].marginBox.h);
+				y += li[i].marginBox.h;
 			}
 			if(i>=len) i=0;
 			this.setSelectedItem(i);
