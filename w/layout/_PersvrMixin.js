@@ -52,22 +52,21 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 						var results = this.store.query();
 						results.forEach(lang.hitch(this,this.addItem));
 						
-					    this.own(
-						    results.observe(lang.hitch(this,function(item, removed, inserted){
-							    if(removed > -1){ // existing object removed
-							    	this.itemnodesmap[item.id].destroyRecursive();
-									delete this.itemnodesmap[item.id];
-							    }
-							    if(inserted > -1){ // new or updated object inserted
-							    	this.addItem(item,0,this.listitems,"first");
-									this.currentId = item.id;
-							    }
-						    })),
-						    this.watch("newItem",function(name,oldItem,item){
+						this.own(
+							results.observe(lang.hitch(this,function(item, removed, inserted){
+								if(removed > -1){ // existing object removed
+									this._removeItemById(item[this.idProperty]);
+								}
+								if(inserted > -1){ // new or updated object inserted
+									this.addItem(item,0,this.listitems,"last");
+									this.currentId = item[this.idProperty];
+								}
+							})),
+							this.watch("newItem",function(name,oldItem,item){
 								this.store.add(item);
 								this.newItem = null;
 							}),
-						    this.watch("removeItem",function(name,oldId,id){
+							this.watch("removeItem",function(name,oldId,id){
 								this.store.remove(id);
 								this.removeItem = null;
 							})
@@ -358,6 +357,15 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		}));
 		this.addChild(listItem,insertIndex);
 	},
+	_removeItemById:function(id) {
+		var i=0;
+		for(;i<this.listitems.length;i++) {
+			if(this.listitems[i][this.idProperty]==id) break;
+		}
+		if(i<this.listitems.length) this.listitems.splice(i,1);
+		this.itemnodesmap[id].destroyRecursive();
+		delete this.itemnodesmap[id];
+	},
 	parseTemplate: function(tpl,partials){
 		tpl = tpl.replace(/[\n\t\u200B\u200C\u200D\uFEFF]+/g,"").replace(/\>\s+\</g,"><");
 		var div = domConstruct.create("div",{
@@ -436,8 +444,9 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	getModel:function(){
 		return this.model || this.currentItem.model;
 	},
-	getTemplate:function(templateDir){
+	getTemplate:function(templateDir,suffix){
 		var xtemplate = "";
+		suffix = suffix && !this.filterById ? "_"+suffix : "";
 		var locale = this.locale;
 		if(!this.childTemplate) {
 			var item = this.currentItem;
@@ -456,7 +465,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 					}
 					tpath = ar.splice(0,i).join("/");
 				}
-				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+(this.filterById ? "_view.html" : ".html");
+				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 			}
 		}
 		return locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
