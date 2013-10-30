@@ -106,6 +106,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			console.log("schemauri",this.store.schemaUri)
 			this._getSchema().then(lang.hitch(this,function(){
 				var self = this;
+				var listItem;
 				var common = i18n.load("dforma","common");
 				// TODO:
 				// - assign schema url
@@ -136,7 +137,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						return;
 					}
 				}
-				var listItem = new ScrollableFormPaneItem({
+				listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
 					store:this.store,
 					label:schema.title,
@@ -162,15 +163,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						domClass.toggle(this.buttonNode,"dijitHidden",true);
 						this.set("message",formbundle.submitMessage);
 						if(schema.links) {
-							array.forEach(schema.links,function(link){
-								if(!data[link.rel]) data[link.rel] = [];
-								var localStore = self.stores[link.href];
-								if(localStore) {
-									var localdata = localStore.query();
-									localStore.clear && localStore.clear();
-									data[link.rel] = data[link.rel].concat(localdata);
-								}
-							});
+							var localData = self.getLocalData(schema.links,true);
+							data = lang.mixin(data,localData);
 						}
 						if(item.search) {
 							var q = new rqlQuery.Query();
@@ -215,6 +209,10 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						} else {
 							if(!data.locale) data.locale = item.locale;
 							this.store.put(data);
+							listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
+							if(item.preview) {
+								self._removeItemById(0);
+							}
 							listItem.containerNode = listItem.domNode;
 							listItem.data = data;
 							listItem._load().then(function(){
@@ -257,10 +255,42 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						self.onReady();
 					}
 				}).play();
+				if(item.preview) {
+					var data = {};
+					if(schema.links || schema.condition) {
+						var localData = this.getLocalData(schema.condition && schema.condition.links || schema.links);
+						console.log(localData)
+						if(schema.condition && schema.condition.query) localData = jsArray.executeQuery(schema.condition.query,{},[localData]);
+						data = lang.mixin(data,localData);
+					}
+					var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
+					listItem = new ScrollablePaneItem({
+						parent:this,
+						itemHeight:"auto",
+						data:data
+					});
+					this.listitems.push(listItem);
+					var _lh = aspect.after(listItem,"onLoad",lang.hitch(this,function(){
+						_lh.remove();
+						// as this can take a while, listItem may be destroyed in the meantime
+						if(this._beingDestroyed || listItem._beingDestroyed) return;
+						// ref item may have been resolved now
+						var item = listItem.data;
+						this.template = this.getTemplate(this.templateDir,"preview");
+						this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+							this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+								listItem.applyTemplate(tplo.tpl,tplo.partials);
+								fx.fadeIn({node:listItem.containerNode}).play();
+							}));
+						}));
+						this.itemnodesmap[-1] = listItem;
+					}));
+					this.addChild(listItem,"first");
+				}
 			}));
 		}
 	},
-	getLocalData:function(links){
+	getLocalData:function(links,clear){
 		var data = {};
 		if(links) {
 			array.forEach(links,function(link){
@@ -268,6 +298,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				var localStore = this.stores[link.href];
 				if(localStore) {
 					var localdata = localStore.query();
+					clear && localStore.clear && localStore.clear();
 					data[link.rel] = data[link.rel].concat(localdata);
 				}
 			},this);
