@@ -214,6 +214,7 @@ define([
 			var idar = this.currentId.split("/");
 			// nothing to select
 			if(idar.length<=depth) {
+				this.oldItem = null;
 				this.set("path",[]);
 				this.collapseAll();
 				var item = {};
