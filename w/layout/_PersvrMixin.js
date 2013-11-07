@@ -94,7 +94,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 					this.currentId = item[this.idProperty];
 				}));
 			}),
-			this.watch("filters",this.onFilters),
+			this.watch("filters",this.onFilters)/*,
 			this.watch("sort",function(){
 				this.newsort = true;
 				this.forcedLoad();
@@ -102,7 +102,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			}),
 			this.watch("childTemplate",function(){
 				this.replaceChildTemplate();
-			})
+			})*/
 		);
 	},
 	replaceChildTemplate: function(child,templateDir,partials) {
