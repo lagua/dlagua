@@ -5,10 +5,11 @@ define([
 	"dojo/dom-style",
 	"dojo/html", // html._ContentSetter
 	"dojo/when",
+	"dijit/registry",
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained"
-],function(declare,lang,array,domStyle,html,when,_Widget,_Templated,_Contained) {
+],function(declare,lang,array,domStyle,html,when,registry,_Widget,_Templated,_Contained) {
 return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Templated, _Contained], {
 	parent:null, //quickref to parent widget
 	itemHeight:null,
@@ -123,11 +124,16 @@ return declare("dlagua.w.layout.ScrollableServicedPaneItem", [_Widget, _Template
 			}
 		}
 	},
+	getParent: function(){
+		if(this._beingDestroyed) return;
+		if(!this.parent) this.parent = registry.getEnclosingWidget(this.domNode.parentNode.parentNode);
+		return this.parent;
+	},
 	resize:function() {
 		if(this._beingDestroyed) return;
 		this.inherited(arguments);
 		this.layoutChildren();
-		var parent = (this.parent || this.getParent());
+		var parent = this.getParent();
 		if(parent && parent.containerNode && parent.useScrollBar) parent.showScrollBar();
 	}
 });
