@@ -35,7 +35,7 @@ define([
 				return d;
 			}
 			var md = new Deferred();
-			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var parent = this.getParent();
 			var schema = (parent && parent.schema ? parent.schema : this.schema);
 			var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
 			this._mixinRecursive(lang.clone(this.data),schema,resolveProps,new Mixin(),md);
@@ -47,7 +47,7 @@ define([
 		},
 		_mixinRecursive: function(item,schema,resolveProps,mu_mixin,d,skipX) {
 			if(!d) d = new Deferred();
-			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var parent = this.getParent();
 			var refattr = parent.refAttribute || "$ref";
 			item.__onChildDone = function(){
 				if(this.__childrenDone) this.__childrenDone--;
@@ -142,7 +142,7 @@ define([
 		getSchema:function(model){
 			var schemaUri = "/persvr/Class/"+model;
 			var d = new Deferred();
-			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var parent = this.getParent();
 			if(parent.schemata && parent.schemata[schemaUri]) {
 				var schema = parent.schemata[schemaUri];
 				if(schema.__request) {
@@ -169,7 +169,7 @@ define([
 		},
 		resolveLinks: function(data,schema,resolveProps,skipX){
 			var d = new Deferred();
-			var parent = (this.parent || (this.getParent && typeof this.getParent == "function" ? this.getParent() : null));
+			var parent = this.getParent();
 			var refattr = parent.refAttribute || "$ref";
 			if(!schema || data.__resolved) {
 				d.resolve(data);
