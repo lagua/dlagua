@@ -19,7 +19,6 @@ define([
 	"dojox/mobile/compat"
 ],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWidget, _TemplatedMixin],{
-	listitems:null,
 	itemnodesmap:null,
 	templateString:templateString,
 	idProperty:"id",
@@ -64,7 +63,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	_containerInitTop:0,
 	startup: function(){
 		if(this._started){ return; }
-		this.listitems = [];
 		this.itemnodesmap = {};
 		this.orifilter = this.filter;
 		// servicetype+locale will be set by loader
@@ -236,7 +234,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		this._tplo = {};
 		this.selectedIndex = 0;
 		this.selectedItem = null;
-		this.listitems = [];
 		this.itemnodesmap = {};
 		if(this.servicetype=="persvr") {
 			// find in _PervsMixin
@@ -310,7 +307,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 				},10);
 			});
 		}
-		this.listitems.push(listItem);
 		this.addChild(listItem);
 		this.itemnodesmap[item[this.idProperty]] = listItem;
 		fx.fadeIn({node:listItem.containerNode}).play();

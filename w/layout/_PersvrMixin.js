@@ -42,6 +42,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	startup:function(){
 		if(this._started) return;
 		if(this.store) {
+			this.stores[this.store.target] = this.store;
 			this.template = this.getTemplate();
 			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
@@ -58,7 +59,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 									this._removeItemById(item[this.idProperty]);
 								}
 								if(inserted > -1){ // new or updated object inserted
-									this.addItem(item,0,this.listitems,"last");
+									this.addItem(item,0,null,"first");
 									this.currentId = item[this.idProperty];
 								}
 							})),
@@ -115,7 +116,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				} else {
 					// FIXME: is this really permanent?
 					this._tplo = tplo;
-					array.forEach(this.listitems,function(li){
+					array.forEach(this.getChildren(),function(li){
 						li.applyTemplate(tplo.tpl,tplo.partials);
 					});
 				}
@@ -336,7 +337,8 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			data:item,
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
 		});
-		this.listitems.push(listItem);
+		items = items || this.getChildren();
+		var len = items.length;
 		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 			// as this can take a while, listItem may be destroyed in the meantime
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
@@ -347,7 +349,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
 			fx.fadeIn({node:listItem.containerNode}).play();
 			this.childrenReady++;
-			if(this.childrenReady == items.length) {
+			if(this.childrenReady == len) {
 				// wait for the margin boxes to be set
 				setTimeout(lang.hitch(this,function(){
 					this.onReady();
@@ -359,10 +361,11 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	},
 	_removeItemById:function(id) {
 		var i=0;
-		for(;i<this.listitems.length;i++) {
-			if(this.listitems[i][this.idProperty]==id) break;
+		var items = this.getChildren();
+		for(;i<items.length;i++) {
+			if(items[i][this.idProperty]==id) break;
 		}
-		if(i<this.listitems.length) this.listitems.splice(i,1);
+		if(i<items.length) items.splice(i,1);
 		this.itemnodesmap[id].destroyRecursive();
 		delete this.itemnodesmap[id];
 	},
