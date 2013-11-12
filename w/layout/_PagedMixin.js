@@ -15,7 +15,7 @@ define([
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
-		pageThreshold:1000,
+		pageThreshold:150,
 		childTemplate:"",
 		snap:false,
 		pageButtons:true,
