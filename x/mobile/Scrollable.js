@@ -9,15 +9,47 @@ define([
 	"dojo/dom-construct",
 	"dojo/dom-style",
 	"dojo/touch",
+	"dojo/on",
 	"dojox/mobile/sniff",
 	"./_css3",
 	"dojox/mobile/scrollable"
-], function(dojo, connect, declare, lang, event, win, domClass, domConstruct, domStyle, touch, has, css3, Scrollable){
+], function(dojo, connect, declare, lang, event, win, domClass, domConstruct, domStyle, touch, on, has, css3, Scrollable){
 	
 	var dm = lang.getObject("dojox.mobile", true);
 	
 	return declare("dlagua.x.mobile.Scrollable", Scrollable, {
 		noTouch:false,
+		tapTimeOut:null,
+		holdThreshold:250,
+		doubleTapTimeout:250,
+		tapRadius:10,
+		_tapdata:null,
+		_selectable:null,
+		_initTap: function(/*Event*/e){
+			// summary:
+			//		Update the gesture data with new tap info
+			if(!this._tapdata) this._tapdata = {context:null};
+			if(!this._tapdata.context){
+				this._tapdata.context = {x: 0, y: 0, t: 0, c: 0};
+			}
+			var ct = new Date().getTime();
+			if(ct - this._tapdata.context.t <= this.doubleTapTimeout){
+				this._tapdata.context.c++;
+			}else{
+				this._tapdata.context.c = 1;
+				this._tapdata.context.x = e.screenX;
+				this._tapdata.context.y = e.screenY;
+			}
+			this._tapdata.context.t = ct;
+		},
+		_isTap: function(/*Event*/e){
+			if(!this._tapdata.context || !e) return;
+			// summary:
+			//		Check whether it's an valid tap
+			var dx = Math.abs(this._tapdata.context.x - e.screenX);
+			var dy = Math.abs(this._tapdata.context.y - e.screenY);
+			return dx <= this.tapRadius && dy <= this.tapRadius;
+		},
 		init: function(/*Object?*/params){
 			if(this._beingDestroyed) return;
 			// WSH: scrollbar only (bit hacky)
@@ -49,6 +81,21 @@ define([
 			// WSH: escape on form inputs
 			if(this.isFormElement(e.target) || domClass.contains(e.target,"dlaguaPreventScroll") || this.isScrollable(e.target)) return;
 			
+			if(e.touches && e.touches.length >= 2){
+				//tap gesture is only for single touch
+				clearTimeout(this._tapdata.tapTimeOut); 
+				this._tapdata.context = null;
+			}
+			var target = e.target;
+			this._initTap(e);
+			this._tapdata.tapTimeOut = setTimeout(lang.hitch(this, function(){
+				if(!this._selectable && this._isTap(e)){
+					console.log("taphold")
+					this._selectable = true;
+				}
+				this._tapdata.context = null;
+			}), this.holdThreshold);
+
 			if(this.disableTouchScroll){ return; }
 			if(this._conn && (new Date()).getTime() - this.startTime < 500){
 				return; // ignore successive onTouchStart calls
@@ -58,7 +105,7 @@ define([
 				this._conn.push(connect.connect(win.doc, touch.move, this, "onTouchMove"));
 				this._conn.push(connect.connect(win.doc, touch.release, this, "onTouchEnd"));
 			}
-
+			if(this._selectable) return;
 			this._aborted = false;
 			if(domClass.contains(this.containerNode, "mblScrollableScrollTo2")){
 				this.abort();
@@ -84,7 +131,7 @@ define([
 			this._posY = [this.invert ? -this.touchStartY : this.touchStartY];
 			this._locked = false;
 
-			if(!this.isFormElement(e.target)){
+			if(!this.isFormElement(e.target) && !this._tapdata.context){
 				this.propagatable ? e.preventDefault() : event.stop(e);
 			}
 		},
@@ -92,7 +139,7 @@ define([
 		onTouchMove: function(e){
 			// summary:
 			//		User-defined function to handle touchMove events.
-			if(this._locked || this.locked){ return; }
+			if(this._locked || this.locked || this._selectable){ return; }
 			var x = e.touches ? e.touches[0].pageX : e.clientX;
 			var y = e.touches ? e.touches[0].pageY : e.clientY;
 			var dx = x - this.touchStartX;
@@ -104,6 +151,20 @@ define([
 
 			dx = Math.abs(dx);
 			dy = Math.abs(dy);
+			
+			if(this._tapdata.context && (dx > this.tapRadius || dy > this.tapRadius)) {
+				clearTimeout(this._tapdata.tapTimeOut);
+				this._tapdata.context = null;
+				if(window.getSelection) {
+					if(window.getSelection().empty) {  // Chrome
+						window.getSelection().empty();
+					} else if(window.getSelection().removeAllRanges) {  // Firefox
+						window.getSelection().removeAllRanges();
+					}
+				} else if (document.selection) {  // IE?
+					document.selection.empty();
+				}
+			}
 
 			// WSH: set to to inverted pos on invert  
 			// TODO: add for horizontal
@@ -198,7 +259,32 @@ define([
 		onTouchEnd: function(/*Event*/e){
 			// summary:
 			//		User-defined function to handle touchEnd events.
+			if(this._selectable) {
+				if(typeof window.getSelection != "undefined") {
+			        var sel = window.getSelection().toString();
+			    } else if (typeof document.selection != "undefined") {
+			        if (document.selection.type == "Text") {
+			            sel = document.selection.createRange();
+			        }
+			    }
+			}
+			if(!this._tapdata) this._tapdata = {context:null};
+			if(!this._tapdata.context){
+				clearTimeout(this._tapdata.tapTimeOut);
+			}
+			if(this._isTap(e)){
+				switch(this._tapdata.context.c){
+				case 1: 
+					this._selectable = false;
+					break;
+				case 2:
+					break;
+				}
+			}
+			clearTimeout(this._tapdata.tapTimeOut);
+
 			if(this._locked){ return; }
+			
 			var speed = this._speed = {x:0, y:0};
 			var dim = this._dim;
 			var pos = this.getPos();
@@ -473,6 +559,7 @@ define([
 			// WSH: added this to resize scrollbar wrapper, could also be hiding
 			var f2 = function(wrapper, d, c, hd, v){
 				if(!wrapper) return;
+				wrapper.className = "mblScrollBarWrapper mblScrollBarHidden";
 				var props = {};
 				props[v ? "top" : "left"] = hd + 4 + "px"; // +4 is for top or left margin
 				props[v ? "height" : "width"] = d - 8 + "px";
@@ -488,6 +575,7 @@ define([
 			//		Resets the scroll bar length, position, etc.
 			var f = function(wrapper, bar, d, c, hd, v){
 				if(!bar){ return; }
+				wrapper.className = "mblScrollBarWrapper";
 				var props = {};
 				props[v ? "top" : "left"] = hd + 4 + "px"; // +4 is for top or left margin
 				var t = (d - 8) <= 0 ? 1 : d - 8;
