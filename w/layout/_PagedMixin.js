@@ -15,7 +15,7 @@ define([
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
-		pageThreshold:150,
+		pageThreshold:50,
 		childTemplate:"",
 		snap:false,
 		pageButtons:true,
@@ -109,6 +109,18 @@ define([
 					}))
 				);
 			}
+			if(this.nativeScroll) {
+				var delay = 250;
+				var timeout = null;
+				this.own(
+					on(this.containerNode,"scroll",lang.hitch(this,function(){
+						clearTimeout(timeout);
+						timeout = setTimeout(lang.hitch(this,function(){
+					        this.onFlickAnimationEnd();
+					    }),delay);
+					}))
+				);
+			}
 		},
 		layout:function(){
 			this.inherited(arguments);
@@ -130,17 +142,15 @@ define([
 				this.pageStore(-Infinity);
 				return;
 			}
-			//this.currentId = null;
+			this.currentId = null;
 			if(this.selectedItem && this.selectedItem == item) return;
 			var index = item.getIndexInParent();
 			this.scrollToItem(index);
 		},
 		skipPrev:function(cnt) {
-			console.log(cnt,this.selectedIndex-1)
 			if(cnt>-1) this.scrollToItem(this.selectedIndex-1);
 		},
 		skipNext:function(cnt) {
-			console.log(cnt,this.selectedIndex+1)
 			if(cnt>-1) this.scrollToItem(this.selectedIndex+1);
 		},
 		_pageUp:function(cnt) {
@@ -221,13 +231,18 @@ define([
 			if(items[n]) {
 				y = items[n].marginBox.t - top;
 			}
-			this.slideTo({x:0,y:-y},0.3,"ease-out");
+			if(this.nativeScroll) {
+				items[n].domNode.scrollIntoView();
+			} else {
+				this.slideTo({x:0,y:-y},0.3,"ease-out");
+			}
 		},
 		pageStore:function(py){
-			if(this._loading || this.servicetype!="persvr") return;
+			if(this._loading || this.servicetype!="model" || !this._dim || this._dim.o.h<=0) return;
 			if(!py) py = this.getPos().y;
-			py -= this.pageThreshold;
 			var dim = this._dim;
+			var threshold = Math.round(dim.o.h * this.pageThreshold/100); 
+			py -= threshold;
 			var items = this.getChildren();
 			var len = items.length;
 			if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
@@ -255,7 +270,7 @@ define([
 			}
 		},
 		setSelectedItem: function(index) {
-			if(this.servicetype!="persvr") return;
+			if(this._loading || this.servicetype!="model") return;
 			var py = this.getPos().y;
 			var dim = this._dim;
 			var items = this.getChildren();
@@ -272,15 +287,14 @@ define([
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
 			this.selectedItem = items[index];
-			console.log("selectedItem",index,this.selectedItem);
 			if(this.id && len) {
 				topic.publish("/components/"+this.id,items[index].data);
 				var id = items[index].data[this.idProperty];
-				console.warn(id,items[index].data)
 				topic.publish("/components/"+this.id+"/currentId",id);
 			}
 		},
 		checkSelectedItem: function(){
+			if(this._loading || this.servicetype!="model") return;
 			// get proximate item
 			// BIG FIXME!: py is NOT safe for borders / gutters
 			var py = this.getPos().y;
@@ -292,22 +306,22 @@ define([
 			// won't work for inline items
 			for(;i<len;i++) {
 				y1 = y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h);
-				y2 = y+(0.5*li[i].marginBox.h);
+				y2 = li[i].marginBox.t+(0.5*li[i].marginBox.h);
 				if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
-				y += li[i].marginBox.h;
+				y = li[i].marginBox.t;
 			}
 			if(i>=len) i=0;
 			this.setSelectedItem(i);
 		},
 		onFlickAnimationEnd:function(e){
-			if(!this._bounce && this.servicetype=="persvr"){
+			if(!this._bounce && this.servicetype=="model"){
 				this.checkSelectedItem();
 			}
 			this.inherited(arguments);
 		},
 		onReady: function(){
 			this.inherited(arguments);
-			if(this._beingDestroyed || this.servicetype!="persvr") return;
+			if(this._beingDestroyed || this.servicetype!="model") return;
 			this.resize();
 			// if needed, get more stuff from the store
 			this.pageStore();
