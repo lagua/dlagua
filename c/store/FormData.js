@@ -9,7 +9,7 @@ define([
 		idProperty: "id",
 		model:"",
 		schemaModel:"Class",
-		service:"/persvr/",
+		service:"model/",
 		local:false,
 		persistent:false,
 		constructor: function(options) {

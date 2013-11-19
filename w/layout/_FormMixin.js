@@ -67,7 +67,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "/persvr/");
+			if(!item.service) item.service = (this.service || "model/");
 			if(!item.model) return;
 			var model = item.model;
 			var schemaModel = this.schemaModel;
@@ -125,7 +125,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						oldHash = ha.pop();
 						self.query = q.toString();
 						self.set("currentItem",lang.mixin(item,{
-							type:"persvr",
+							type:"model",
 							model:item.targetModel
 						}));
 						var _rh = aspect.after(self,"onReady",function(){
@@ -182,7 +182,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							var oldHash = hash();
 							hash(oldHash+"/?"+self.query);
 							self.set("currentItem",lang.mixin(item,{
-								type:"persvr",
+								type:"model",
 								model:item.targetModel
 							}));
 							var _rh = aspect.after(self,"onReady",function(){
