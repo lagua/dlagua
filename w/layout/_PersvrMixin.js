@@ -88,7 +88,21 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 				this.orifilter = this.filter;
 				this.forcedLoad();
 			}),
-			this.watch("filterById",this.forcedLoad),
+			this.watch("filterById",lang.hitch(this,function(prop,oldVal,newVal){
+				// wait for all properties to be reset
+				if(this._loading) {
+					this.filterById = oldVal;
+					var _rh = aspect.after(this,"onReady",function(){
+						_rh.remove();
+						this.set("filterById",newVal)
+					},true);
+					return;
+				}
+				setTimeout(lang.hitch(this,function(){
+					if(oldVal && !newVal) this.currentId = oldVal;
+					this.forcedLoad();
+				}),1);
+			})),
 			this.watch("newData",function(){
 				array.forEach(this.newData,lang.hitch(this,function(item,i,items){
 					this.addItem(item,i,items,"first");
@@ -458,7 +472,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 			if(!templateDir) templateDir = this.templateDir;
 			if(item[this.templateProperty]) {
 				var tpath = item[this.templateProperty];
-				if(this.templateProperty=="path" && this.filterById) {
+				/*if(this.templateProperty=="path" && this.filterById) {
 					var ar = tpath.split("/");
 					var i;
 					for(i=0;i<ar.length;i++){
@@ -467,7 +481,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 						}
 					}
 					tpath = ar.splice(0,i).join("/");
-				}
+				}*/
 				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 			}
 		}
