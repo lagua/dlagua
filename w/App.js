@@ -56,12 +56,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
 		var hashar = hash.split(":");
 		var state,rest,locale,path;
-		if(hashar.length>1) {
+		if(hashar.length>1 && !hashar[0].match(/\?|\//).length) {
 			state = hashar[0];
 			rest = hashar[1];
 		} else {
 			state = "initial";
-			rest = hashar[0];
+			rest = hash;
 		}
 		// try stateMap
 		if(state=="initial" && this.stateMap) {
