@@ -300,7 +300,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						console.log(localStore);
 					}
 					var localdata = localStore.query();
-					clear && localStore.clear && localStore.clear();
+					clear && (localStore.clear && localStore.clear()) || 
+						(localStore.engine && localStore.engine.clear && localStore.engine.clear());
 					data[link.rel] = data[link.rel].concat(localdata);
 				}
 			},this);
