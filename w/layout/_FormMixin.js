@@ -15,8 +15,9 @@ define([
 	"rql/query",
 	"rql/js-array",
 	"dojox/mobile/i18n",
+	"dojo/store/Observable",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,Observable,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -32,7 +33,7 @@ function traverse(obj,func, parent) {
 			});
 		}
 	}
-};
+}
 function replaceNlsRecursive(obj,nls){
 	traverse(obj, function(key, value, parent){
 		if(typeof value == "string" && value.indexOf("{")>-1){
@@ -40,8 +41,8 @@ function replaceNlsRecursive(obj,nls){
 		}
 	});
 	return obj;
-};
-	
+}
+
 return declare("dlagua.w.layout._FormMixin", [], {
 	store:null,
 	stores:{},
@@ -81,14 +82,14 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			if(item.filter) this.orifilter = this.filter = item.filter;
 			if(!this.stores[target]) {
 				if(!this.externalStore) {
-					this.store = new FormData({
+					this.store = new Observable(new FormData({
 						local:item.localStorage,
 						identifier: "id",
 						persistent:item.persistentStorage,
 						model:model,
 						schemaModel:schemaModel,
 						service:item.service
-					});
+					}));
 				} else {
 					this.store.target = target;
 					this.store.schemaUri = schemaUri;
@@ -103,7 +104,6 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	rebuild:function(item){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
-			console.log("schemauri",this.store.schemaUri)
 			this._getSchema().then(lang.hitch(this,function(){
 				var self = this;
 				var listItem;
@@ -153,7 +153,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							// it may be a group
 							// make all booleans explicit
 							if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
-								if(data[k].length==0) {
+								if(!data[k].length) {
 									data[k] = false;
 								} else if(data[k].length<2) {
 									data[k] = data[k][0];
@@ -235,8 +235,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						}
 					},100);
 				},true));
+				var data;
 				if(schema.condition) {
-					var data = this.getLocalData(schema.condition.links || schema.links);
+					data = this.getLocalData(schema.condition.links || schema.links);
 					var result = jsArray.executeQuery(schema.condition.query,{},[data]);
 					// if there are no results for this query, display a message
 					if(!result.length) {
@@ -256,10 +257,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					}
 				}).play();
 				if(item.preview) {
-					var data = {};
+					data = {};
 					if(schema.links || schema.condition) {
 						var localData = this.getLocalData(schema.condition && schema.condition.links || schema.links);
-						console.log(localData)
 						if(schema.condition && schema.condition.query) localData = jsArray.executeQuery(schema.condition.query,{},[localData]);
 						data = lang.mixin(data,localData);
 					}
