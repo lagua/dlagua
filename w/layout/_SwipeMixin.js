@@ -14,7 +14,7 @@ define([
 	"dlagua/x/json/ref",
 	"rql/query",
 	"rql/parser",
-	"domains/benjamins_com/widget/layout/ScrollableServicedPane"
+	"dlagua/w/layout/ScrollableServicedPane"
 ],function(declare,lang,array,fx,Deferred,aspect,Memory,Cache,JsonRest,topic,domStyle,domGeometry,jsonref,rqlQuery,rqlParser,ScrollableServicedPane) {
 	return declare("dlagua.w.layout._SwipeMixin",[],{
 		servicetype:"persvr",
