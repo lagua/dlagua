@@ -15,7 +15,7 @@ define([
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
-		pageThreshold:150,
+		pageThreshold:50,
 		childTemplate:"",
 		snap:false,
 		pageButtons:true,
@@ -109,6 +109,18 @@ define([
 					}))
 				);
 			}
+			if(this.nativeScroll) {
+				var delay = 250;
+				var timeout = null;
+				this.own(
+					on(this.containerNode,"scroll",lang.hitch(this,function(){
+						clearTimeout(timeout);
+						timeout = setTimeout(lang.hitch(this,function(){
+					        this.onFlickAnimationEnd();
+					    }),delay);
+					}))
+				);
+			}
 		},
 		layout:function(){
 			this.inherited(arguments);
@@ -136,11 +148,9 @@ define([
 			this.scrollToItem(index);
 		},
 		skipPrev:function(cnt) {
-			console.log(cnt,this.selectedIndex-1)
 			if(cnt>-1) this.scrollToItem(this.selectedIndex-1);
 		},
 		skipNext:function(cnt) {
-			console.log(cnt,this.selectedIndex+1)
 			if(cnt>-1) this.scrollToItem(this.selectedIndex+1);
 		},
 		_pageUp:function(cnt) {
@@ -213,21 +223,28 @@ define([
 		},
 		scrollToItem: function(n) {
 			// FIXME item should not scroll beyond min/max
-			var len = this.listitems.length;
+			var items = this.getChildren();
+			var len = items.length;
 			if(n>=len || n<0) return;
 			var y = 0;
 			var top = this.header ? this.fixedHeaderHeight + this._containerInitTop : 0;
-			if(this.listitems[n]) {
-				y = this.listitems[n].marginBox.t - top;
+			if(items[n]) {
+				y = items[n].marginBox.t - top;
 			}
-			this.slideTo({x:0,y:-y},0.3,"ease-out");
+			if(this.nativeScroll) {
+				items[n].domNode.scrollIntoView();
+			} else {
+				this.slideTo({x:0,y:-y},0.3,"ease-out");
+			}
 		},
 		pageStore:function(py){
-			if(this._loading || this.servicetype!="persvr") return;
+			if(this._loading || this.servicetype!="model" || !this._dim || this._dim.o.h<=0) return;
 			if(!py) py = this.getPos().y;
-			py -= this.pageThreshold;
 			var dim = this._dim;
-			var len = this.listitems.length;
+			var threshold = Math.round(dim.o.h * this.pageThreshold/100); 
+			py -= threshold;
+			var items = this.getChildren();
+			var len = items.length;
 			if(this.store && -py>=dim.o.h && len<this.total && this.total<this.maxCount) {
 				// try to get more stuff from the store...
 				this._loading = true;
@@ -253,13 +270,14 @@ define([
 			}
 		},
 		setSelectedItem: function(index) {
-			if(this.servicetype!="persvr") return;
+			if(this._loading || this.servicetype!="model") return;
 			var py = this.getPos().y;
 			var dim = this._dim;
-			var len = this.listitems.length;
+			var items = this.getChildren();
+			var len = items.length;
 			var top = this.header ? this.fixedHeaderHeight + this._containerInitTop : 0;
 			if(this.snap) {
-				var y = this.listitems[index] && this.listitems[index].marginBox.t - top;
+				var y = items[index] && items[index].marginBox.t - top;
 				var dy = y+py;
 				// FIXME: for border, but margin may differ
 				if(dy==1 || dy==-1) dy = 0;
@@ -268,37 +286,42 @@ define([
 			this.pageStore(py);
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
-			this.selectedItem = this.listitems[index];
-			console.log("selectedItem",index,this.selectedItem);
-			if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].data);
+			this.selectedItem = items[index];
+			if(this.id && len) {
+				topic.publish("/components/"+this.id,items[index].data);
+				var id = items[index].data[this.idProperty];
+				topic.publish("/components/"+this.id+"/currentId",id);
+			}
 		},
 		checkSelectedItem: function(){
+			if(this._loading || this.servicetype!="model") return;
 			// get proximate item
 			// BIG FIXME!: py is NOT safe for borders / gutters
 			var py = this.getPos().y;
-			var li = this.listitems;
+			var li = this.getChildren();
 			var len = li.length;
 			if(!len) return;
-			var y=0, y1=0, y2=0, i=0;
+			var y1=0, y2=0, i=0;
+			var y = (this.header ? this.fixedHeaderHeight + this._containerInitTop : 0);
 			// won't work for inline items
 			for(;i<len;i++) {
 				y1 = y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h);
-				y2 = y+(0.5*li[i].marginBox.h);
+				y2 = li[i].marginBox.t+(0.5*li[i].marginBox.h);
 				if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
-				y += li[i].marginBox.h;
+				y = li[i].marginBox.t;
 			}
 			if(i>=len) i=0;
 			this.setSelectedItem(i);
 		},
 		onFlickAnimationEnd:function(e){
-			if(!this._bounce && this.servicetype=="persvr"){
+			if(!this._bounce && this.servicetype=="model"){
 				this.checkSelectedItem();
 			}
 			this.inherited(arguments);
 		},
 		onReady: function(){
 			this.inherited(arguments);
-			if(this._beingDestroyed || this.servicetype!="persvr") return;
+			if(this._beingDestroyed || this.servicetype!="model") return;
 			this.resize();
 			// if needed, get more stuff from the store
 			this.pageStore();

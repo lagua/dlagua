@@ -14,12 +14,10 @@ define([
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
-	//"dojox/mobile/parser",
-	//"dojox/mobile",
 	"dojox/mobile/compat"
 ],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+	
 return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWidget, _TemplatedMixin],{
-	listitems:null,
 	itemnodesmap:null,
 	templateString:templateString,
 	idProperty:"id",
@@ -61,10 +59,11 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
 	height:"inherit",
+	nativeScroll:false,
+	noCover:false,
 	_containerInitTop:0,
 	startup: function(){
 		if(this._started){ return; }
-		this.listitems = [];
 		this.itemnodesmap = {};
 		this.orifilter = this.filter;
 		// servicetype+locale will be set by loader
@@ -87,7 +86,15 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			domStyle.set(this.fixedHeader,"display","none");
 			params.fixedHeaderHeight = 0;
 		}
-		this.init(params);
+		if(this.nativeScroll) {
+			domStyle.set(this.containerNode,{
+				overflow:"auto",
+				WebkitOverflowScrolling: "touch",
+				height:"100%"
+			});
+		} else {
+			this.init(params);
+		}
 		if(this.footer) {
 			node = dom.byId(this.fixedFooter);
 			if(node.parentNode == this.domNode){ // local footer
@@ -115,7 +122,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		if(this.model || this.path) {
 			// set default servicetype
 			if(!this.servicetype) {
-				this.servicetype = (this.model ? "persvr" : "page");
+				this.servicetype = (this.model ? "model" : "page");
 			}
 			this.currentItem = {
 				path: this.path,
@@ -142,7 +149,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		}
 		if(!cancel) return;
 		switch(o.type || this.servicetype) {
-			case "persvr":
+			case "model":
 				if(this.results && this.results.fired==-1) {
 					this.results.cancel();
 				}
@@ -211,17 +218,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		this.oldItem = item;
 		if(this.servicetype=="xform") {
 			this.servicetype = "page";
-		} else if(this.servicetype=="persvr" || this.servicetype=="atom") {
+		} else if(this.servicetype=="model" || this.servicetype=="atom") {
 			this.template = this.getTemplate();
 		}
 		switch(this.servicetype) {
-			case "persvr":
+			case "model":
 			case "form":
 			case "atom":
 				// find in mixin
 				break;
 			case "page":
-				if(!item.service) item.service = "/xbrota/rest";
+				if(!item.service) item.service = "rest";
 				this.rebuild(item);
 				break;
 		}
@@ -236,9 +243,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		this._tplo = {};
 		this.selectedIndex = 0;
 		this.selectedItem = null;
-		this.listitems = [];
 		this.itemnodesmap = {};
-		if(this.servicetype=="persvr") {
+		if(this.servicetype=="model") {
 			// find in _PervsMixin
 		} else if(this.servicetype=="form") {
 			// find in _FormMixin
@@ -264,13 +270,46 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			this.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		}
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
+		if(!this._dim) this._dim = this.getDim();
+		if(this.nativeScroll) {
+			var h = this._dim.d.h;
+			domStyle.set(this.containerNode, "height",h+"px");			
+		} else {
+			var w = this._dim.v.w-(this._scrollBarV ? 13 : 0);
+			domStyle.set(this.containerNode,"width",w+"px");				
+		}
 		if(this.header) {
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
-			this.containerNode.style.paddingTop = this.fixedHeaderHeight + this._containerInitTop + "px";
+			domStyle.set(this.containerNode,this.nativeScroll ? "marginTop" : "paddingTop", this.fixedHeaderHeight + this._containerInitTop + "px");
 		}
 		this.resetScrollBar();
 		this.onTouchEnd();
 		this.layoutChildren();
+	},
+	getPos: function(){
+		if(this.nativeScroll) {
+			return {x:-this.containerNode.scrollLeft,y:-this.containerNode.scrollTop};
+		}
+		return this.inherited(arguments);
+	},
+	getDim: function(){
+		if(this.nativeScroll) {
+			// summary:
+			//		Returns various internal dimensional information needed for calculation.
+			var d = {};
+			// content width/height
+			d.c = {h:this.containerNode.scrollHeight, w:this.containerNode.offsetWidth};
+	
+			// view width/height
+			d.v = {h:this.domNode.offsetHeight + this._appFooterHeight, w:this.domNode.offsetWidth};
+			// display width/height
+			d.d = {h:d.v.h - this.fixedHeaderHeight - this.fixedFooterHeight - this._appFooterHeight - this._containerInitTop, w:d.v.w};
+	
+			// overflowed width/height
+			d.o = {h:d.c.h - d.v.h + this.fixedHeaderHeight + this.fixedFooterHeight + this._appFooterHeight, w:d.c.w - d.v.w};
+			return d;
+		}
+		return this.inherited(arguments);
 	},
 	layoutChildren: function(){
 		var children = this.getChildren(),
@@ -310,15 +349,14 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 				},10);
 			});
 		}
-		this.listitems.push(listItem);
 		this.addChild(listItem);
 		this.itemnodesmap[item[this.idProperty]] = listItem;
 		fx.fadeIn({node:listItem.containerNode}).play();
 	},
 	onReady: function(){
+		this._loading = false;
 		if(this._beingDestroyed) return;
 		console.log("done loading "+this.id);
-		this._loading = false;
 		if(this.loadingAnimation && this.footer) {
 			domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}

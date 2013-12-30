@@ -10,6 +10,7 @@ define([
 	"dojo/dom-construct",
 	"dojo/dom-attr",
 	"dojo/Deferred",
+	"dojo/date/stamp",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
@@ -19,12 +20,12 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
+],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,stamp,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
 
-return declare("dlagua.w.layout._PersvrMixin", [], {
+return declare("dlagua.w.layout._ModelMixin", [], {
 	store:null,
 	stores:{},
 	schema:null,
@@ -59,7 +60,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 									this._removeItemById(item[this.idProperty]);
 								}
 								if(inserted > -1){ // new or updated object inserted
-									this.addItem(item,0,null,"first");
+									this.addItem(item);
 									this.currentId = item[this.idProperty];
 								}
 							})),
@@ -221,9 +222,9 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	loadFromItem:function(prop,oldValue,newValue){
 		if(!this._allowLoad(oldValue,newValue)) return;
 		this.inherited(arguments);
-		if(this.servicetype=="persvr") {
+		if(this.servicetype=="model") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "/persvr/");
+			if(!item.service) item.service = (this.service || "model/");
 			if(!item.model) return;
 			var model = item.model;
 			var target = item.service+model+"/";
@@ -260,7 +261,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 	},
 	rebuild:function(){
 		this.inherited(arguments);
-		if(this.servicetype=="persvr") {
+		if(this.servicetype=="model") {
 			this._getSchema().then(lang.hitch(this,function(){
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 					var partials = {};
@@ -343,6 +344,53 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		}
 		return "?"+qo.toString();
 	},
+	_compare: function (a, b) {
+		var sort = this.sort.split(",");
+		var terms = [];
+		for(var i=0; i<sort.length; i++){
+			var sortAttribute = sort[i];
+			var firstChar = sortAttribute.charAt(0);
+			var term = {attribute: sortAttribute, ascending: true};
+			if (firstChar == "-" || firstChar == "+") {
+				if(firstChar == "-"){
+					term.ascending = false;
+				}
+				term.attribute = term.attribute.substring(1);
+			}
+			// if one of items doesn't have attr we cannot compare?
+			// if(a.hasOwnProperty(term.attribute) && b.hasOwnProperty(term.attribute)) 
+			terms.push(term);
+		}
+		for (var term, i = 0; term = terms[i]; i++) {
+			var aa = a[term.attribute];
+			var ab = b[term.attribute];
+			aa = aa instanceof Date ? stamp.toISOString(aa) : aa;
+			ab = ab instanceof Date ? stamp.toISOString(ab) : ab;
+			if(aa != ab) {
+				return term.ascending == aa > ab ? 1 : -1;
+			}
+		}
+		return 0;
+	},
+	_findIndex: function(insert) {
+		var items = this.getChildren(),
+		max   = items.length,
+		min   = 0,
+		item, middle;
+		if(!max || !this.sort) return max;
+		// Perform an iterative binary search to determine the correct position
+		// based on the return value of the `comparator` function.
+		while (min < max) {
+			middle = (min + max) >> 1; // Divide by two and discard remainder.
+			item = items[middle];
+			if(this._compare(item.data, insert) < 0) {
+				min = middle + 1;
+			} else {
+				max = middle;
+			}
+		}
+		return min;
+	},
 	addItem:function(item,index,items,insertIndex) {
 		if(this._beingDestroyed) return;
 		var content = "";
@@ -353,6 +401,7 @@ return declare("dlagua.w.layout._PersvrMixin", [], {
 		});
 		items = items || this.getChildren();
 		var len = items.length;
+		if(!insertIndex && this.sort) insertIndex = this._findIndex(item);
 		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 			// as this can take a while, listItem may be destroyed in the meantime
 			if(this._beingDestroyed || listItem._beingDestroyed) return;

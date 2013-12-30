@@ -60,14 +60,15 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		if(this.store) this.externalStore = true;
 	},
 	loadFromItem:function(prop,oldValue,newValue){
-		if(this.servicetype=="form" && this.listitems && this.listitems[0]) {
-			this.listitems[0].cancel && this.listitems[0].cancel();
+		var items = this.getChildren();
+		if(this.servicetype=="form" && items[0]) {
+			items[0].cancel && items[0].cancel();
 		}
 		if(!this._allowLoad(oldValue,newValue)) return;
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "/persvr/");
+			if(!item.service) item.service = (this.service || "model/");
 			if(!item.model) return;
 			var model = item.model;
 			var schemaModel = this.schemaModel;
@@ -124,7 +125,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						oldHash = ha.pop();
 						self.query = q.toString();
 						self.set("currentItem",lang.mixin(item,{
-							type:"persvr",
+							type:"model",
 							model:item.targetModel
 						}));
 						var _rh = aspect.after(self,"onReady",function(){
@@ -181,7 +182,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							var oldHash = hash();
 							hash(oldHash+"/?"+self.query);
 							self.set("currentItem",lang.mixin(item,{
-								type:"persvr",
+								type:"model",
 								model:item.targetModel
 							}));
 							var _rh = aspect.after(self,"onReady",function(){
@@ -247,7 +248,6 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						domClass.add(listItem.buttonNode,"dijitHidden");
 					}
 				}
-				this.listitems.push(listItem);
 				this.addChild(listItem);
 				this.itemnodesmap[0] = listItem;
 				fx.fadeIn({
@@ -269,23 +269,22 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						itemHeight:"auto",
 						data:data
 					});
-					this.listitems.push(listItem);
-					var _lh = aspect.after(listItem,"onLoad",lang.hitch(this,function(){
+					var _lh = aspect.after(listItem,"onLoad",function(){
 						_lh.remove();
 						// as this can take a while, listItem may be destroyed in the meantime
-						if(this._beingDestroyed || listItem._beingDestroyed) return;
+						if(self._beingDestroyed || this._beingDestroyed) return;
 						// ref item may have been resolved now
-						var item = listItem.data;
-						this.template = this.getTemplate(this.templateDir,"preview");
-						this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-							this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-								listItem.applyTemplate(tplo.tpl,tplo.partials);
+						var item = this.data;
+						self.template = self.getTemplate(self.templateDir,"preview");
+						self._fetchTpl(self.template).then(lang.hitch(this,function(tpl){
+							self.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+								this.applyTemplate(tplo.tpl,tplo.partials);
 								fx.fadeIn({node:listItem.containerNode}).play();
 							}));
 						}));
-						this.itemnodesmap[-1] = listItem;
-					}));
-					this.addChild(listItem,"first");
+						self.itemnodesmap[-1] = listItem;
+					});
+					this.addChild(listItem);
 				}
 			}));
 		}
@@ -297,8 +296,12 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				if(!data[link.rel]) data[link.rel] = [];
 				var localStore = this.stores[link.href];
 				if(localStore) {
+					if(localStore.open) {
+						console.log(localStore);
+					}
 					var localdata = localStore.query();
-					clear && localStore.clear && localStore.clear();
+					clear && (localStore.clear && localStore.clear()) || 
+						(localStore.engine && localStore.engine.clear && localStore.engine.clear());
 					data[link.rel] = data[link.rel].concat(localdata);
 				}
 			},this);

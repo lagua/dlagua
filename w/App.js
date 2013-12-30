@@ -31,7 +31,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var d = new Deferred();
 		var inferred = {};
 		inferred.__view = false;
-		if(!this.localechanged && ((this.servicetype=="persvr" && fromHash) || servicetype=="persvr")) {
+		if(!this.localechanged && ((this.servicetype=="model" && fromHash) || servicetype=="model")) {
 			if(depth==this.depth+1 || truncated) {
 				var par = path.split("/");
 				var maybeId = par.pop();
@@ -56,12 +56,12 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
 		var hashar = hash.split(":");
 		var state,rest,locale,path;
-		if(hashar.length>1) {
+		if(hashar.length>1 && !hashar[0].match(/\?|\//).length) {
 			state = hashar[0];
 			rest = hashar[1];
 		} else {
 			state = "initial";
-			rest = hashar[0];
+			rest = hash;
 		}
 		// try stateMap
 		if(state=="initial" && this.stateMap) {
@@ -165,7 +165,7 @@ return declare("dlagua.w.App", [BorderContainer,Subscribable], {
 		var path = item.path;
 		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
-		var servicetype = item.type || (model ? "persvr" : "");
+		var servicetype = item.type || (model ? "model" : "");
 		//if(this.d && !this.d.isResolved()) {
 		//	console.warn("CANCELING INFER")
 		//	this.d.cancel();
