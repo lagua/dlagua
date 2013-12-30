@@ -1,9 +1,8 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
-	"dojo/store/Observable",
 	"./JsonRest", 
-	"./LocalStore"], function(declare,lang,Observable,JsonRest,LocalStore) {
+	"./LocalStore"], function(declare,lang,JsonRest,LocalStore) {
 	
 	return declare("dlagua.c.store.FormData",null,{
 		idProperty: "id",
@@ -21,18 +20,18 @@ define([
 			var schemaUri = this.service+schemaModel+"/"+model;
 			var store;
 			if(this.local) {
-				store = new Observable(new LocalStore({
+				store = new LocalStore({
 					idProperty: this.idProperty,
 					persistent:this.persistent,
 					target:target,
 					schemaUri:schemaUri
-				}));
+				});
 			} else {
-				store = new Observable(new JsonRest({
+				store = new JsonRest({
 					idProperty: this.idProperty,
 					target:target,
 					schemaUri:schemaUri
-				}));
+				});
 			}
 			declare.safeMixin(this,store);
 		}
