@@ -228,7 +228,6 @@ define([
 					}
 				}
 			},true);
-			this.listitems.push(listItem);
 			fx.fadeIn({node:listItem.containerNode}).play();
 			this.childrenReady++;
 			if(this.childrenReady == items.length) {
@@ -240,7 +239,7 @@ define([
 		},
 		scrollToItem: function(n) {
 			// FIXME item should not scroll beyond min/max
-			var len = this.listitems.length;
+			var len = this.getChildren().length;
 			if(n>=len || n<0) return;
 			var x = this._dim.v.w * n;
 			this.slideTo({x:0,x:-x},0.3,"ease-out");
@@ -259,7 +258,8 @@ define([
 		setSelectedItem: function(index) {
 			var px = this.getPos().x;
 			var dim = this._dim;
-			var len = this.listitems.length;
+			var items = this.getChildren();
+			var len = items.length;
 			// snap
 			var x = dim.v.w * index;
 			var dx = x+px;
@@ -268,17 +268,17 @@ define([
 			if(dx!=0 && !this._bounce) this._bounce = {x:-x,y:0};
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
-			this.selectedItem = this.listitems[index];
+			this.selectedItem = items[index];
 			//this.selectedItem.scrollTo({x:0,y:0});
 			console.log("selectedItem",this.selectedItem);
-			if(this.id && this.listitems && this.listitems.length) topic.publish("/components/"+this.id,this.listitems[index].currentItem);
+			if(this.id && items && items.length) topic.publish("/components/"+this.id,items[index].currentItem);
 			//this.selectedItem.loadFromItem();
 		},
 		checkSelectedItem: function(){
 			// get proximate item
 			// BIG FIXME!: py is NOT safe for borders / gutters
 			var px = this.getPos().x;
-			var li = this.listitems;
+			var li = this.getChildren();
 			var len = li.length;
 			if(!len) return;
 			var x=0, x1=0, x2=0, i=0;
