@@ -131,7 +131,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						var _rh = aspect.after(self,"onReady",function(){
 							_rh.remove();
 							if(!this.total) {
-								alert("no results");
+								//alert("no results");
 								hash(oldHash);
 							}
 						});
@@ -168,6 +168,11 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							data = lang.mixin(data,localData);
 						}
 						if(item.search) {
+							if(!data.q) {
+								domClass.toggle(this.buttonNode,"dijitHidden",false);
+								this.set("message","Please enter your query");
+								return;
+							}
 							var q = new rqlQuery.Query();
 							array.forEach(item.search.split(","),function(_){
 								var a = _.split(":");
