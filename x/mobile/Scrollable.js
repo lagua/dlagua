@@ -310,6 +310,8 @@ define([
 				if(clicked){ // clicked, not dragged or flicked
 					this.hideScrollBar();
 					this.removeCover();
+					// WSH: reset startTime for scrolling
+					this.startTime = 0;
 					// need to send a synthetic click?
 					if(has("touch") && has("clicks-prevented") && !this.isFormElement(e.target)){
 						var elem = e.target;
