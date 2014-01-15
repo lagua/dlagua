@@ -258,6 +258,22 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			}
 		}
 	},
+	startSelect:function(){
+		domClass.toggle(this.domNode,"dlaguaSSPSelect",true);
+		this.inherited(arguments);
+	},
+	endSelect:function(){
+		domClass.toggle(this.domNode,"dlaguaSSPSelect",false);
+		this.inherited(arguments);
+	},
+	startDrag:function(){
+		domClass.toggle(this.domNode,"dlaguaSSPDrag",true);
+		this.inherited(arguments);
+	},
+	onTouchEnd:function(){
+		domClass.toggle(this.domNode,"dlaguaSSPDrag",false);
+		this.inherited(arguments);
+	},
 	destroyRecursive: function(/*Boolean*/ preserveDom){
 		// summary:
 		//		Destroy the ContentPane and its contents
