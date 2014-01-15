@@ -98,7 +98,7 @@ define([
 			var target = e.target;
 			this._initTap(e);
 			this._tapdata.tapTimeOut = setTimeout(lang.hitch(this, function(){
-				if(!this._selectable && this._isTap(e)){
+				if(!this.invert && !this._selectable && this._isTap(e)){
 					console.log("taphold")
 					this.startSelect();
 				}
