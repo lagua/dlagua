@@ -74,6 +74,15 @@ define([
 			}
 			return (w && w.baseClass=="dlaguaScrollableServicedPane" && w != this);
 		},
+		startSelect:function(){
+			this._selectable = true;
+		},
+		endSelect:function(){
+			this._selectable = false;
+		},
+		startDrag:function(){
+			// override
+		},
 		onTouchStart: function(e){
 			// summary:
 			//		User-defined function to handle touchStart events.
@@ -91,7 +100,7 @@ define([
 			this._tapdata.tapTimeOut = setTimeout(lang.hitch(this, function(){
 				if(!this._selectable && this._isTap(e)){
 					console.log("taphold")
-					this._selectable = true;
+					this.startSelect();
 				}
 				this._tapdata.context = null;
 			}), this.holdThreshold);
@@ -222,6 +231,7 @@ define([
 					}
 				}
 			}
+			this.startDrag();
 			this.scrollTo(to);
 
 			var max = 10;
@@ -275,7 +285,7 @@ define([
 			if(this._isTap(e)){
 				switch(this._tapdata.context.c){
 				case 1: 
-					this._selectable = false;
+					this.endSelect();
 					break;
 				case 2:
 					break;
