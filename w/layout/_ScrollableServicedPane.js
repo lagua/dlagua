@@ -216,9 +216,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		// copy type if have one
 		if(item.type) this.servicetype = item.type;
 		this.oldItem = item;
-		if(this.servicetype=="xform") {
-			this.servicetype = "page";
-		} else if(this.servicetype=="model" || this.servicetype=="atom") {
+		if(this.servicetype=="model" || this.servicetype=="atom") {
 			this.template = this.getTemplate();
 		}
 		switch(this.servicetype) {
@@ -352,19 +350,12 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			itemHeight:"auto"
 		});
 		var href = item.service+"/"+item.locale+"/"+item.path;
-		if(item.type=="xform") {
-			this.setXFormTarget(href);
+		request(href).then(function(res){
+			listItem.set("content",res);
 			setTimeout(function(){
 				self.onReady();
-			},100);
-		} else {
-			request(href).then(function(res){
-				listItem.set("content",res);
-				setTimeout(function(){
-					self.onReady();
-				},10);
-			});
-		}
+			},10);
+		});
 		this.addChild(listItem);
 		this.itemnodesmap[item[this.idProperty]] = listItem;
 		fx.fadeIn({node:listItem.containerNode}).play();
