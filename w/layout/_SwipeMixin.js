@@ -18,6 +18,8 @@ define([
 ],function(declare,lang,array,fx,Deferred,aspect,Memory,Cache,JsonRest,topic,domStyle,domGeometry,jsonref,rqlQuery,rqlParser,ScrollableServicedPane) {
 	return declare("dlagua.w.layout._SwipeMixin",[],{
 		servicetype:"persvr",
+		childWidgetType:"",
+		childWidget:ScrollableServicedPane,
 		scrollDir:"h",
 		//height:"inherit",
 		stores:{},
@@ -25,7 +27,15 @@ define([
 		locked:false,
 		useScrollBar:false,
 		startup:function(){
-			this.inherited(arguments);
+			var args = arguments;
+			if(this.childWidgetType) {
+				require([this.childWidgetType],lang.hitch(this,function(Widget){
+					this.childWidget = Widget;
+					this.inherited(args);
+				}));
+			} else {
+				this.inherited(arguments);
+			}
 		},
 		layout:function(){
 			this.inherited(arguments);
