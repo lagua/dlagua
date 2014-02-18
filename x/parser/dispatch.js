@@ -41,7 +41,7 @@ var form = function(val,options) {
 	if(!ref.stores) ref = ref.getParent();
 	var data = options.values;
 	var action = options.action;
-	var service = options.service || "/persvr/";
+	var service = options.service || "/model/";
 	var target = service+options.model+"/";
 	var _parsable = options._parsable;
 	delete options.values;

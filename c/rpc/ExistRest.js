@@ -41,6 +41,7 @@ define([
 				type: item.type,
 				uri:"",
 				target:this.target,
+				__published:false,
 				__deleted: item.__deleted,
 				__new:false,
 				query:""
@@ -94,6 +95,7 @@ define([
 			if(postfix==="") return;
 			var self = this;
 			d.then(function(){
+				self.mappedItem.__published = true;
 				if(oldItem.__deleted || moved) self.onChange(property,changeSet,"");
 			},function(){
 				if(!oldItem.__deleted && !moved) self.onChange(property,changeSet,"");

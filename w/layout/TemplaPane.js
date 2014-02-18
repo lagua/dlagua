@@ -3,13 +3,13 @@ define([
 	"dojo/_base/lang",
 	"dojo/Deferred",
 	"dijit/layout/ContentPane",
-	"dlagua/w/layout/_PersvrMixin",
+	"dlagua/w/layout/_ModelMixin",
 	"dlagua/w/layout/TemplaMixin",
 	"dlagua/c/store/JsonRest",
 	"dlagua/c/templa/Mixin"
-],function(declare,lang,Deferred,ContentPane,_PersvrMixin,TemplaMixim,JsonRest,Mixin) {
+],function(declare,lang,Deferred,ContentPane,_ModelMixin,TemplaMixim,JsonRest,Mixin) {
 
-	return declare("dlagua.w.layout.TemplaPane",[ContentPane,_PersvrMixin,TemplaMixin],{
+	return declare("dlagua.w.layout.TemplaPane",[ContentPane,_ModelMixin,TemplaMixin],{
 		template:"",
 		templateModule:"",
 		service:"",

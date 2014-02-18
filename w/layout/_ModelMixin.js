@@ -223,7 +223,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		this.inherited(arguments);
 		if(this.servicetype=="model") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "model/");
+			if(!item.service) item.service = (this.service || "/model/");
 			if(!item.model) return;
 			var model = item.model;
 			var target = item.service+model+"/";

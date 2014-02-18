@@ -6,10 +6,11 @@ define("dlagua/w/layout/LayoutContainer", [
 	"dojo/_base/fx",
 	"dojo/dom-geometry",
 	"dojo/dom-style",
+	"dojo/dom-class",
 	"dijit/registry",
 	"dijit/layout/utils",
 	"dijit/layout/LayoutContainer"
- ], function(declare, lang, array, coreFx, fx, domGeometry, domStyle, registry, utils, LayoutContainer){
+ ], function(declare, lang, array, coreFx, fx, domGeometry, domStyle, domClass, registry, utils, LayoutContainer){
 
 	var layoutChildren = utils.layoutChildren;
 	var layoutUtils = lang.mixin(lang.mixin({},utils),{
@@ -32,8 +33,6 @@ define("dlagua/w/layout/LayoutContainer", [
 	});
 	
 	return declare("dlagua.w.layout.LayoutContainer",[LayoutContainer],{
-		tileSize:60,
-		tileMargin:"5px",
 		prog:0,
 		swapChildren:function(widget,target) {
 			if(typeof widget == "string") widget = registry.byId(widget);
@@ -108,35 +107,35 @@ define("dlagua/w/layout/LayoutContainer", [
 		},
 		layout: function(){
 			var children = this._getOrderedChildren();
-			if(this._prog>0) {
-				array.forEach(children, function(child){
-					if(child._oriStyle) domStyle.set(child.domNode,child._oriStyle);
-				});
-			}
-			var prog = layoutUtils.layoutChildren(this.domNode, this._contentBox, children);
+			var cb = this._contentBox;
+			var landsc = cb.w>cb.h;
+			var layoutPrio=0;
+			var dw;
+			array.forEach(children,function(_){
+				domClass.toggle(_.domNode,"dlaguaTile",false);
+				domAttr.remove(_.domNode,"style")
+				if(!_.params.layoutPrio) delete _.layoutPrio;
+				_.region = _.params.region;
+				if(_.region=="center") {
+					dw = _._contentBox.w - parseInt(domStyle.get(_.domNode,"minWidth"),10);
+				}
+				if((landsc && _.region=="trailing") || (!landsc && _.region=="bottom")) {
+					if(_.layoutPrio) layoutPrio = Math.max(layoutPrio,_.layoutPrio);
+					layoutPrio++;
+				}
+			});
+			var prog = layoutUtils.layoutChildren(this.domNode, cb, children);
 			if(prog>0) {
 				array.forEach(children, function(child){
 					var elm = child.domNode;
-					if(child.region=="leading" || child.region=="trailing") {
-						if(prog==1) {
-							// tile
-							child._oriStyle = {
-								maxWidth:domStyle.get(elm,"maxWidth") || "",
-								maxHeight:domStyle.get(elm,"maxHeight") || "",
-								margin:domStyle.get(elm,"margin"),
-							};
-							domStyle.set(elm,{
-								maxWidth:this.tileSize + "px",
-								maxHeight:this.tileSize + "px",
-								margin:this.tileMargin
-							});
-						} else {
-							domStyle.set(elm,child._oriStyle);
-							delete child._oriStyle;
-						}
+					if(child.region=="leading" || child.region=="trailing" || child.oriRegion=="leading" || child.oriRegion=="trailing") {
+						// prog 1 = tile
+						domClass.toggle(elm,"dlaguaTile",prog==1);
+						child.region = landsc && dw>0 ? "trailing" : "bottom";
+						child.layoutPriority = layoutPrio++;
 					}
 				},this);
-				layoutChildren(this.domNode, this._contentBox, children);
+				layoutChildren(this.domNode, cb, children);
 				this._prog = prog;
 			}
 		}

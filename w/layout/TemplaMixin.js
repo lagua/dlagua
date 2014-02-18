@@ -214,7 +214,7 @@ define([
 				if(!skipX) {
 					array.forEach(toResolveX, function(x){
 						var link = data[x];
-						request("rest/"+parent.locale+"/"+link,{
+						request("/rest/"+parent.locale+"/"+link,{
 							failOk:true
 						}).then(function(res){
 							data[x] = res;
