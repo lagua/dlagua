@@ -8,7 +8,7 @@ define([
 		idProperty: "id",
 		model:"",
 		schemaModel:"Class",
-		service:"model/",
+		service:"/model/",
 		local:false,
 		persistent:false,
 		constructor: function(options) {

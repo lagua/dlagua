@@ -140,7 +140,7 @@ define([
 			return d;
 		},
 		getSchema:function(model){
-			var schemaUri = "model/Class/"+model;
+			var schemaUri = "/model/Class/"+model;
 			var d = new Deferred();
 			var parent = this.getParent();
 			if(parent.schemata && parent.schemata[schemaUri]) {
