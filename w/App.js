@@ -3,13 +3,13 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/on",
-	"dlagua/w/layout/LayoutContainer",
+	"dijit/layout/LayoutContainer",
+	"dlagua/c/App",
 	"dlagua/w/Subscribable"
-],function(declare,lang,array,on,LayoutContainer,Subscribable){
+],function(declare,lang,array,on,LayoutContainer,App,Subscribable){
 
-return declare("dlagua.w.App", [LayoutContainer,Subscribable], {
+return declare("dlagua.w.App", [LayoutContainer,App,Subscribable], {
 	startup: function(){
-		console.log("app startup called");
 		this.own(
 			on(window,"onresize",lang.hitch(this,function(){
 				this.resize();
