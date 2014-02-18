@@ -22,7 +22,7 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 			onItem();
 			return;
 		}
-		var target = "/persvr/Page/";
+		var target = "/model/Page/";
 		if(!this.stores[target]) {
 			var store = new JsonRest({
 				target:target
@@ -31,7 +31,7 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 		}
 		if(this.stores) this.store = this.stores[target];
 		this.root = this.root;
-		if(this.root.type=="persvr" && this.root.model) {
+		if(this.root.type=="model" && this.root.model) {
 			var cpath = "../"+this.root.model+"/?locale="+this.root.locale;
 			if(this.root.sort) cpath+="&sort("+this.root.sort+")";
 			this.root.children = {"$ref":cpath};

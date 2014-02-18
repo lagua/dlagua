@@ -17,7 +17,7 @@ define([
 	"dlagua/w/layout/ScrollableServicedPane"
 ],function(declare,lang,array,fx,Deferred,aspect,Memory,Cache,JsonRest,topic,domStyle,domGeometry,jsonref,rqlQuery,rqlParser,ScrollableServicedPane) {
 	return declare("dlagua.w.layout._SwipeMixin",[],{
-		servicetype:"persvr",
+		servicetype:"model",
 		childWidgetType:"",
 		childWidget:ScrollableServicedPane,
 		scrollDir:"h",
@@ -96,9 +96,9 @@ define([
 			this.reload = false;
 			//this.idProperty = this.hrProperty = "";
 			this.childrenReady = 0;
-			if(this.servicetype=="persvr") {
+			if(this.servicetype=="model") {
 				var item = lang.mixin({},this.currentItem);
-				if(!item.service) item.service = (this.service || "/persvr/");
+				if(!item.service) item.service = (this.service || "/model/");
 				var model = "Page";
 				var target = item.service+model+"/";
 				var schemaUri = item.service+"Class/"+model;
@@ -123,7 +123,7 @@ define([
 		},
 		rebuild:function(){
 			this.inherited(arguments);
-			if(this.servicetype=="persvr") {
+			if(this.servicetype=="model") {
 				var item = lang.mixin({},this.currentItem);
 				this.total = item.children ? item.children.length : 0;
 				if(this.total===0 || isNaN(this.total)) {

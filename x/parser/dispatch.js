@@ -54,7 +54,7 @@ var form = function(val,options) {
 	var ref = this.ref;
 	var data = options.values;
 	var action = options.action;
-	var service = options.service || "/persvr/";
+	var service = options.service || "/model/";
 	var target = service+options.model+"/";
 	delete options.values;
 	delete options.action;

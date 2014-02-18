@@ -226,7 +226,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 				// find in mixin
 				break;
 			case "page":
-				if(!item.service) item.service = "rest";
+				if(!item.service) item.service = "/rest";
 				this.rebuild(item);
 				break;
 		}
