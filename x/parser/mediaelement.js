@@ -16,11 +16,13 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 	// BUT we also may need one for pub/sub
     var id = options.id || generateRandomUuid();
     var types = options.types || ["mp3"];
+    var tries = 10;
 	// declare audio player with jQuery
 	var parse = function(){
 		// check if the div AND mediaelement are available
-		if($("#audio_"+id).length){
-			$("#audio_"+id).mediaelementplayer({
+		var x = $("#audio_"+id);
+		if(x.length && x.mediaelementplayer){
+			x.mediaelementplayer({
 				audioWidth : (options.width || 280),
 				success : function(me) {
 					on(me,"play",function(){
@@ -34,12 +36,15 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 				}
 			});
 		} else {
-			setTimeout(function(){
-				parse();
-			},10);
+			if(tries>0) {
+				tries--;
+				setTimeout(function(){
+					parse();
+				},10);
+			}
 		}
 	};
-	var reqs = ["jquery","mediaelement/mediaelement-and-player"];
+	var reqs = ["jquery","mediaelement/mediaelement-and-player.min"];
 	require(reqs,function(){
 		parse();
 	});
