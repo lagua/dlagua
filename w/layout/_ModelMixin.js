@@ -10,7 +10,6 @@ define([
 	"dojo/dom-construct",
 	"dojo/dom-attr",
 	"dojo/Deferred",
-	"dojo/date/stamp",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
@@ -20,7 +19,7 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,stamp,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
+],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
@@ -357,6 +356,11 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				}
 				term.attribute = term.attribute.substring(1);
 			}
+			var ta = term.attribute.split(":");
+			if(ta.length>1) {
+				term.type = ta.shift();
+				term.attribute = ta.join(":");
+			}
 			// if one of items doesn't have attr we cannot compare?
 			// if(a.hasOwnProperty(term.attribute) && b.hasOwnProperty(term.attribute)) 
 			terms.push(term);
@@ -364,8 +368,23 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		for (var term, i = 0; term = terms[i]; i++) {
 			var aa = a[term.attribute];
 			var ab = b[term.attribute];
-			aa = aa instanceof Date ? stamp.toISOString(aa) : aa;
-			ab = ab instanceof Date ? stamp.toISOString(ab) : ab;
+			aa = aa instanceof Date ? aa.getTime() : aa;
+			ab = ab instanceof Date ? ab.getTime() : ab;
+			switch(term.type) {
+				case "number":
+					aa = parseInt(aa,10);
+					ab = parseInt(ab,10);
+					break;
+				case "string":
+					aa+="";
+					ab+="";
+					break;
+				case "date":
+					aa = (new Date(aa)).getTime();
+					ab = (new Date(ab)).getTime();
+					break;
+				default:
+			}
 			if(aa != ab) {
 				return term.ascending == aa > ab ? 1 : -1;
 			}
