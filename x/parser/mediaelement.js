@@ -5,9 +5,10 @@ define([
 	"dojo/on",
 	"dojo/topic",
 	"dojox/uuid/generateRandomUuid",
+	"dlagua/x/$",
 	"dojo/has",
 	"dojo/_base/sniff"
-], function(require,lang,array,on,topic,generateRandomUuid,has) {
+], function(require,lang,array,on,topic,generateRandomUuid,$,has) {
 
 lang.getObject("dlagua.x.parser.mediaelement", true);
 
@@ -17,7 +18,9 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
     var id = options.id || generateRandomUuid();
     var types = options.types || ["mp3"];
     var tries = 10;
-	// declare audio player with jQuery
+	// declare audio player with bling
+	mejs = {};
+	mejs.$ = $;
 	var parse = function(){
 		// check if the div AND mediaelement are available
 		var x = $("#audio_"+id);
@@ -44,8 +47,25 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 			}
 		}
 	};
-	var reqs = ["jquery","mediaelement/mediaelement-and-player.min"];
+	// require mejs after bling is assigned (and to keep out of dojo build)
+	var reqs = ["mediaelement/mediaelement-and-player.min"];
 	require(reqs,function(){
+		$.fn.mediaelementplayer = function(options) {
+			if (options === false) {
+				this.each(function() {
+				var player = $(this).data('mediaelementplayer');
+				if (player) {
+					player.remove();
+				}
+				$(this).removeData('mediaelementplayer');
+			});
+			} else {
+				this.each(function() {
+					$(this).data('mediaelementplayer', new mejs.MediaElementPlayer(this, options));
+				});
+			}
+			return this;
+		};
 		parse();
 	});
 	var text = '<audio id="audio_'+id+'" controls="controls">';
