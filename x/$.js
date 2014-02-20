@@ -98,9 +98,9 @@ define([
 		trigger:function(type){
 			this.forEach(function(_){
 				on.emit(_, type, {
-			        bubbles: true,
-			        cancelable: true
-			    });
+					bubbles: true,
+					cancelable: true
+				});
 			});
 			return this;
 		},
@@ -175,13 +175,14 @@ define([
 	};
 	$.extend = function(){
 		var args = Array.prototype.slice.call(arguments);
-		var target = args[0] || {};
+		var target = args[0];
 		var deep = false;
 		// Handle a deep copy situation
 		if(typeof target === "boolean" ) {
 			deep = args.shift();
 		}
-		return lang.mixin.apply(this,args);
+		var f = deep ? lang.clone : lang.mixin;
+		return f.apply(this,args);
 	}
 	return $;
 });
