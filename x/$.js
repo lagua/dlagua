@@ -181,8 +181,7 @@ define([
 		if(typeof target === "boolean" ) {
 			deep = args.shift();
 		}
-		var f = deep ? lang.clone : lang.mixin;
-		return f.apply(this,args);
+		return lang.mixin.apply(this,args);
 	}
 	return $;
 });
