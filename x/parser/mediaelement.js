@@ -19,8 +19,8 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
     var types = options.types || ["mp3"];
     var tries = 10;
 	// declare audio player with bling
-	mejs = {};
-	mejs.$ = $;
+	mejs = window.mejs || {};
+	if(!mejs.$) mejs.$ = $;
 	var parse = function(){
 		// check if the div AND mediaelement are available
 		var x = $("#audio_"+id);
@@ -53,12 +53,12 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 		$.fn.mediaelementplayer = function(options) {
 			if (options === false) {
 				this.each(function() {
-				var player = $(this).data('mediaelementplayer');
-				if (player) {
-					player.remove();
-				}
-				$(this).removeData('mediaelementplayer');
-			});
+					var player = $(this).data('mediaelementplayer');
+					if (player) {
+						player.remove();
+					}
+					$(this).removeData('mediaelementplayer');
+				});
 			} else {
 				this.each(function() {
 					$(this).data('mediaelementplayer', new mejs.MediaElementPlayer(this, options));
