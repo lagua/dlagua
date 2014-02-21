@@ -319,10 +319,11 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				if(terms.length>1) v = terms[1];
 				if(v) {
 					if(typeof v == "string") v = v.replace("undefined","*");
-					qo = qo[name](k,v);
-				} else {
-					qo = qo[name](k);
+					return v;
 				}
+			});
+			fo.args.forEach(function(arg){
+				qo = qo[arg.name].apply(qo,arg.args);
 			});
 		}
 		if(this.filterByItemProperties) {
