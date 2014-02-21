@@ -13,6 +13,7 @@ define([
 		_selectedNode:null,
 		locale:"en_us",
 		rootType:"content",
+		query:"",
 		currentId:"",
 		currentItem:null,
 		loadOnCreation:true,
@@ -93,7 +94,7 @@ define([
 				d.resolve([this.currentItem]);
 				return d;
 			}
-			var q = ioQuery.objectToQuery({
+			var q = this.query || ioQuery.objectToQuery({
 				locale:this.locale,
 				type:this.rootType
 			});
@@ -169,7 +170,7 @@ define([
 			var child;
 			if(node && truncated && this.depth<this.maxDepth) {
 				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
-					child = node.popup._loadFromId(prop,oldValue,newValue);
+					child = lang.hitch(node.popup,node.popup._loadFromId(prop,oldValue,newValue));
 				}
 				if(child) {
 					// this means a selection is made, so select me too
