@@ -19,7 +19,7 @@ define([
 					store:this.store,
 					currentItem:item,
 					publishId:this.id,
-					depth:3,
+					depth:this.depth+1,
 					parent:this,
 					maxDepth:this.maxDepth,
 					labelAttr:this.labelAttr
