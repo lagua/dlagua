@@ -371,6 +371,9 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			var ab = b[term.attribute];
 			aa = aa instanceof Date ? aa.getTime() : aa;
 			ab = ab instanceof Date ? ab.getTime() : ab;
+			var iso = /^([0-9]{4})(-([0-9]{2})(-([0-9]{2})([T ]([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?(Z|(([-+])([0-9]{2})((:?)([0-9]{2}))?))?)?)?)?$/;
+			aa = typeof aa==="string" && aa.match(iso) ? (new Date(aa)).getTime() : aa;
+			ab = typeof ab==="string" && ab.match(iso) ? (new Date(ab)).getTime() : ab;
 			switch(term.type) {
 				case "number":
 					aa = parseInt(aa,10);
