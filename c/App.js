@@ -86,11 +86,12 @@ return declare("dlagua.c.App", [Stateful], {
 		return item;
 	},
 	getMeta:function(node){
+		if(this.nodes) return this.inherited(arguments);
 		var i18n = {};
 		if(this.i18n) {
 			for(var i=0;i<this.i18n.length;i++) {
 				i18n.locale = this.i18n[i].locale;
-				if(this.i18n[i].component==node.data.id) {
+				if(this.i18n[i].component==node.id) {
 					if(this.i18n[i].properties) i18n = lang.mixin(i18n,this.i18n[i].properties);
 					break;
 				}
@@ -98,57 +99,86 @@ return declare("dlagua.c.App", [Stateful], {
 		}
 		return lang.mixin(this.meta,{i18n:i18n});
 	},
+	replaceMeta:function(node,type) {
+		if(this.nodes) return this.inherited(arguments);
+		if(!type) type="";
+		// replace variables in properties:
+		var v, newv;
+		var meta = this.getMeta(node);
+		for(var i in node.params) {
+			if(i=="id" || i=="type") continue;
+			v = node.params[i];
+			if(typeof v == "string" && v.indexOf("{"+type)>-1) {
+				newv = lang.replace(v,meta).replace("undefined","");
+				if(v!=newv) {
+					if(v.indexOf("{i18n.")>-1) {
+						// keep track of what is replaced
+						if(!this.replaced["i18n"]) this.replaced["i18n"] = {};
+						if(!this.replaced["i18n"][node.id]) this.replaced["i18n"][node.id] = {};
+						this.replaced["i18n"][node.id][i] = v;
+					}
+					if(v.indexOf("{inferred.")>-1) {
+						// keep track of what is replaced
+						if(!this.replaced["inferred"]) this.replaced["inferred"] = {};
+						if(!this.replaced["inferred"][node.id]) this.replaced["inferred"][node.id] = {};
+						this.replaced["inferred"][node.id][i] = v;
+					}
+					var nint = parseInt(newv,10);
+					if(nint == newv) newv = nint;
+					node[i] = newv;
+				}
+			}
+		}
+		return node;
+	},
 	replaceInferred:function(){
+		if(this.nodes) return this.inherited(arguments);
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["inferred"]) {
-			var node = this.nodes[id];
+			var node = dijit.registry.byId(id);
 			var meta = this.getMeta(node);
-			if(node.created) {
-				if(node.dojoo) {
-					for(k in this.replaced["inferred"][id]) {
-						v = this.replaced["inferred"][id][k];
-						if(typeof v == "string") {
-							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							//console.log("reset",k,v,newv)
-							reset.push({dojoo:node.dojoo,key:k,value:newv});
-							//node.dojoo.set(k,newv);
-						}
+			if(!node._beingDestroyed) {
+				for(k in this.replaced["inferred"][id]) {
+					v = this.replaced["inferred"][id][k];
+					if(typeof v == "string") {
+						var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
+						//console.log("reset",k,v,newv)
+						reset.push({dojoo:node,key:k,value:newv});
+						//node.dojoo.set(k,newv);
 					}
 				}
 			} else {
 				//console.log("reset inferred: ",id,k,v);
 				for(k in this.replaced["inferred"][id]) {
 					v = this.replaced["inferred"][id][k];
-					if(typeof v == "string") node.data[k] = v;
+					if(typeof v == "string") node[k] = v;
 				}
 			}
 		}
 		return reset;
 	},
 	replaceI18n:function(){
+		if(this.nodes) return this.inherited(arguments);
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["i18n"]) {
-			var node = this.nodes[id];
+			var node = dijit.registry.byId(id);
 			var meta = this.getMeta(node);
-			if(node.created) {
-				if(node.dojoo) {
-					for(k in this.replaced["i18n"][id]) {
-						v = this.replaced["i18n"][id][k];
-						if(typeof v == "string") {
-							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							//console.log("reset",k,v,newv)
-							reset.push({dojoo:node.dojoo,key:k,value:newv});
-							//node.dojoo.set(k,newv);
-						}
+			if(!node._beingDestroyed) {
+				for(k in this.replaced["i18n"][id]) {
+					v = this.replaced["i18n"][id][k];
+					if(typeof v == "string") {
+						var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
+						//console.log("reset",k,v,newv)
+						reset.push({dojoo:node,key:k,value:newv});
 					}
 				}
 			} else {
 				//console.log("reset i18n: ",id,k,v);
 				for(k in this.replaced["i18n"][id]) {
 					v = this.replaced["i18n"][id][k];
-					if(typeof v == "string") node.data[k] = v;
+					if(typeof v == "string") node[k] = v;
 				}
 				//delete this.replaced["i18n"][id];
 			}
