@@ -50,6 +50,14 @@ return declare("dlagua.c.templa.Mixin",[Stateful],{
 			return fn.apply(this,props);
 		};
 	},
+	_replace:function(){
+		return function(text, render) {
+			var ar = text.split("|");
+			var patt = ar.shift();
+			var repl = ar.shift();
+			return render(ar.join("|")).replace(patt,repl);
+		}
+	},
 	_switch:function(){
 		return function(text, render) {
 			text = render(text);
