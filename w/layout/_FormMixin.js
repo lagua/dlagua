@@ -59,6 +59,13 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		this.inherited(arguments);
 		if(this.store) this.externalStore = true;
 	},
+	destroyRecursive:function(){
+		if(this.servicetype=="form") {
+			var items = this.getChildren();
+			if(items[0]) items[0].cancel && items[0].cancel();
+		}
+		this.inherited(arguments);
+	},
 	loadFromItem:function(prop,oldValue,newValue){
 		var items = this.getChildren();
 		if(this.servicetype=="form" && items[0]) {
@@ -98,6 +105,11 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				this.stores[target] = this.store;//new Cache(this.store, new Memory());
 			} else {
 				this.store = this.stores[target];
+			}
+			if(item.autoSelect && !this.store.query().length) {
+				var id = this.store.put({});
+				this.store.selectedId = id;
+				this.store.newdata = true;
 			}
 			this.rebuild(item);
 		}
@@ -234,6 +246,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				});
 				this.own(aspect.after(listItem,"layout",function(){
 					setTimeout(function(){
+						if(self._beingDestroyed) return;
 						self._dim = self.getDim();
 						self.slideTo({x:0,y:0}, 0.3, "ease-out");
 						if(self.useScrollBar) {
