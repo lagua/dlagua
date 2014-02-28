@@ -56,6 +56,7 @@ var form = function(val,options) {
 		onClick:function(){
 			var id = ref.stores[target].put(data);
 			ref.stores[target].selectedId = id;
+			ref.stores[target].newdata = true;
 			hash(action);
 		}
 	});
