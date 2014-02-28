@@ -86,7 +86,6 @@ return declare("dlagua.c.App", [Stateful], {
 		return item;
 	},
 	getMeta:function(node){
-		if(this.nodes) return this.inherited(arguments);
 		var i18n = {};
 		if(this.i18n) {
 			for(var i=0;i<this.i18n.length;i++) {
@@ -100,7 +99,6 @@ return declare("dlagua.c.App", [Stateful], {
 		return lang.mixin(this.meta,{i18n:i18n});
 	},
 	replaceMeta:function(node,type) {
-		if(this.nodes) return this.inherited(arguments);
 		if(!type) type="";
 		// replace variables in properties:
 		var v, newv;
@@ -132,7 +130,6 @@ return declare("dlagua.c.App", [Stateful], {
 		return node;
 	},
 	replaceInferred:function(){
-		if(this.nodes) return this.inherited(arguments);
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["inferred"]) {
@@ -159,7 +156,6 @@ return declare("dlagua.c.App", [Stateful], {
 		return reset;
 	},
 	replaceI18n:function(){
-		if(this.nodes) return this.inherited(arguments);
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["i18n"]) {
