@@ -143,7 +143,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						var _rh = aspect.after(self,"onReady",function(){
 							_rh.remove();
 							if(!this.total) {
-								//alert("no results");
+								if(this.query) alert("no results");
+								this.query = "";
 								hash(oldHash);
 							}
 						});
@@ -166,7 +167,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							// it may be a group
 							// make all booleans explicit
 							if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
-								if(!data[k].length) {
+								if(data[k].length===0) {
 									data[k] = false;
 								} else if(data[k].length<2) {
 									data[k] = data[k][0];
@@ -205,7 +206,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							var _rh = aspect.after(self,"onReady",function(){
 								_rh.remove();
 								if(!this.total) {
-									alert("no results");
+									if(this.query) alert("no results");
+									this.query = "";
 									hash(oldHash);
 								}
 							});
