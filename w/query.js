@@ -1,5 +1,19 @@
-define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspect", "dojo/on", "dojo/has", "dojo/selector/lite", "dojo/dom-construct", "dojo/dom-attr", "dojo/dom-style", "dojo/dom-class", "dijit/registry", "dijit/_WidgetBase",  "dojox/lang/functional"],
-	function(declare, lang, array, aspect, on, has, defaultEngine, domConstruct,domAttr,domStyle,domClass, registry, _WidgetBase, df){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/aspect",
+	"dojo/on",
+	"dojo/has",
+	"dojo/selector/lite",
+	"dojo/dom-construct",
+	"dojo/dom-attr",
+	"dojo/dom-style",
+	"dojo/dom-class",
+	"dijit/registry",
+	"dijit/_WidgetBase"
+],
+	function(declare, lang, array, aspect, on, has, defaultEngine, domConstruct,domAttr,domStyle,domClass, registry, _WidgetBase){
 	
 	"use strict";
 
@@ -246,7 +260,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			}
 		},
 		
-		lambda: function(s, callback) {
+		/*lambda: function(s, callback) {
 			var x = df.lambda(s);
 			var res = x.apply(null,this);
 			//if(typeof res != "Object" && !(res instanceof NodeList) && res) res = this;
@@ -255,7 +269,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 			} else {
 				return res;
 			}
-		},
+		},*/
 
 		end: function(){
 			if(this._parent){
@@ -276,18 +290,18 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array", "dojo/aspec
 		},
 
 		map: function(/*Function*/ func, /*Function?*/ obj){
-			return this._wrap(df.map(this, func, obj), this); // dojo/NodeList
+			return this._wrap(array.map(this, func, obj), this); // dojo/NodeList
 		},
 
 		forEach: function(callback, thisObj){
-			df.forEach(this, callback, thisObj);
+			array.forEach(this, callback, thisObj);
 			// non-standard return to allow easier chaining
 			return this; // dojo/NodeList
 		},
 		filter: function(/*String|Function*/ filter){
-			if(typeof filter == "string"){ // inline'd type check
+			/*if(typeof filter == "string"){ // inline'd type check
 				return this._wrap(df.filter(this, filter), this); // dojo/NodeList
-			}
+			}*/
 			return this._wrap(array.filter(this, filter), this);	// dojo/NodeList
 		},
 		at: function(/*===== index =====*/){
