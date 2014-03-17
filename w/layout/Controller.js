@@ -17,7 +17,7 @@ define([
 		//		added, deleted, or selected, updates itself accordingly.
 		"class":"dijitTabContainerTop-tabs",
 		childrenAttr:"children",
-		refAttribute:"_ref",
+		refAttribute:"$ref",
 		resolve:function(data,store,rootcallback){
 			if(!data || !store) return;
 			ref.refAttribute = this.refAttribute;
