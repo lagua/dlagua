@@ -140,9 +140,9 @@ define([
 			return d;
 		},
 		getSchema:function(model){
-			var schemaUri = "/model/Class/"+model;
-			var d = new Deferred();
 			var parent = this.getParent();
+			var schemaUri = parent.base+"model/Class/"+model;
+			var d = new Deferred();
 			if(parent.schemata && parent.schemata[schemaUri]) {
 				var schema = parent.schemata[schemaUri];
 				if(schema.__request) {
@@ -214,7 +214,7 @@ define([
 				if(!skipX) {
 					array.forEach(toResolveX, function(x){
 						var link = data[x];
-						request("/rest/"+parent.locale+"/"+link,{
+						request(parent.base+"rest/"+parent.locale+"/"+link,{
 							failOk:true
 						}).then(function(res){
 							data[x] = res;

@@ -24,6 +24,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	hrProperty:"",
 	filter:"",
 	sort:"",
+	base:"",
 	filters:null,
 	orifilters:null,
 	childrenReady:0,
@@ -226,7 +227,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 				// find in mixin
 				break;
 			case "page":
-				if(!item.service) item.service = "/rest";
+				if(!item.service) item.service = this.base+"rest";
 				this.rebuild(item);
 				break;
 		}
