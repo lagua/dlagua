@@ -49,7 +49,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	schema:null,
 	schemata:{},
 	schemaModel:"Class",
-	refAttribute:"_ref",
+	refAttribute:"$ref",
 	localStorage:true,
 	persistentStorage:false,
 	formBundle:"form",
