@@ -1,0 +1,447 @@
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/array",
+	"dojo/_base/event",
+	"dojo/Deferred",
+	"dojo/on",
+	"dojo/aspect",
+	"dojo/topic",
+	"dojo/when",
+	"dojo/keys",
+	"dojo/dom-style",
+	"dojo/dom-class",
+	"dijit/Dialog",
+	"dijit/Menu",
+	"dijit/MenuItem",
+	"rql/query",
+	"dforma/Builder",
+//	"dojox/widget/Toaster",
+	"dlagua/w/SearchableTree",
+	"dijit/tree/dndSource"
+],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,domStyle,domClass,Dialog,Menu,MenuItem,rqlQuery,Builder,SearchableTree,dndSource){
+
+var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
+	addChild:function(child){
+		if(this.tree.role=="admin") {
+			this.tree.menu.bindDomNode(child.domNode);
+			child.own(
+				on(child.domNode,"mousedown",lang.hitch(child,function(evt){
+					if(evt.button!=2) return true;
+					this.tree.set('selectedNode',this);
+					event.stop(evt);
+				}))
+			);
+		}
+		this.inherited(arguments);
+	},
+	_onAddClick:function(){
+		var tree = this.tree; 
+		tree.dialog.set("title",this.tree.newLabel+" a new item under "+this.item.name);
+		tree.createForm();
+		tree.dialog.show();
+	},
+	_mayEdit:function(){
+		return true;
+	},
+	_onEditClick:function(){
+		var tree = this.tree;
+		if(this._mayEdit()){
+			tree.dialog.set("title",this.tree.editLabel+" "+this.item.name);
+			tree.createForm(this.item);
+			tree.dialog.show();
+		}
+	},
+	_onDeleteClick:function(){
+		var node = this;
+		var t = this.tree;
+		var m = t.model;
+		// remove deferred from node
+		if(node && node._expandNodeDeferred){
+			delete node._expandNodeDeferred;
+		}
+		if(m.mayHaveChildren(this.item)) {
+			alert("You cannot delete a container. Please delete all items in this container first and try again.");
+			return;
+		}
+		var path = this.item.path;
+		if(!confirm("Are you sure you want to delete "+path+"?")) return;
+		var id = this.item.id;
+		this.item.__deleted = true;
+		t.pubPath(this.item);
+		m.getParent(this.item).then(function(parent){
+			m.store.remove(id,{parent:parent});
+		});
+	}
+});
+
+var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
+	model:null,
+	showRoot:false,
+	tree:null,
+	center:null,
+	locale:"",
+	state:"initial",
+	foldersArePages:false,
+	role:"",
+	newLabel:"Create",
+	editLabel:"Edit",
+	dialog:null,
+	form:null,
+	style:"overflow:visible;",
+	currentId:"",
+	_lh:null,
+	menu:null,
+	selectedMenuNode:null,
+	dndController:dndSource,
+	betweenThreshold:5,
+	checkItemAcceptance:function(target,source,position) {
+		var node = dijit.getEnclosingWidget(target);
+		var item = node.item;
+		if(node && item) {
+			if(position=="over" && this.tree.model.mayHaveChildren(item)){
+				return true;
+			} else if(position=="before" || position=="after") {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+    },
+	onClick:function(item,node){
+		this.pubPath(item);
+	},
+	_onExpandoClick:function(msg){
+		var node = msg.node;
+		//this.pubPath(node.item);
+		this.inherited(arguments);
+	},
+	pubPath:function(item){
+		var olditem = lang.mixin({}, item);
+		var m = this.model;
+		m.getParent(item).then(lang.hitch(this,function(parent){
+			var path = (parent.path ? parent.path+"/" : "")+item.name
+			item.path = path;
+			if(!olditem.path || olditem.path!=path) {
+				m.store.put(item,{parent:parent,overwrite:true});
+			}
+			// never publish real item
+			topic.publish("/components/"+this.id,lang.mixin({},item),olditem);
+		}),function(err){
+			console.error(err);
+		});
+	},
+	_checkTruncate:function(path){
+		this.selectNodeByField(this.currentId,"path",true).then(lang.hitch(this,function(result){
+			if(result) {
+				if(!this.selectedItem) return;
+				var node = this.getNodesByItem(this.selectedItem)[0];
+				this.onClick(node.item,node);
+				this.collapseAll(node).then(lang.hitch(this,function(){
+					this._expandNode(node);
+				}));
+			} else {
+				this._truncated = this.currentId;
+				var pathar = path.split("/");
+				pathar.pop();
+				// is there something else to select?
+				if(pathar.length>0) {
+					this._checkTruncate(pathar.join("/"));
+				} else {
+					this.set("path",[]);
+				}
+			}
+		}));
+	},
+	loadFromId:function(){
+		var self = this;
+		if(!this.model.loaded) {
+			console.log("model was not loaded",this.model.locale)
+			this._lh = aspect.after(this.model,"onLoad",lang.hitch(this,this.loadFromId));
+			return;
+		}
+		if(this._lh) {
+			this._lh.remove();
+			this._lh = null;
+		}
+		console.log("EditableTree currentId ", this.currentId)
+		if(this.selectedItem && this.selectedItem.path==this.currentId) return;
+		var d = new Deferred();
+		d.then(function(){
+			self._checkTruncate(self.currentId);
+		});
+		if(!this._loaded) {
+			var h = aspect.after(this,"onLoad",function(){
+				h.remove();
+				d.resolve();
+			})
+		} else {
+			d.resolve();
+		}
+	},
+	onLoad:function(){
+		this._loaded = true;
+	},
+	postCreate:function(){
+		this.addEditableInterface();
+		this.own(
+			this.watch("locale",function(){
+				console.log("EditableTree locale ",this.model.locale,this.locale,this.model.loaded)
+				if(this._lh) {
+					this._lh.remove();
+					this._lh = null;
+				}
+				this.model.locale = this.locale;
+				this.rebuild();
+				this.loadFromId();
+			}),
+			this.watch("currentId",this.loadFromId),
+			this.watch("newData",function(){
+				// TODO: how to see where new child needs to enter parent?
+				// path will work but parentid maybe better
+				var data = this.newData;
+				this.newData = null;
+				this.search(data.id, [], this.model.root, "id", "id").then(lang.hitch(this,function(result){
+					if(result) {
+						var found = this._found;
+						if(found) {
+							data.__parent = found.__parent;
+							this.model.onChange(data);
+							if(data.children || found.children) {
+								this.model.onSet(data);
+							}
+						}
+					} else {
+						// it will be new
+						// get parent:
+						var par = data.path.split("/");
+						par.pop();
+						var ppath = par.join("/");
+						this.search(ppath, [], this.model.root, "path", "id").then(lang.hitch(this,function(result){
+							if(result) {
+								var found = this._found;
+								if(found) {
+									console.log("found",found)
+								}
+							}
+						}));
+					}
+				}));
+			})
+		);
+		this.inherited(arguments);
+	},
+	_onSubmit:function(data){
+		var self = this;
+		var type = data.type;
+		var name = data.name;
+		var m = this.model;
+		var k;
+		// get the real item!
+		var res = m.store.get(this.selectedItem.id);
+		var create = lang.hitch(this,function(item){
+			if(!item || !m.isItem(item)) return;
+			for(k in data) {
+				// it may be a group
+				// make all booleans explicit
+				if(lang.isArray(data[k])) {
+					if(data[k].length==0) {
+						data[k] = false;
+					} else if(data[k].length<2) {
+						data[k] = data[k][0];
+					}
+				}
+				if(!data[k]) delete data[k];
+			}
+			var node = this.getNodesByItem(item)[0];
+			if(data.id) {
+				// just update
+				// only copy children + path + __parent:
+				// if __loaded is not present the children will be reloaded
+				data.path = item.path;
+				if(item.parent) data.parent = item.parent;
+				if(item.children) data.children = item.children;
+				node.item = item = data;
+				node.set("label",item.name);
+				m.store.put(item).then(function(item){
+					alert("Item updated successfully");
+					self.onClick(node.item,node);
+				});
+			} else {
+				var duplicate = false;
+				var clen = item.children ? item.children.length : 0;
+				for(var i=0;i<clen;i++) {
+					if(item.children[i].name==name) {
+						duplicate=true;
+						break;
+					}
+				}
+				if(duplicate) {
+					alert("Page '"+name+"' already exists on this level. Please choose another name");
+					return;
+				}
+				data.path = (item.path ? item.path+"/" : "")+name;
+				// generated id from persevere is used
+				when(m.store.put(data,{parent:item}),function(){
+					// remove when https://bugs.dojotoolkit.org/ticket/17783 is fixed
+					m.childrenCache[item.id] && m.childrenCache[item.id].close && m.childrenCache[item.id].close();
+					delete m.childrenCache[item.id];
+					m.getChildren(item,function(children){
+						m.onChildrenChange(item,children);
+					});
+				});
+			}
+		});
+		if(res.then) {
+			res.then(create);
+		} else {
+			create(res);
+		}
+	},
+	submit:function(data){
+		this._onSubmit(data);
+	},
+	addEditableInterface:function(){
+		if(this.role!="admin") return;
+		var self = this;
+		this.dialog = new Dialog({
+			title: this.newLabel,
+			style: "width:500px; height:auto;text-align:left;"
+		});
+		this.form = new Builder({
+			cancel:function(){
+				self.dialog.hide();
+			},
+			submit: function(){
+				if(!this.validate()) return;
+				var form = this;
+				self.dialog.hide();
+				var data = this.get("value");
+				self.submit(data);
+			}
+		}).placeAt(this.dialog.containerNode);
+		this.form.startup();
+		this.own(
+			aspect.after(this.model,"onNew",lang.hitch(this,function(item){
+				this.pubPath(item);
+			}),true),
+			aspect.after(this.model, "onChange",lang.hitch(this,function(item){
+				this.pubPath(item);
+			}),true)
+		);
+		this.menu = new Menu();
+		this.menu.addChild(new MenuItem({
+			label:"Add",
+			iconClass:"dijitEditorIcon dbrotaAddIcon",
+			onClick:function(){
+				var item = self.selectedItem;
+				if(!item) return;
+				var node = self.getNodesByItem(item)[0];
+				node._onAddClick();
+			}
+		}));
+		this.menu.addChild(new MenuItem({
+			label:"Edit",
+			iconClass:"dijitEditorIcon dbrotaEditIcon",
+			onClick:function(){
+				var item = self.selectedItem;
+				if(!item) return;
+				var node = self.getNodesByItem(item)[0];
+				node._onEditClick();
+			}
+		}));
+		this.menu.addChild(new MenuItem({
+			label:"Delete",
+			iconClass:"dijitEditorIcon dbrotaDeleteIcon",
+			onClick: function(){
+				var item = self.selectedItem;
+				if(!item) return;
+				var node = self.getNodesByItem(item)[0];
+				node._onDeleteClick();
+			}
+		}));
+		this.menu.startup();
+		// root menu
+		this.rootmenu = new Menu();
+		this.rootmenu.addChild(new MenuItem({
+			label:"Add",
+			iconClass:"dijitEditorIcon dbrotaAddIcon",
+			onClick:function(){
+				self.set("selectedNode",self.rootNode);
+				self._addRootNode();
+			}
+		}));
+		this.rootmenu.startup();
+		this.rootmenu.bindDomNode(this.domNode);
+	},
+	_createTreeNode: function(args) {
+		var node = new TreeNode(args);
+		return node;
+	},
+	_addRootNode:function(){
+		this.form.rebuild({
+			controls:[{
+	  			type:"select",
+	  			name: "type",
+	  			description:"Note: there may be only one content container and its name must be 'content'.",
+	  			style: "width:100px"
+	  		}, {
+	  			type:"input",
+	  			name:"name",
+	  			required:true
+	  		}, {
+	  			type:"hidden",
+	  			name:"locale",
+	  			value:this.locale
+	  		}],
+		  	submit:{
+		  		label:"Create"
+		  	}
+		});
+		this.dialog.set("title",this.newLabel+" a new container for locale "+this.locale);
+		this.dialog.show();
+	},
+	createForm: function(item) {
+		item = item || {};
+		this.form.rebuild({
+			controls:[{
+	  			type:"select",
+	  			controller:true,
+	  			value: (item ? item.type : "page"),
+	  			name: "type",
+	  			style: "width:100px",
+	  			options:[{
+  					id:"page",
+  					controls: [{
+						type:"checkbox",
+						name:"hidden",
+						value:item.hidden || false
+  					}]
+  				}]
+	  		},{
+	  			type:"input",
+	  			name:"name",
+	  			value:(item ? item.name : null),
+	  			required:true
+	  		},{
+	  			type:"hidden",
+	  			name:"id",
+	  			value:item ? item.id : null
+	  		},{
+	  			type:"hidden",
+	  			name:"locale",
+	  			value:this.locale
+	  		}],
+		  	submit:{
+		  		label:(item ? "Save" : "Create")
+		  	}
+		});
+	}
+});
+
+Tree._TreeNode = TreeNode;
+
+return Tree;
+
+});
