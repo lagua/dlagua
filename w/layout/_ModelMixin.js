@@ -30,6 +30,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	schema:null,
 	schemata:{},
 	templateModule:"",
+	templatePath:"",
+	base:"",
 	template:"",
 	query:"",
 	start:0,
@@ -81,6 +83,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				})); 
 			}));
 		}
+		// support templateModule for now
+		if(this.templateModule) this.templatePath = require.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.inherited(arguments);
 		this.own(
 			this.watch("filter",function(){
@@ -139,7 +143,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	},
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
-		return request(require.toUrl(this.templateModule)+"/"+template);
+		return request(this.templatePath+"/"+template);
 	},
 	_getSchema:function(){
 		var d = new Deferred;
@@ -223,7 +227,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		this.inherited(arguments);
 		if(this.servicetype=="model") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "/model/");
+			if(!item.service) item.service = (this.service || this.base+"model/");
 			if(!item.model) return;
 			var model = item.model;
 			var target = item.service+model+"/";
@@ -290,11 +294,11 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 							results.then(lang.hitch(this,function(res){
 								this.total = res[0].children.length;
 								if(this.total===0 || isNaN(this.total)) this.onReady();
-								jsonref.refAttribute = "_ref";
+								jsonref.refAttribute = "$ref";
 								var store = this.store;
 								var item = jsonref.resolveJson(res[0],{
 									loader:function(callback,d){
-										store.get(this["_ref"]).then(function(item){
+										store.get(this["$ref"]).then(function(item){
 											callback(item,d);
 										});
 									}
