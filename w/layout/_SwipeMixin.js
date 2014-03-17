@@ -131,11 +131,11 @@ define([
 					this.onReady();
 					return;
 				}
-				jsonref.refAttribute = "_ref";
+				jsonref.refAttribute = "$ref";
 				var store = this.store;
 				item = jsonref.resolveJson(item,{
 					loader:function(callback,d){
-						store.get(this["_ref"]).then(function(item){
+						store.get(this["$ref"]).then(function(item){
 							callback(item,d);
 						});
 					}
@@ -243,7 +243,7 @@ define([
 			if(this.childrenReady == items.length) {
 				this.onReady();
 			}
-			var id = item.id || item._ref;
+			var id = item.id;
 			this.itemnodesmap[id] = listItem;
 			this.addChild(listItem,insertIndex);
 		},
