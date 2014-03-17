@@ -3,13 +3,12 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/array",
-	"dojo/dom-construct",
-	"dlagua/x/json/ref"
-],function(require,declare,lang,array,domConstruct,ref) {
+	"dojo/dom-construct"
+	//"dlagua/x/json/ref"
+],function(require,declare,lang,array,domConstruct) {
 	return declare("dlagua.w.Resolvable",[],{
 		_childNodesMap:null,
-		childrenAttr:"children",
-		refAttribute:"_ref",
+		/*refAttribute:"$ref",
 		resolve:function(data,store,rootcallback){
 			if(!data || !store) return;
 			ref.refAttribute = this.refAttribute;
@@ -37,7 +36,7 @@ define([
 					});
 				}
 			});
-		},
+		},*/
 		addChild: function(/*dijit/_WidgetBase*/ widget, /*int?*/ index, /*int?*/ length){
 			var refNode = this.containerNode;
 			var insertIndex = "last";
@@ -61,11 +60,11 @@ define([
 			params = params || {};
 			//console.log(item.name,index)
 			var self = this;
-			if(item._loadObject) {
+			/*if(item._loadObject) {
 				this._loading = true;
 				item._loadObject(lang.hitch(this,this._addItem),index,items,params);
 				return;
-			}
+			}*/
 			if(!this.childWidget && !params.childWidget) {
 				var childWidgetType = params.childWidgetType || this.childWidgetType;
 				require([childWidgetType],lang.hitch(this,function(Widget){
