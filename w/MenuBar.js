@@ -14,7 +14,7 @@ define([
 		store:null,
 		depth:2,
 		_addItem:function(item,index,items,params){
-			if(!item._loadObject && this.maxDepth>this.depth && item.children && item.children.length && !params) {
+			if(this.maxDepth>this.depth && item[this.childrenAttr] && item[this.childrenAttr].length && !params) {
 				var dd = new DropDownMenu({
 					store:this.store,
 					currentItem:item,
@@ -39,7 +39,7 @@ define([
 			}
 		},
 		onItemClick:function(node) {
-			if(this.maxDepth<=this.depth || !node.item.children || !node.item.children.length || this.foldersArePages) this.selectNode(node);
+			if(this.maxDepth<=this.depth || !node.item[this.childrenAttr] || !node.item[this.childrenAttr].length || this.foldersArePages) this.selectNode(node);
 			this.inherited(arguments);
 		}
 	});
