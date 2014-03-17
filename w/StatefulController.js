@@ -5,10 +5,11 @@ define([
 	"dojo/Deferred",
 	"dojo/io-query",
 	"dojo/topic",
+	"dojo/when",
 	"dojo/aspect",
 	"dlagua/w/Subscribable",
 	"dlagua/w/Resolvable"
-],function(declare,lang,array,Deferred,ioQuery,topic,aspect,Subscribable,Resolvable){
+],function(declare,lang,array,Deferred,ioQuery,topic,when,aspect,Subscribable,Resolvable){
 	return declare("dlagua.w.StatefulController",[Subscribable,Resolvable],{
 		_selectedNode:null,
 		locale:"en_us",
@@ -25,6 +26,7 @@ define([
 		_lh:null,
 		_bh:null,
 		idProperty:"path",
+		childrenAttr:"childorder",
 		rebuild:function(forceView){
 			if(this._loading) {
 				if(this.localeChanged) return;
@@ -60,23 +62,20 @@ define([
 			this.getRoot().then(lang.hitch(this,function(res){
 				var root = this.root = res[0];
 				var children = [];
-				var childrenResolved = false;
 				var loadRoot = false;
-				if(root[this.childrenAttr] && root[this.childrenAttr].length) {
-					var data = this.resolve(root,this.store,lang.hitch(this,function(root){
+				if(root[this.childrenAttr]) {
+					this.store.getChildren(root).then(lang.hitch(this,function(children){
 						if(forceView) {
 							setCurrentId(root);
 						}
+						array.forEach(children,this._addItem,this);
 						this.onReady();
 					}));
-					children = data.children;
-					childrenResolved = array.every(children,function(_){ return !_._loadObject || _.__resolved==true });
 				} else {
 					loadRoot = true;
-					children = [root];
+					array.forEach([root],this._addItem,this);
 				}
-				array.forEach(children,this._addItem,this);
-				if(loadRoot || childrenResolved) {
+				if(loadRoot) {
 					if(forceView) {
 						if(loadRoot) {
 							this.currentId = root.path;
@@ -94,12 +93,14 @@ define([
 				d.resolve([this.currentItem]);
 				return d;
 			}
-			var q = this.query || ioQuery.objectToQuery({
-				locale:this.locale,
-				type:this.rootType
-			});
+			if(!this.query) {
+				this.query = {
+					locale:this.locale,
+					type:this.rootType
+				};
+			}
 			// since we have children with _refs, resolve children first
-			return this.store.query("?"+q,{start:0,count:100});
+			return this.store.query(this.query,{start:0,count:100});
 		},
 		_loadDefault: function() {
 			// user should always see a menu item selected
@@ -235,6 +236,20 @@ define([
 					this.rebuild();
 				})
 			);
+			this.store = lang.mixin(this.store,{
+				getChildren:function(item){
+					// TODO use item.children.$ref;
+					var res = this.query({parent:item.id});
+					if(item.childorder) {
+						when(res,function(children){
+							children.sort(function(a,b){
+								return item.childorder.indexOf(a.id) - item.childorder.indexOf(b.id);
+							});
+						});
+					}
+					return res;
+				}
+			});
 			if(this.loadOnCreation) {
 				this.rebuild();
 			}
