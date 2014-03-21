@@ -23,12 +23,13 @@ define([
 
 var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 	addChild:function(child){
-		if(this.tree.role=="admin") {
+		if(this.tree.checkEditAcceptance()) {
 			this.tree.menu.bindDomNode(child.domNode);
 			child.own(
 				on(child.domNode,"mousedown",lang.hitch(child,function(evt){
 					if(evt.button!=2) return true;
 					this.tree.set('selectedNode',this);
+					this.tree.onContextClick(this.item,this);
 					event.stop(evt);
 				}))
 			);
@@ -68,7 +69,7 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 		if(!confirm("Are you sure you want to delete "+path+"?")) return;
 		var id = this.item.id;
 		this.item.__deleted = true;
-		t.pubPath(this.item);
+		t.onActivate(this.item);
 		m.getParent(this.item).then(function(parent){
 			m.store.remove(id,{parent:parent});
 		});
@@ -82,6 +83,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 	center:null,
 	locale:"",
 	state:"initial",
+	formProperties:null,
 	foldersArePages:false,
 	role:"",
 	newLabel:"Create",
@@ -109,28 +111,22 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		}
 		return false;
     },
+    checkEditAcceptance:function(){
+    	return true;
+    },
 	onClick:function(item,node){
-		this.pubPath(item);
+		this.onActivate(item);
+	},
+	onContextClick:function(item,node){
+		// trigger for item onContextClick
 	},
 	_onExpandoClick:function(msg){
 		var node = msg.node;
-		//this.pubPath(node.item);
+		//this.onActivate(node.item);
 		this.inherited(arguments);
 	},
-	pubPath:function(item){
-		var olditem = lang.mixin({}, item);
-		var m = this.model;
-		m.getParent(item).then(lang.hitch(this,function(parent){
-			var path = (parent.path ? parent.path+"/" : "")+item.name
-			item.path = path;
-			if(!olditem.path || olditem.path!=path) {
-				m.store.put(item,{parent:parent,overwrite:true});
-			}
-			// never publish real item
-			topic.publish("/components/"+this.id,lang.mixin({},item),olditem);
-		}),function(err){
-			console.error(err);
-		});
+	onActivate:function(item){
+		// trigger for item activation
 	},
 	_checkTruncate:function(path){
 		this.selectNodeByField(this.currentId,"path",true).then(lang.hitch(this,function(result){
@@ -184,6 +180,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		this._loaded = true;
 	},
 	postCreate:function(){
+		if(!this.formProperties) this.formProperties = {};
 		this.addEditableInterface();
 		this.own(
 			this.watch("locale",function(){
@@ -303,13 +300,13 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		this._onSubmit(data);
 	},
 	addEditableInterface:function(){
-		if(this.role!="admin") return;
+		if(!this.checkEditAcceptance()) return;
 		var self = this;
 		this.dialog = new Dialog({
 			title: this.newLabel,
 			style: "width:500px; height:auto;text-align:left;"
 		});
-		this.form = new Builder({
+		this.form = new Builder(lang.mixin({
 			cancel:function(){
 				self.dialog.hide();
 			},
@@ -320,14 +317,14 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 				var data = this.get("value");
 				self.submit(data);
 			}
-		}).placeAt(this.dialog.containerNode);
+		},this.formProperties)).placeAt(this.dialog.containerNode);
 		this.form.startup();
 		this.own(
 			aspect.after(this.model,"onNew",lang.hitch(this,function(item){
-				this.pubPath(item);
+				this.onActivate(item);
 			}),true),
 			aspect.after(this.model, "onChange",lang.hitch(this,function(item){
-				this.pubPath(item);
+				this.onActivate(item);
 			}),true)
 		);
 		this.menu = new Menu();
