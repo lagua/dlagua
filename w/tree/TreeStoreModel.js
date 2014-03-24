@@ -95,16 +95,17 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 		var master = new Observable(store);
 		this.store = new Cache(master,new Memory({idProperty:"id"}));
 	},
-	getParent:function(item){
-		var d = new Deferred();
+	getParent:function(item,callback,errback){
 		if(item.parent) {
 			var res = this.store.get(item.parent);
-			if(res.then) return res;
-			d.resolve(res);
+			if(res.then) {
+				res.then(callback);
+			} else {
+				callback(res);
+			}
 		} else {
-			d.reject("No parent item found!");
+			errback("No parent item found!");
 		}
-		return d;
 	},
 	mayHaveChildren : function(item) {
 		return item ? item.hasOwnProperty("childorder") : false;
