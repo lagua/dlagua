@@ -70,7 +70,7 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 		var id = this.item.id;
 		this.item.__deleted = true;
 		t.onActivate(this.item);
-		m.getParent(this.item).then(function(parent){
+		m.getParent(this.item,function(parent){
 			m.store.remove(id,{parent:parent});
 		});
 	}
