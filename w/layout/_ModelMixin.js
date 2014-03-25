@@ -43,6 +43,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	partials:"",
 	startup:function(){
 		if(this._started) return;
+		// support templateModule for now
+		if(this.templateModule) this.templatePath = require.toUrl(this.templateModule)+"/"+this.templatePath;
 		if(this.store) {
 			this.stores[this.store.target] = this.store;
 			this.template = this.getTemplate();
@@ -83,8 +85,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				})); 
 			}));
 		}
-		// support templateModule for now
-		if(this.templateModule) this.templatePath = require.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.inherited(arguments);
 		this.own(
 			this.watch("filter",function(){
