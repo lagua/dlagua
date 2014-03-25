@@ -7,6 +7,7 @@ define([
 	"dojo/aspect",
 	"dojo/hash",
 	"dojo/Deferred",
+	"dojo/promise/all",
 	"dojo/dom-class",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
@@ -17,7 +18,7 @@ define([
 	"dojox/mobile/i18n",
 	"dojo/store/Observable",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,Observable,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,Observable,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -176,74 +177,81 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						}
 						domClass.toggle(this.buttonNode,"dijitHidden",true);
 						this.set("message",formbundle.submitMessage);
+						var d = new Deferred();
 						if(schema.links) {
-							var localData = self.getLocalData(schema.links,true);
-							data = lang.mixin(data,localData);
+							self.getLinkedData(schema.links,true).then(function(localData){
+								data = lang.mixin(data,localData);
+								d.resolve(data);
+							});
+						} else {
+							d.resolve(data);
 						}
-						if(item.search) {
-							if(!data.q) {
-								domClass.toggle(this.buttonNode,"dijitHidden",false);
-								this.set("message","Please enter your query");
-								return;
-							}
-							var q = new rqlQuery.Query();
-							array.forEach(item.search.split(","),function(_){
-								var a = _.split(":");
-								if(a.length==1) {
-									q = q.search(_,data.q,data.r);
-								} else if(data[a[0]]){
-									q = q.search(a[1],data.q,data.r);
+						d.then(lang.hitch(this,function(data){
+							if(item.search) {
+								if(!data.q) {
+									domClass.toggle(this.buttonNode,"dijitHidden",false);
+									this.set("message","Please enter your query");
+									return;
 								}
-							});
-							if(q.args.length>1) q.name = "or";
-							self.query = q.toString();
-							var oldHash = hash();
-							hash(oldHash+"/?"+self.query);
-							self.set("currentItem",lang.mixin(item,{
-								type:"model",
-								model:item.targetModel
-							}));
-							var _rh = aspect.after(self,"onReady",function(){
-								_rh.remove();
-								if(!this.total) {
-									if(this.query) alert("no results");
-									this.query = "";
-									hash(oldHash);
-								}
-							});
-						} else if(item.action) {
-							var action = item.action;
-							if(action.charAt(0)=="#") {
-								hash(action);
-							} else {
-								var method = item.method || "post";
-								request(action,{
-									handleAs:"json",
-									method:method,
-									headers:{
-										"Content-Type":"application/json",
-										"Accept":"application/json"
+								var q = new rqlQuery.Query();
+								array.forEach(item.search.split(","),function(_){
+									var a = _.split(":");
+									if(a.length==1) {
+										q = q.search(_,data.q,data.r);
+									} else if(data[a[0]]){
+										q = q.search(a[1],data.q,data.r);
 									}
 								});
-							}
-						} else {
-							if(!data.locale) data.locale = item.locale;
-							this.store.put(data);
-							listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
-							if(item.preview) {
-								self._removeItemById(0);
-							}
-							listItem.containerNode = listItem.domNode;
-							listItem.data = data;
-							listItem._load().then(function(){
-								var form = {};
-								for(var k in formbundle) {
-									form[k] = formbundle[k];
+								if(q.args.length>1) q.name = "or";
+								self.query = q.toString();
+								var oldHash = hash();
+								hash(oldHash+"/?"+self.query);
+								self.set("currentItem",lang.mixin(item,{
+									type:"model",
+									model:item.targetModel
+								}));
+								var _rh = aspect.after(self,"onReady",function(){
+									_rh.remove();
+									if(!this.total) {
+										if(this.query) alert("no results");
+										this.query = "";
+										hash(oldHash);
+									}
+								});
+							} else if(item.action) {
+								var action = item.action;
+								if(action.charAt(0)=="#") {
+									hash(action);
+								} else {
+									var method = item.method || "post";
+									request(action,{
+										handleAs:"json",
+										method:method,
+										headers:{
+											"Content-Type":"application/json",
+											"Accept":"application/json"
+										}
+									});
 								}
-								self.replaceChildTemplate(listItem,"",form);
-								listItem.layout();
-							});
-						}
+							} else {
+								if(!data.locale) data.locale = item.locale;
+								this.store.put(data);
+								listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
+								if(item.preview) {
+									self._removeItemById(0);
+								}
+								listItem.containerNode = listItem.domNode;
+								listItem.data = data;
+								listItem._load().then(function(){
+									var form = {};
+									for(var k in formbundle) {
+										form[k] = formbundle[k];
+									}
+									self.replaceChildTemplate(listItem,"",form);
+									listItem.layout();
+								});
+							}
+						}));
 					}
 				});
 				this.own(aspect.after(listItem,"layout",function(){
@@ -256,17 +264,40 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						}
 					},100);
 				},true));
-				var data;
-				if(schema.condition) {
-					data = this.getLocalData(schema.condition.links || schema.links);
-					var result = jsArray.executeQuery(schema.condition.query,{},[data]);
-					// if there are no results for this query, display a message
-					if(!result.length) {
-						listItem.set("message",schema.condition.message);
-						domClass.add(listItem.containerNode,"dijitHidden");
-						domClass.add(listItem.hintNode,"dijitHidden");
-						domClass.add(listItem.buttonNode,"dijitHidden");
-					}
+				if(schema.condition || (schema.links && item.preview)) {
+					this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(function(data){
+						var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
+						// if there are no results for this query, display a message
+						if(!result.length) {
+							listItem.set("message",schema.condition.message);
+							domClass.add(listItem.containerNode,"dijitHidden");
+							domClass.add(listItem.hintNode,"dijitHidden");
+							domClass.add(listItem.buttonNode,"dijitHidden");
+						} else if(item.preview) {
+							var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
+							listItem = new ScrollablePaneItem({
+								parent:this,
+								itemHeight:"auto",
+								data:data
+							});
+							var _lh = aspect.after(listItem,"onLoad",function(){
+								_lh.remove();
+								// as this can take a while, listItem may be destroyed in the meantime
+								if(self._beingDestroyed || this._beingDestroyed) return;
+								// ref item may have been resolved now
+								var item = this.data;
+								self.template = self.getTemplate(self.templateDir,"preview");
+								self._fetchTpl(self.template).then(lang.hitch(this,function(tpl){
+									self.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+										this.applyTemplate(tplo.tpl,tplo.partials);
+										fx.fadeIn({node:listItem.containerNode}).play();
+									}));
+								}));
+								self.itemnodesmap[-1] = listItem;
+							});
+							this.addChild(listItem);
+						}
+					});
 				}
 				this.addChild(listItem);
 				this.itemnodesmap[0] = listItem;
@@ -276,57 +307,54 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						self.onReady();
 					}
 				}).play();
-				if(item.preview) {
-					data = {};
-					if(schema.links || schema.condition) {
-						var localData = this.getLocalData(schema.condition && schema.condition.links || schema.links);
-						if(schema.condition && schema.condition.query) localData = jsArray.executeQuery(schema.condition.query,{},[localData]);
-						data = lang.mixin(data,localData);
-					}
-					var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
-					listItem = new ScrollablePaneItem({
-						parent:this,
-						itemHeight:"auto",
-						data:data
-					});
-					var _lh = aspect.after(listItem,"onLoad",function(){
-						_lh.remove();
-						// as this can take a while, listItem may be destroyed in the meantime
-						if(self._beingDestroyed || this._beingDestroyed) return;
-						// ref item may have been resolved now
-						var item = this.data;
-						self.template = self.getTemplate(self.templateDir,"preview");
-						self._fetchTpl(self.template).then(lang.hitch(this,function(tpl){
-							self.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-								this.applyTemplate(tplo.tpl,tplo.partials);
-								fx.fadeIn({node:listItem.containerNode}).play();
-							}));
-						}));
-						self.itemnodesmap[-1] = listItem;
-					});
-					this.addChild(listItem);
-				}
 			}));
 		}
 	},
-	getLocalData:function(links,clear){
+	getLinkedData:function(links,clear){
 		var data = {};
-		if(links) {
-			array.forEach(links,function(link){
-				if(!data[link.rel]) data[link.rel] = [];
-				var localStore = this.stores[link.href];
-				if(localStore) {
-					if(localStore.open) {
-						console.log(localStore);
-					}
-					var localdata = localStore.query();
-					clear && (localStore.clear && localStore.clear()) || 
-						(localStore.engine && localStore.engine.clear && localStore.engine.clear());
-					data[link.rel] = data[link.rel].concat(localdata);
-				}
-			},this);
+		var d = new Deferred();
+		function getData(store,name){
+			var d = new Deferred();
+			var res = store.query();
+			if(clear) {
+				(store.clear && store.clear()) || 
+				(store.engine && store.engine.clear && store.engine.clear());
+			}
+			if(res.then) {
+				res.then(function(res){
+					data[name] = data[name].concat(res);
+					d.resolve();
+				});
+			} else {
+				data[name] = data[name].concat(res);
+				d.resolve();
+			}
+			return d;
 		}
-		return data;
+		if(links) {
+			all(array.map(links,function(link){
+				var d = new Deferred();
+				if(!data[link.rel]) data[link.rel] = [];
+				var store = this.stores[link.href];
+				if(store) {
+					if(store.open) {
+						return store.open().then(function(){
+							return getData(store,link.rel).promise;
+						});
+					} else {
+						return getData(store,link.rel).promise;
+					}
+				} else {
+					d.resolve();
+					return d.promise;
+				}
+			},this)).then(function(){
+				d.resolve(data);
+			});
+		} else {
+			d.resolve(data);
+		}
+		return d;
 	}
 });
 
