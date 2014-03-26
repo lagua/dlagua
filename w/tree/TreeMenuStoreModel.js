@@ -8,7 +8,7 @@ define([
 
 return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	stores:{},
-	constructor : function(args) {
+	constructor:function(args) {
 		if(!args.store) {
 			this.store = new JsonRest({
 				target:"/model/Page/"
@@ -18,14 +18,14 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	},
 	getRoot:function(onItem){
 		// replace root children if they should come from another model
-		aspect.after(this,"onItem",lang.hitch(this,function(root)
+		aspect.after(this,"onItem",lang.hitch(this,function(root){
 			if(root.type=="model" && root.model) {
 				var cpath = "../"+root.model+"/?locale="+root.locale;
 				if(root.sort) cpath+="&sort("+root.sort+")";
 				root.children = {"$ref":cpath};
 				return root;
 			}
-		},true);
+		}),true);
 		this.inherited(arguments);
 	}
 });
