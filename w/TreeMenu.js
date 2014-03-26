@@ -4,7 +4,7 @@ define([
     "dojo/_base/array",
     "dojo/aspect",
     "dojo/topic",
-	"dlagua/w/Tree",
+	"dlagua/w/SearchableTree",
 	"dlagua/w/Subscribable",
 	"dojo/text!dlagua/w/templates/TreeMenuNode.html"
 ],function(declare,lang,array,aspect,topic,_Tree,Subscribable,nodeTemplate) {
