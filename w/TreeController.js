@@ -41,7 +41,7 @@ define([
 			var id = this.publishId ? this.publishId : this.id;
 			topic.publish("/components/"+id,item);
 		},
-		onReady:function(){
+		ready:function(){
 			console.log("TreeController ready");
 			this.inherited(arguments);
 		}

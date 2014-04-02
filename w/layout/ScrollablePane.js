@@ -78,7 +78,7 @@ return declare("dlagua.w.layout.ScrollablePane",[Scrollable, _LayoutWidget, Dest
 		request(href).then(function(res){
 			self.containerNode.innerHTML = res;
 			setTimeout(function(){
-				self.onReady();
+				self.ready();
 			},10);
 		});
 	},
@@ -87,7 +87,7 @@ return declare("dlagua.w.layout.ScrollablePane",[Scrollable, _LayoutWidget, Dest
 		var self = this;
 		self.containerNode.innerHTML = content;
 	},
-	onReady: function(){
+	ready: function(){
 		if(this._beingDestroyed) return;
 		console.log("done loading "+this.id);
 		this._loading = false;

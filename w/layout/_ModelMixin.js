@@ -96,7 +96,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				// wait for all properties to be reset
 				if(this._loading) {
 					this.filterById = oldVal;
-					var _rh = aspect.after(this,"onReady",function(){
+					var _rh = aspect.after(this,"ready",function(){
 						_rh.remove();
 						this.set("filterById",newVal)
 					},true);
@@ -287,13 +287,13 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 						if(!this.useItemChildren){
 							results.total.then(lang.hitch(this,function(total){
 								this.total = total;
-								if(total===0 || isNaN(total)) this.onReady();
+								if(total===0 || isNaN(total)) this.ready();
 							}));
 							results.forEach(lang.hitch(this,this.addItem));
 						} else {
 							results.then(lang.hitch(this,function(res){
 								this.total = res[0].children.length;
-								if(this.total===0 || isNaN(this.total)) this.onReady();
+								if(this.total===0 || isNaN(this.total)) this.ready();
 								jsonref.refAttribute = "$ref";
 								var store = this.store;
 								var item = jsonref.resolveJson(res[0],{
@@ -442,7 +442,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(this.childrenReady == len) {
 				// wait for the margin boxes to be set
 				setTimeout(lang.hitch(this,function(){
-					this.onReady();
+					this.ready();
 				}),10);
 			}
 			this.itemnodesmap[id] = listItem;

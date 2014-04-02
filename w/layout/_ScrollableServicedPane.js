@@ -253,7 +253,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 			if(item) {
 				this._initContent(item);
 			} else {
-				this.onReady();
+				this.ready();
 			}
 		}
 	},
@@ -354,14 +354,14 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 		request(href).then(function(res){
 			listItem.set("content",res);
 			setTimeout(function(){
-				self.onReady();
+				self.ready();
 			},10);
 		});
 		this.addChild(listItem);
 		this.itemnodesmap[item[this.idProperty]] = listItem;
 		fx.fadeIn({node:listItem.containerNode}).play();
 	},
-	onReady: function(){
+	ready: function(){
 		this._loading = false;
 		if(this._beingDestroyed) return;
 		console.log("done loading "+this.id);

@@ -128,7 +128,7 @@ define([
 				this.total = item.children ? item.children.length : 0;
 				if(this.total===0 || isNaN(this.total)) {
 					this.addItem(item,0,[]);
-					this.onReady();
+					this.ready();
 					return;
 				}
 				jsonref.refAttribute = "$ref";
@@ -141,7 +141,7 @@ define([
 					}
 				});
 				item.children.forEach(lang.hitch(this,this.addItem));
-				this.onReady();
+				this.ready();
 			}
 		},
 		createQuery:function(){
@@ -241,7 +241,7 @@ define([
 			fx.fadeIn({node:listItem.containerNode}).play();
 			this.childrenReady++;
 			if(this.childrenReady == items.length) {
-				this.onReady();
+				this.ready();
 			}
 			var id = item.id;
 			this.itemnodesmap[id] = listItem;
@@ -310,7 +310,7 @@ define([
 			this.locked = this.childlocked = false;
 			this.inherited(arguments);
 		},
-		onReady: function(){
+		ready: function(){
 			this.inherited(arguments);
 			if(this._beingDestroyed) return;
 			this.layout();

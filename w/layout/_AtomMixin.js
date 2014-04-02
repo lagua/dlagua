@@ -14,7 +14,7 @@ define([
 	        		var total = items.length;
 	        		this.total = total;
 					if(total===0 || isNaN(total)) {
-						this.onReady();
+						this.ready();
 					} else {
 						array.forEach(items,this.addItem,this);
 					}

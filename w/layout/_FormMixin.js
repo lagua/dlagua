@@ -141,7 +141,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							type:"model",
 							model:item.targetModel
 						}));
-						var _rh = aspect.after(self,"onReady",function(){
+						var _rh = aspect.after(self,"ready",function(){
 							_rh.remove();
 							if(!this.total) {
 								if(this.query) alert("no results");
@@ -210,7 +210,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 									type:"model",
 									model:item.targetModel
 								}));
-								var _rh = aspect.after(self,"onReady",function(){
+								var _rh = aspect.after(self,"ready",function(){
 									_rh.remove();
 									if(!this.total) {
 										if(this.query) alert("no results");
@@ -304,7 +304,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				fx.fadeIn({
 					node:listItem.containerNode,
 					onEnd:function(){
-						self.onReady();
+						self.ready();
 					}
 				}).play();
 			}));

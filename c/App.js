@@ -344,9 +344,9 @@ return declare("dlagua.c.App", [Stateful], {
 				topic.publish("/dojo/hashchange",hash);
 			},100);
 		}
-		this.onReady();
+		this.ready();
 	},
-	onReady:function(){}
+	ready:function(){}
 });
 
 });

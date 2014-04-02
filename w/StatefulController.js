@@ -31,7 +31,7 @@ define([
 			if(this._loading) {
 				if(this.localeChanged) return;
 				console.log("not loaded, deferring rebuild")
-				if(!this._bh) this._bh = aspect.after(this,"onReady",this.rebuild);
+				if(!this._bh) this._bh = aspect.after(this,"ready",this.rebuild);
 				return;
 			}
 			if(this._bh) this._bh.remove();
@@ -69,7 +69,7 @@ define([
 							setCurrentId(root);
 						}
 						array.forEach(children,this._addItem,this);
-						this.onReady();
+						this.ready();
 					}));
 				} else {
 					loadRoot = true;
@@ -83,7 +83,7 @@ define([
 							setCurrentId(root);
 						}
 					}
-					this.onReady();
+					this.ready();
 				}
 			}));
 		},
@@ -107,7 +107,7 @@ define([
 			console.log("loading default",this._loading,this._lh)
 			if(this._loading) {
 				console.log(this.id,"not loaded, deferring _loadDefault")
-				if(!this._lh) this._lh = aspect.after(this,"onReady",this._loadDefault);
+				if(!this._lh) this._lh = aspect.after(this,"ready",this._loadDefault);
 				return;
 			}
 			if(this._lh) this._lh.remove();
@@ -148,7 +148,7 @@ define([
 			if(this._loading) {
 				console.log(this.id,"not loaded, deferring loadFromId")
 				var args = arguments;
-				if(!this._lh) this._lh = aspect.after(this,"onReady",lang.hitch(this,function(){
+				if(!this._lh) this._lh = aspect.after(this,"ready",lang.hitch(this,function(){
 					this._loadFromId.apply(this,args);
 				}));
 				return;
@@ -156,7 +156,7 @@ define([
 			if(this._lh) this._lh.remove();
 			this._lh = null;
 			if(!this.currentId && !newValue) {
-				this.onReady();
+				this.ready();
 				return;
 			}
 			// preserve original currentId for reload top level on history.back
@@ -228,7 +228,7 @@ define([
 			this.own(
 				this.watch("currentItem",this._loadFromItem),
 				this.watch("currentId",this._loadFromId),
-				aspect.after(this,"onReady",lang.hitch(this,function(){
+				aspect.after(this,"ready",lang.hitch(this,function(){
 					if(this.currentId && !this._lh) this._loadFromId("",null,this.currentId);
 				})),
 				this.watch("locale", function() {
@@ -255,7 +255,7 @@ define([
 			}
 			this.inherited(arguments);
 		},
-		onReady:function(){
+		ready:function(){
 			this._loading = false;
 			console.log("StatefulController",this.id,"ready")
 			if(this.localeChanged){

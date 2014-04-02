@@ -247,7 +247,7 @@ define([
 			}
 			this.inherited(arguments);
 		},
-		onReady: function(){
+		ready: function(){
 			this.inherited(arguments);
 			if(this._beingDestroyed || this.servicetype!="model") return;
 			this.resize();
