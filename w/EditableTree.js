@@ -36,9 +36,17 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 		}
 		this.inherited(arguments);
 	},
+	_getMessage:function(type) {
+		var message = "";
+		if(type=="add") message = this.tree.newLabel+" a new item under "+this.item.name;
+		if(type=="edit") message = this.tree.editLabel+" "+this.item.name;
+		if(type=="delete_alert") message = "You cannot delete a container. Please delete all items in this container first and try again.";
+		if(type=="delete_confirm") message = "Are you sure you want to delete "+this.item.path+"?"
+		return message;
+	},
 	_onAddClick:function(){
 		var tree = this.tree; 
-		tree.dialog.set("title",this.tree.newLabel+" a new item under "+this.item.name);
+		tree.dialog.set("title",this._getMessage("add"));
 		tree.createForm();
 		tree.dialog.show();
 	},
@@ -48,7 +56,7 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 	_onEditClick:function(){
 		var tree = this.tree;
 		if(this._mayEdit()){
-			tree.dialog.set("title",this.tree.editLabel+" "+this.item.name);
+			tree.dialog.set("title",this._getMessage("edit"));
 			tree.createForm(this.item);
 			tree.dialog.show();
 		}
@@ -62,11 +70,11 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 			delete node._expandNodeDeferred;
 		}
 		if(m.mayHaveChildren(this.item)) {
-			alert("You cannot delete a container. Please delete all items in this container first and try again.");
+			alert(this._getMessage("delete_alert"));
 			return;
 		}
 		var path = this.item.path;
-		if(!confirm("Are you sure you want to delete "+path+"?")) return;
+		if(!confirm(this._getMessage("delete_confirm"))) return;
 		var id = this.item.id;
 		this.item.__deleted = true;
 		t.onActivate(this.item);
@@ -330,7 +338,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		this.menu = new Menu();
 		this.menu.addChild(new MenuItem({
 			label:"Add",
-			iconClass:"dijitEditorIcon dbrotaAddIcon",
+			iconClass:"dijitEditorIcon dformaAddIcon",
 			onClick:function(){
 				var item = self.selectedItem;
 				if(!item) return;
@@ -340,7 +348,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		}));
 		this.menu.addChild(new MenuItem({
 			label:"Edit",
-			iconClass:"dijitEditorIcon dbrotaEditIcon",
+			iconClass:"dijitEditorIcon dformaEditIcon",
 			onClick:function(){
 				var item = self.selectedItem;
 				if(!item) return;
@@ -350,7 +358,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		}));
 		this.menu.addChild(new MenuItem({
 			label:"Delete",
-			iconClass:"dijitEditorIcon dbrotaDeleteIcon",
+			iconClass:"dijitEditorIcon dformaDeleteIcon",
 			onClick: function(){
 				var item = self.selectedItem;
 				if(!item) return;
@@ -363,7 +371,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		this.rootmenu = new Menu();
 		this.rootmenu.addChild(new MenuItem({
 			label:"Add",
-			iconClass:"dijitEditorIcon dbrotaAddIcon",
+			iconClass:"dijitEditorIcon dformaAddIcon",
 			onClick:function(){
 				self.set("selectedNode",self.rootNode);
 				self._addRootNode();
