@@ -258,7 +258,7 @@ return declare("dlagua.c.App", [Stateful], {
 				r.dojoo.set(r.key,r.value);
 			});
 			if(pathchanged || localechanged) {
-				topic.publish("/app/pagechange",item);
+				topic.publish("/components/"+this.id+"/page-change",item);
 				var par = path.split("/");
 				var stripar = this.stripPath.split("/");
 				par = array.filter(par,function(item,index){
@@ -279,10 +279,10 @@ return declare("dlagua.c.App", [Stateful], {
 				}
 				d.resolve(true);
 			} else {
-				topic.publish("/app/pagechange",item);
+				topic.publish("/components/"+this.id+"/page-change",item);
 				d.resolve(true);
 			}
-			if(item.id) this.set("pageid",item.id);
+			if(item.id) this.set("pageId",item.id);
 			//delete this.d;
 		}));
 		//return d;
@@ -300,14 +300,14 @@ return declare("dlagua.c.App", [Stateful], {
 		}));
 		this.own(
 			this.watch("state",function(){
-				topic.publish("/app/statechange",this.state);
+				topic.publish("/components/"+this.id+"/state-change",this.state);
 			}),
 			this.watch("locale",function(){
 				if(!this.locale) return;
 				dojo.locale = this.locale.replace("_","-");
 				if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
 				this.localechanged = true;
-				topic.publish("/app/localechange",this.locale);
+				topic.publish("/components/"+this.id+"/locale-change",this.locale);
 			}),
 			// use this to force locale for locale-unaware navigation or no nav
 			this.watch("newlocale",function(){
@@ -316,13 +316,13 @@ return declare("dlagua.c.App", [Stateful], {
 				this.onItem(oldValue,this.currentItem);
 			}),
 			this.watch("path",function(){
-				topic.publish("/app/pathchange",this.path);
+				topic.publish("/components/"+this.id+"/path-change",this.path);
 			}),
-			this.watch("pageid",function(){
-				topic.publish("/app/pageidchange",this.pageid);
+			this.watch("pageId",function(){
+				topic.publish("/components/"+this.id+"/page-id-change",this.pageId);
 			}),
 			this.watch("servicetype",function(){
-				topic.publish("/app/servicetypechange",this.servicetype);
+				topic.publish("/components/"+this.id+"/service-type-change",this.servicetype);
 			}),
 			// all navigation components:
 			this.watch("currentItem",function(prop,oldValue,newValue){
