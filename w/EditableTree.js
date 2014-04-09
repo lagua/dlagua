@@ -16,10 +16,10 @@ define([
 	"dijit/MenuItem",
 	"rql/query",
 	"dforma/Builder",
-//	"dojox/widget/Toaster",
+	"dojox/widget/Toaster",
 	"dlagua/w/SearchableTree",
 	"dijit/tree/dndSource"
-],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,domStyle,domClass,Dialog,Menu,MenuItem,rqlQuery,Builder,SearchableTree,dndSource){
+],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,domStyle,domClass,Dialog,Menu,MenuItem,rqlQuery,Builder,Toaster,SearchableTree,dndSource){
 
 var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 	addChild:function(child){
@@ -189,6 +189,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 	},
 	postCreate:function(){
 		if(!this.formProperties) this.formProperties = {};
+		this.toaster = new Toaster();
 		this.addEditableInterface();
 		this.own(
 			this.watch("locale",function(){
@@ -270,7 +271,8 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 				node.item = item = data;
 				node.set("label",item.name);
 				m.store.put(item).then(function(item){
-					alert("Item updated successfully");
+					self.toaster.setContent("Item saved successfully");
+					self.toaster.show();
 					self.onClick(node.item,node);
 				});
 			} else {
@@ -288,14 +290,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 				}
 				data.path = (item.path ? item.path+"/" : "")+name;
 				// generated id from persevere is used
-				when(m.store.put(data,{parent:item}),function(){
-					// remove when https://bugs.dojotoolkit.org/ticket/17783 is fixed
-					m.childrenCache[item.id] && m.childrenCache[item.id].close && m.childrenCache[item.id].close();
-					delete m.childrenCache[item.id];
-					m.getChildren(item,function(children){
-						m.onChildrenChange(item,children);
-					});
-				});
+				m.store.put(data,{parent:item});
 			}
 		});
 		if(res.then) {
