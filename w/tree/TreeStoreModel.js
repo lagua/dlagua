@@ -9,8 +9,9 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dojo/store/Observable",
+	"dojo/store/util/SimpleQueryEngine",
 	"dijit/tree/ObjectStoreModel"
-],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,ObjectStoreModel){
+],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,SimpleQueryEngine,ObjectStoreModel){
 return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	root : null,
 	store: null,
@@ -40,6 +41,7 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 		}
 		var childrenAttr = this.childrenAttr;
 		var store = lang.mixin(this.store,{
+			queryEngine:SimpleQueryEngine,
 			getChildren: function(item) {
 				// TODO use item.children._ref;
 				var res = this.query({parent:item.id});
