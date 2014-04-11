@@ -9,15 +9,14 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/parser",
-	"dlagua/x/mobile/Scrollable",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
 	"dojox/mobile/compat"
-],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,Scrollable,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 	
-return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWidget, _TemplatedMixin],{
+return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _TemplatedMixin],{
 	itemnodesmap:null,
 	templateString:templateString,
 	idProperty:"id",
@@ -60,8 +59,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[Scrollable, _LayoutWid
 	baseClass:"dlaguaScrollableServicedPane",
 	useScrollBar:true,
 	height:"inherit",
-	nativeScroll:false,
-	noCover:false,
+	nativeScroll:true,
 	_containerInitTop:0,
 	startup: function(){
 		if(this._started){ return; }
