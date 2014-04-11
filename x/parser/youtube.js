@@ -17,7 +17,6 @@ define([
 				html5:1,
 				origin:location.protocol+"//"+location.host
 			};
-			var div = domConstruct.create("div");
 			//title=0byline=0portrait=0color=ff9f0c&autoplay=1&loop=1
 			var frameattrs = {
 				webkitAllowFullScreen:"webkitAllowFullScreen",
@@ -30,6 +29,9 @@ define([
 			if(options.height) {
 				frameattrs.height = options.height;
 			}
+			if(options.style) {
+				frameattrs.style = options.style;
+			}
 			if(options.frameborder) {
 				frameattrs.frameborder = options.frameborder;
 			} else {
@@ -37,11 +39,10 @@ define([
 			}
 			var q = ioQuery.objectToQuery(qo);
 			frameattrs.src = url+val+(q ? "?"+q : "");
-			domConstruct.create("iframe",frameattrs,div);
 			setTimeout(function(){
-				options._parsable.containerNode.appendChild(div);
-			},100);
-			return "<div data-dojo-attach-point=\"containerNode\"></div>";
+				domConstruct.create("iframe",frameattrs,options._parsable.domNode,"replace");
+			},10);
+			return "<div></div>";
 		}
 	});
 });
