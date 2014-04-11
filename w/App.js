@@ -15,7 +15,6 @@ return declare("dlagua.w.App", [LayoutContainer,App,Subscribable], {
 		var box = Viewport.getEffectiveBox();
 		var f = box.w<=this.flipSize;
 		if(f!=this.flipped) {
-			console.log("emit")
 			topic.publish("/components/"+this.id+"/view-change", f ? "small" : "large");
 		}
 		this.flipped = f;
