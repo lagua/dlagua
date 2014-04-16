@@ -164,7 +164,9 @@ define([
 				domNode.innerHTML = "";
 				var Widget = declare(mixins);
 				node = new Widget(params,domNode);
-				node.placeAt(ref,insertIndex);
+				if(node.placeAt) {
+					node.placeAt(ref,insertIndex);
+				}
 				node.set("style",style);
 				node.startup();
 				return node;
