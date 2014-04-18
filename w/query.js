@@ -175,6 +175,17 @@ define([
 		},
 		set:function(param,data){
 			forEach(this,function(node){
+				// update params too
+				node.params[param] = data;
+				node.set(param,data);
+			});
+			return this;
+		},
+		update:function(param,fn){
+			forEach(this,function(node){
+				var data = fn(node.get(param));
+				// update params too
+				node.params[param] = data;
 				node.set(param,data);
 			});
 			return this;
@@ -210,6 +221,17 @@ define([
 			var f = args.shift();
 			forEach(this,function(node){
 				node[f].apply(node,args);
+			});
+			return this;
+		},
+		timed_call:function(){
+			var args = Array.prototype.slice.call(arguments);
+			var f = args.shift();
+			var t = args.shift();
+			forEach(this,function(node){
+				setTimeout(function(){
+					node[f].apply(node,args);
+				},parseInt(t,10));
 			});
 			return this;
 		},
