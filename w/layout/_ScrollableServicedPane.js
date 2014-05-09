@@ -91,6 +91,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 				WebkitOverflowScrolling: "touch",
 				height:"100%"
 			});
+			this.useScrollBar = false;
 		} else {
 			this.init(params);
 		}
@@ -218,6 +219,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		if(this.servicetype=="model" || this.servicetype=="atom") {
 			this.template = this.getTemplate();
 		}
+		// set servicetype now as last resort
 		switch(this.servicetype) {
 			case "model":
 			case "form":
@@ -228,6 +230,12 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 				if(!item.service) item.service = this.base+"rest";
 				this.rebuild(item);
 				break;
+		}
+	},
+	scrollTo:function(pos){
+		if(this.nativeScroll) {
+			this.containerNode.scrollLeft = pos.x;
+			this.containerNode.scrollTop = pos.y;
 		}
 	},
 	rebuild:function(item) {
@@ -295,7 +303,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 			domStyle.set(this.containerNode,this.nativeScroll ? "marginTop" : "paddingTop", this.fixedHeaderHeight + this._containerInitTop + "px");
 		}
-		this.resetScrollBar();
+		if(!this.nativeScroll) this.resetScrollBar();
 		this.onTouchEnd();
 		this.layoutChildren();
 	},
@@ -366,8 +374,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		if(this.loadingAnimation && this.footer) {
 			domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
-		this.showScrollBar();
 		if(this.useScrollBar) {
+			this.showScrollBar();
 			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
 		}
 		this.inherited(arguments);
