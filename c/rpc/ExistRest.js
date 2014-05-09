@@ -53,6 +53,9 @@ define([
 				mappedItem.query = "?"+ioQuery.objectToQuery({_query:this._query});
 			}
 			mappedItem.uri = item.locale+"/"+item.path;
+			var doc = item.path.split("/").pop();
+			var ext = doc.match(/\.(xml|htm|html|xhtml)$/);
+			if(ext) mappedItem.extension = ext.pop();
 			if(item["default"]) mappedItem.defaultInstance = item.locale+"/"+item["default"];
 			return mappedItem;
 		},
@@ -159,7 +162,11 @@ define([
 			var dd = new Deferred();
 			//console.log(this)
 			// FIXME: what needs to get called back to where?
-			if(!publish) url += this.postfix;
+			if(!publish && !this.mappedItem.extension) {
+				url += this.postfix;
+			} else if(publish && this.mappedItem.extension){
+				return new Deferred().resolve();
+			}
 			if(_q) url += "?"+_q;
 			console.log(url)
 			return this.store.put(url,data,XMLOptions);
