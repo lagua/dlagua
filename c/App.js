@@ -11,7 +11,6 @@ define([
 
 return declare("dlagua.c.App", [Stateful], {
 	currentItem:null,
-	state:"initial",
 	path:"",
 	defaultHash:"",
 	indexable:false,
@@ -21,7 +20,6 @@ return declare("dlagua.c.App", [Stateful], {
 	useLocale:true,
 	depth:0,
 	meta:{},
-	stateMap:null,
 	replaced:[],
 	fromHash:false,
 	infer:function(path,servicetype,depth,fromHash,truncated,oldValue){
@@ -51,34 +49,15 @@ return declare("dlagua.c.App", [Stateful], {
 	},
 	hashToItem: function(hash) {
 		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
-		var hashar = hash.split(":");
-		var state,rest,locale,path;
-		if(hashar.length>1 && !hashar[0].match(/\?|\//)) {
-			state = hashar[0];
-			rest = hashar[1];
-		} else {
-			state = "initial";
-			rest = hash;
-		}
-		// try stateMap
-		if(state=="initial" && this.stateMap) {
-			for(var k in this.stateMap) {
-				var patt = new RegExp(this.stateMap[k],"ig");
-				if(patt.test(rest)) {
-					state = k;
-					break;
-				}
-			}
-		}
+		var locale,path;
 		// concat stripPath:
-		var restar = rest.split("/");
+		var restar = hash.split("/");
 		if(this.useLocale) locale = restar.shift();
 		if(this.stripPath) {
 			restar = this.stripPath.split("/").concat(restar);
 		}
 		path = restar.join("/");
 		var item = {
-			state:state,
 			locale:locale,
 			path:path,
 			__fromHash:true
@@ -184,8 +163,23 @@ return declare("dlagua.c.App", [Stateful], {
 	onItem: function(oldValue,newValue){
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
-		var state = item.state;
 		var path = item.path;
+		var par = path.split("/");
+		var stripar = this.stripPath.split("/");
+		par = array.filter(par,function(item,index){
+			return par[index]!=stripar[index];
+		});
+		var view = this.checkView(par.join("/"));
+		if(view) {
+			this.rebuild(view).then(lang.hitch(this,function(){
+				this.startup();
+				this.resize();
+				// reset item to trigger stuff below
+				d = this.onItem(oldValue,this.currentItem);
+			}));
+			return d;
+		}
+		// this will cause entire rebuild
 		var locale = this.useLocale ? item.locale : this.locale;
 		var model = item.model;
 		var servicetype = item.type || (model ? "model" : "");
@@ -212,18 +206,6 @@ return declare("dlagua.c.App", [Stateful], {
 		}
 		var fromHash = item.__fromHash;
 		var fromRoot = item.__fromRoot;
-		if(state && this.state!=state) {
-			console.log("changing state!")
-			//var oldValue = lang.mixin({},this.currentItem);
-			this.set("state", state);
-			this.rebuild().then(lang.hitch(this,function(){
-				this.resize();
-				// reset item to trigger stuff below
-				d = this.onItem(oldValue,this.currentItem);
-			}));
-			return d;
-		}
-		if(!state) state = "initial";
 		var localechanged = this.localechanged || (locale != this.locale);
 		this.localechanged = false;
 		var typechanged = (!fromHash && servicetype!="" && this.servicetype!=servicetype);
@@ -264,7 +246,7 @@ return declare("dlagua.c.App", [Stateful], {
 				par = array.filter(par,function(item,index){
 					return par[index]!=stripar[index];
 				});
-				var hash = (this.indexable ? "!" : "")+(state!="initial" && !this.stateMap ? state+":" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
+				var hash = (this.indexable ? "!" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
 				var chash = dhash();
 				if(!fromHash && !fromRoot && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				if(!fromRoot) {
@@ -288,20 +270,17 @@ return declare("dlagua.c.App", [Stateful], {
 		//return d;
 	},
 	startup: function(){
+		if(this._started) return;
 		console.log("app startup called");
-		topic.subscribe("/dojo/hashchange", lang.hitch(this,function(hash){
-			if(this.changeFromApp) {
-				this.changeFromApp = false;
-				return;
-			}
-			var item = this.hashToItem(hash);
-			item.__fromHash = true;
-			this.set("currentItem",item);
-		}));
 		this.own(
-			this.watch("state",function(){
-				topic.publish("/components/"+this.id+"/state-change",this.state);
-			}),
+			topic.subscribe("/dojo/hashchange", lang.hitch(this,function(hash){
+				if(this.changeFromApp) {
+					this.changeFromApp = false;
+					return;
+				}
+				var item = this.hashToItem(hash);
+				this.set("currentItem",item);
+			})),
 			this.watch("locale",function(){
 				if(!this.locale) return;
 				dojo.locale = this.locale.replace("_","-");
@@ -331,22 +310,15 @@ return declare("dlagua.c.App", [Stateful], {
 		);
 		this.inherited(arguments);
 		// set the hash AFTER all children were started
-		//var hash = dhash() || this.defaultHash;
-		//if(hash) {
-		//	var item = this.hashToItem(hash);
-		//	this.infer(item.path);
-		//}
 		var hash = dhash();
 		if(!hash) {
 			if(this.defaultHash) dhash(this.defaultHash);
 		} else {
-			setTimeout(function(){
+			//setTimeout(function(){
 				topic.publish("/dojo/hashchange",hash);
-			},100);
+			//},100);
 		}
-		this.ready();
-	},
-	ready:function(){}
+	}
 });
 
 });
