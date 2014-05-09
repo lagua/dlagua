@@ -307,6 +307,9 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 							}));
 						}
 					}));
+				}),lang.hitch(this,function(err){
+					// template fails, but we should still call ready()
+					this.ready();
 				}));
 			}));
 		}
