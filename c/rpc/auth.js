@@ -2,6 +2,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/dom-construct",
+	"dojo/io-query",
 	"dojo/Deferred",
 	"dojo/request",
 	"dojo/keys",
@@ -9,12 +10,16 @@ define([
 	"dijit/Dialog",
 	"dforma/Builder",
 	"dlagua/x/Aes"
-], function(lang, array, domConstruct, Deferred, request, keys, JSON, Dialog, Builder, Aes){
+], function(lang, array, domConstruct, ioQuery,Deferred, request, keys, JSON, Dialog, Builder, Aes){
 
 	var auth = function(url,params){
+		params = params || {};
 		var d = new Deferred();
 		var sessionParam = params.sessionParam;
-		var json = true;
+		var method = params.method || "post";
+		var json = params.json;
+		var userPrefix = params.userPrefix || "";
+		var duration = params.duration;
 		var token;
 		var authDialog;
 		var form;
@@ -22,20 +27,23 @@ define([
 		
 		var doReq = function(data){
 			var d = new Deferred();
-			var req = request.post(url,{
+			if(method=="get") {
+				requrl = url+"?"+ioQuery.objectToQuery(data);
+			}
+			var req = request[method](requrl,{
 				failOk:true,
 				handleAs:"json",
-				data: JSON.stringify(data),
-				headers: {
+				data: json ? JSON.stringify(data) : data,
+				headers: json ? {
 					"Accept":"application/json",
 					"Content-Type":"application/json"
-				}
+				} : {}
 			});
 			req.then(function(res){
 				if(res && (res.user || hasSessParam)) {
 					d.resolve(res);
 				} else {
-					if(!d.isFulfilled()) d.reject();
+					if(!d.isFulfilled()) d.reject(res);
 				}
 			},function(err) {
 				token = err.response.getHeader("phrase");
@@ -45,22 +53,24 @@ define([
 				token = io.getHeader("phrase");
 				if(io.getHeader(sessionParam)) {
 					hasSessParam = true;
-				} else {
-					var msg = io.xhr.responseText;
-					d.reject(msg);
 				}
 			});
 			return d;
 		};
 		var doAuth = function(data) {
 			form.set("message","");
-			var passwd = Aes.Ctr.encrypt(data.passwd, token, 256);
+			var password = token ? Aes.Ctr.encrypt(data.password, token, 256) : data.password;
 			var req = {
-				"id":"call-id",
-				"method":"authenticate",
-				"user":data.user,
-				"password":passwd
+				"user":userPrefix+data.user,
+				"password":password
 			};
+			if(json) {
+				lang.mixin(req,{
+					"id":"call-id",
+					"method":"authenticate"
+				});
+			}
+			if(duration) req.duration = duration;
 			doReq(req).then(function(auth){
 				authDialog.hide();
 				d.resolve(auth);
@@ -97,7 +107,7 @@ define([
 						}
 					},{
 						label:"password",
-						name:"passwd",
+						name:"password",
 						type:"password",
 						required:true,
 						onKeyPress:function(e) {
@@ -112,15 +122,15 @@ define([
 			if(errmsg) form.set("message",errmsg);
 		};
 		
-		var req = {
+		var req = json ? {
 			"id":"call-id",
 			"method":"verify"
-		};
+		} : {};
 		
 		doReq(req).then(function(auth){
 			d.resolve(auth);
 		},function(errmsg){
-			createForm(params.errorMessage || errmsg);
+			createForm(params.errorMessage);
 		});
 		
 		return d;
