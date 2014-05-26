@@ -24,7 +24,6 @@ define([
 var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 	addChild:function(child){
 		if(this.tree.checkEditAcceptance()) {
-			this.tree.menu.bindDomNode(child.domNode);
 			child.own(
 				on(child.domNode,"mousedown",lang.hitch(child,function(evt){
 					if(evt.button!=2) return true;
