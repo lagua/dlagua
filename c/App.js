@@ -6,8 +6,9 @@ define([
 	"dojo/Stateful",
 	"dojo/topic",
 	"dojo/on",
+	"dojo/when",
 	"dojo/hash"
-],function(declare,lang,array,Deferred,Stateful,topic,on,dhash){
+],function(declare,lang,array,Deferred,Stateful,topic,on,when,dhash){
 
 return declare("dlagua.c.App", [Stateful], {
 	currentItem:null,
@@ -169,15 +170,15 @@ return declare("dlagua.c.App", [Stateful], {
 		par = array.filter(par,function(item,index){
 			return par[index]!=stripar[index];
 		});
-		var view = this.checkView(par.join("/"));
+		var newView = this.getView(item.view || item.state);
+		var view = this.checkView(par.join("/"),newView);
 		if(view) {
-			this.rebuild(view).then(lang.hitch(this,function(){
+			return when(this.rebuild(view).then(lang.hitch(this,function(){
 				this.startup();
 				this.resize();
 				// reset item to trigger stuff below
-				d = this.onItem(oldValue,this.currentItem);
-			}));
-			return d;
+				return this.onItem(oldValue,this.currentItem);
+			})));
 		}
 		// this will cause entire rebuild
 		var locale = this.useLocale ? item.locale : this.locale;
