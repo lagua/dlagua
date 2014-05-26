@@ -27,6 +27,7 @@ define([
 		
 		var doReq = function(data){
 			var d = new Deferred();
+			var requrl = url;
 			if(method=="get") {
 				requrl = url+"?"+ioQuery.objectToQuery(data);
 			}
@@ -82,14 +83,12 @@ define([
 		var createForm = function(errmsg){
 			authDialog = new Dialog({
 				title: "Login",
+				closable:false,
 				style: "text-align:left;",
 				content: "<div style=\"margin-bottom:10px\">Please login</div>"
 			});
 			form = new Builder({
 				style:"max-height:300px;width:400px;overflow:auto",
-				cancel: function(){
-					editDlg.hide();
-				},
 				submit: function(){
 					if(!this.validate()) return;
 					var data = this.get("value");
