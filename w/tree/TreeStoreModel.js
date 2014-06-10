@@ -9,7 +9,7 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dojo/store/Observable",
-	"dojo/store/util/SimpleQueryEngine",
+	"dlagua/w/tree/SimpleQueryEngine",
 	"dijit/tree/ObjectStoreModel"
 ],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,SimpleQueryEngine,ObjectStoreModel){
 return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
@@ -19,7 +19,6 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	rootId : "",
 	rootType:"locale",
 	locale:"",
-	childrenAttr : "children",
 	parentAttr: "__parent",
 	showOnlyChildren : false,
 	labelAttr: "name",
@@ -39,12 +38,11 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 			};
 			if(this.locale) this.query.locale = this.locale;
 		}
-		var childrenAttr = this.childrenAttr;
 		var store = lang.mixin(this.store,{
 			queryEngine:SimpleQueryEngine,
 			getChildren: function(item) {
 				// TODO use item.children._ref;
-				var res = this.query({parent:item.id});
+				var res = this.query({parent:item.id},{parent:item});
 				if(item.childorder) {
 					when(res,function(children){
 						children.sort(function(a,b){
@@ -60,17 +58,12 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 			return function(id,options){
 				options = options || {};
 				if(options.parent) {
-					var parent = lang.mixin({},options.parent);
-					delete parent.children;
-					var childorder = [];
-					array.forEach(parent.childorder,function(cid){
-						if(cid!=id) childorder.push(cid);
-					});
-					if(childorder.length) {
-						parent.childorder = childorder;
-					} else {
-						delete parent.childorder;
+					var parent = options.parent;
+					var i = 0,l = parent.childorder.length;
+					for(;i<l;i++) {
+						if(cid==parent.childorder[i]) break;
 					}
+					parent.childorder.splice(i,1);
 					store.put.call(this,parent,{overwrite:true});
 				}
 				return remove.call(this,id,options);
@@ -79,15 +72,36 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 		aspect.around(store,"put",function(put){
 			return function(item,options){
 				options = options || {};
-				if(options.parent) item.parent = options.parent.id;
-				delete item.children;
+				var parent = options.parent ? options.parent : null;
+				if(parent) {
+					item.parent = parent.id;
+					if(parent.path && item.name) {
+						item.path = parent.path+"/"+item.name;
+					}
+				}
 				var res = put.call(store,item,options);
-				if(options.parent) {
-					var parent = lang.mixin({},options.parent);
-					delete parent.children;
+				var i = 0, l = 0;
+				if(options.oldParent && item.id) {
+					var oldParent = options.oldParent;
+					i = 0, l = oldParent.childorder.length;
+					for(;i<l;i++) {
+						if(oldParent.childorder[i] == item.id) break;
+					}
+					oldParent.childorder.splice(i,1);
+					if(oldParent!=parent) store.put.call(this,oldParent,{overwrite:true});
+				}
+				if(parent) {
 					when(res,function(item){
 						if(!parent.childorder) parent.childorder = [];
-						parent.childorder.push(item.id);
+						if(options.before) {
+							i = 0, l = parent.childorder.length;
+							for(;i<l;i++) {
+								if(parent.childorder[i] == options.before.id) break;
+							}
+							parent.childorder.splice(i,0,item.id);
+						} else {
+							parent.childorder.push(item.id);
+						}
 						store.put.call(store,parent,{overwrite:true});
 					});
 				}
