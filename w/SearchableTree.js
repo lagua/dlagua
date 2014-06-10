@@ -61,55 +61,25 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 		if(val == lookfor) {
 			this._found = item;
 			// call childrensearched also here!
-			if(item.__parent && item.__parent.__onChildrenSearched) {
-				item.__parent.__onChildrenSearched();
-			}
 			d.resolve(buildme);
 		} else {
 			//console.log("lookup",item[field],val,lookfor);
 			// should we get children?
-			if(m.mayHaveChildren(item)) {
+			if(!d.isResolved() && m.mayHaveChildren(item)) {
 				m.getChildren(item,function(children){
 					var len = children.length;
 					if(!len || self._found) {
-						// where there siblings to item? wait for them to finish
-						if(item.__parent && item.__parent.__onChildrenSearched) {
-							item.__parent.__onChildrenSearched();
+						if(!d.isResolved()) {
+							console.warn("cancelling search");
+							d.resolve(buildme);
 						}
 					} else {
-						item.__onChildrenSearched = function(){
-							var len = this.children.length;
-							if(!self._found){
-								if(!this.__childrenSearched) this.__childrenSearched = 0;
-								this.__childrenSearched++;
-							}
-							if(this.__childrenSearched==len || self._found) {
-								console.log("all children searched",this)
-								delete this.__childrenSearched;
-								delete this.__onChildrenSearched;
-								if(this.__parent && this.__parent.__onChildrenSearched) {
-									this.__parent.__onChildrenSearched();
-								} else {
-									// no parent, it must be root
-									if(!this.__parent && !self._found) d.resolve();
-								}
-							}
-						};
 						array.forEach(children,function(child){
-							// prevent spooky lazy loaded children
-							if(d.isResolved()) return;
 							var buildmebranch = buildme.slice(0);
 							self.search(lookfor, buildmebranch, child, field, returnfield, d);
 						});
 					}
 				});
-			} else {
-				if(item.__parent && item.__parent.__onChildrenSearched) {
-					item.__parent.__onChildrenSearched();
-				} else {
-					// FIXME how to do this properly?
-					if(!d.isResolved()) d.resolve();
-				}
 			}
 		}
 		return d;
