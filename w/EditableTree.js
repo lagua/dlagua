@@ -77,9 +77,11 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 		var id = this.item.id;
 		this.item.__deleted = true;
 		t.onActivate(this.item);
-		m.getParent(this.item,function(parent){
-			m.store.remove(id,{parent:parent});
-		});
+		// use tree parent item instead of store parent
+		// because that is the one that must be altered in some cases
+		var parent = node.getParent().item;
+		console.log("editabletree removing",id)
+		m.store.remove(id,{parent:parent});
 	}
 });
 
@@ -159,9 +161,9 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 	},
 	loadFromId:function(){
 		var self = this;
-		if(!this.model.loaded) {
+		if(!this.model.root) {
 			console.log("model was not loaded",this.model.locale)
-			this._lh = aspect.after(this.model,"onLoad",lang.hitch(this,this.loadFromId));
+			this._lh = aspect.after(this,"onLoad",lang.hitch(this,this.loadFromId));
 			return;
 		}
 		if(this._lh) {
@@ -327,52 +329,14 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 			}),true),
 			aspect.after(this.model, "onChange",lang.hitch(this,function(item){
 				this.onActivate(item);
-			}),true)
+			}),true),
+			on(this.domNode,"mousedown",lang.hitch(this,function(evt){
+				if(evt.button!=2 || evt.target==this.rootNode) return true;
+				this.set('selectedNode',this.rootNode);
+				this.onContextClick(this.rootNode.item,this.rootNode);
+				event.stop(evt);
+			}))
 		);
-		this.menu = new Menu();
-		this.menu.addChild(new MenuItem({
-			label:"Add",
-			iconClass:"dijitEditorIcon dformaAddIcon",
-			onClick:function(){
-				var item = self.selectedItem;
-				if(!item) return;
-				var node = self.getNodesByItem(item)[0];
-				node._onAddClick();
-			}
-		}));
-		this.menu.addChild(new MenuItem({
-			label:"Edit",
-			iconClass:"dijitEditorIcon dformaEditIcon",
-			onClick:function(){
-				var item = self.selectedItem;
-				if(!item) return;
-				var node = self.getNodesByItem(item)[0];
-				node._onEditClick();
-			}
-		}));
-		this.menu.addChild(new MenuItem({
-			label:"Delete",
-			iconClass:"dijitEditorIcon dformaDeleteIcon",
-			onClick: function(){
-				var item = self.selectedItem;
-				if(!item) return;
-				var node = self.getNodesByItem(item)[0];
-				node._onDeleteClick();
-			}
-		}));
-		this.menu.startup();
-		// root menu
-		this.rootmenu = new Menu();
-		this.rootmenu.addChild(new MenuItem({
-			label:"Add",
-			iconClass:"dijitEditorIcon dformaAddIcon",
-			onClick:function(){
-				self.set("selectedNode",self.rootNode);
-				self._addRootNode();
-			}
-		}));
-		this.rootmenu.startup();
-		this.rootmenu.bindDomNode(this.domNode);
 	},
 	_createTreeNode: function(args) {
 		var node = new TreeNode(args);
