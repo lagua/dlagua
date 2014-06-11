@@ -8,14 +8,14 @@ define("dlagua/w/layout/LayoutContainer", [
 	"dojo/dom-style",
 	"dojo/dom-class",
 	"dijit/registry",
-	"dijit/layout/utils",
-	"dijit/layout/LayoutContainer"
- ], function(declare, lang, array, coreFx, fx, domGeometry, domStyle, domClass, registry, utils, LayoutContainer){
+	"dijit/layout/LayoutContainer",
+	"./utils"
+ ], function(declare, lang, array, coreFx, fx, domGeometry, domStyle, domClass, registry, LayoutContainer, layoutUtils){
 
-	var layoutChildren = utils.layoutChildren;
+	/*var layoutChildren = utils.layoutChildren;
 	var layoutUtils = lang.mixin(lang.mixin({},utils),{
-		layoutChildren: function(/*DomNode*/ container, /*Object*/ dim, /*Widget[]*/ children,
-				/*String?*/ changedRegionId, /*Number?*/ changedRegionSize){
+		layoutChildren: function(DomNode container, Object dim, Widget[] children,
+				String? changedRegionId, Number? changedRegionSize){
 			// summary:
 			//		Layout a bunch of child dom nodes within a parent dom node
 			var prog;
@@ -30,7 +30,7 @@ define("dlagua/w/layout/LayoutContainer", [
 			},this);
 			return prog;
 		}
-	});
+	});*/
 	
 	return declare("dlagua.w.layout.LayoutContainer",[LayoutContainer],{
 		prog:0,
@@ -106,6 +106,9 @@ define("dlagua/w/layout/LayoutContainer", [
 			comb.play();
 		},
 		layout: function(){
+			layoutUtils.layoutChildren(this.domNode, this._contentBox, this._getOrderedChildren());
+		}
+		/*layout: function(){
 			var children = this._getOrderedChildren();
 			var cb = this._contentBox;
 			var landsc = cb.w>cb.h;
@@ -138,6 +141,6 @@ define("dlagua/w/layout/LayoutContainer", [
 				layoutChildren(this.domNode, cb, children);
 				this._prog = prog;
 			}
-		}
+		}*/
 	});
 });

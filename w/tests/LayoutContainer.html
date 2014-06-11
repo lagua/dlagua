@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+	<title>dijit/layout/LayoutContainer Test</title>
+
+	<script src="../../../dojo/dojo.js" djConfig="async:true,parseOnLoad:true"></script>
+
+	<script type="text/javascript">
+		require([
+			"dijit/layout/ContentPane",
+			"dlagua/w/layout/LayoutContainer",
+			"dojo/domReady!"
+		], function(ContentPane, LayoutContainer){
+		});
+	</script>
+
+</head>
+<body class="claro" role="main">
+	<div id="basic" data-dojo-type="dijit/layout/LayoutContainer" data-dojo-props="design: 'sidebar'"
+		style="border: 2px solid black; width: 90%; height: 300px; padding: 10px;">
+		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout1" region="left" layoutPriority="1" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
+			left1
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout12" region="left" layoutPriority="2" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
+			left2
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="rightcp_layout1" region="right" style="background-color: #acb386;"  tabindex="0">
+			right
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="topcp_layout1" region="top" style="background-color: #b39b86; "  tabindex="0">
+			top bar
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="centercp_layout1" region="center" style="background-color: #f5ffbf; padding: 10px;"  tabindex="0">
+			Here's some text.
+		</div>
+
+		<div data-dojo-type="dijit/layout/ContentPane" id="bottomcp_layout1" region="bottom" style="background-color: #b39b86;"  tabindex="0">
+			bottom bar
+		</div>
+	</div>
+</body>
+</html>
