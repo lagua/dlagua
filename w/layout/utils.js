@@ -60,6 +60,7 @@ define([
 				5:"hide"
 			}
 			var len = children.length;
+			var fit = true;
 			array.forEach(children, function(child,i){
 				var elm = child.domNode,
 					pos = child.region;
@@ -99,19 +100,24 @@ define([
 					// check if elm has height
 					// check if elmHeight <= dim.h, if not refit
 					// if fits, size to elm height and try to fit below
-					
-					
 					if(prog<nextprog) {
 						prog++;
 						
 					}
-					if(child._dim.height<dim.h) {
-						// fit
-						
+					console.log("prog",prog)
+					if(child._dim.height) {
+						if(child._dim.height<dim.h) {
+							// fit
+							sizeSetting.h = child._dim.height;
+						} else {
+							// nofit!
+							fit = false;
+							return;
+						}
 					} else {
-						// nofit!
+						// else auto-height
+						sizeSetting.h = dim.h;
 					}
-					sizeSetting.h = child._dim.height ? child._dim.height : dim.h;
 					size(child, sizeSetting);
 					dim.w -= child.w;
 					if(pos == "left"){
@@ -119,7 +125,7 @@ define([
 						// - into largest width
 						// - when (min/max-)height fits
 						// - when tileSize fits
-						if(regions["left"].length>1) {
+						if(len>1) {
 							
 						}
 						dim.l += child.w;
@@ -131,7 +137,7 @@ define([
 					size(child, dim);
 				}
 			});
-			return dim;
+			return fit ? dim : false;
 		},
 
 
@@ -162,7 +168,7 @@ define([
 
 			// copy dim because we are going to modify it
 			dim = lang.mixin({}, dim);
-
+			
 			domClass.add(container, "dijitLayoutContainer");
 
 			// Move "client" elements to the end of the array for layout.  a11y dictates that the author
@@ -170,7 +176,10 @@ define([
 			// client be last.    TODO: remove for 2.0, all dijit client code already sends children as last item.
 			children = array.filter(children, function(item){ return item.region != "center" && item.layoutAlign != "client"; })
 				.concat(array.filter(children, function(item){ return item.region == "center" || item.layoutAlign == "client"; }));
-
+			
+			// group children by region
+			var regions = {};
+			
 			children = array.map(children,function(child){
 				var pos = (child.region || child.layoutAlign);
 				if(!pos){
@@ -183,17 +192,10 @@ define([
 					pos = child.isLeftToRight() ? "right" : "left";
 				}
 				child.region = pos;
+				if(!regions[pos]) regions[pos] = [];
 				return child;
 			});
 			
-			// group children by region
-			var regions = {
-				left:[],
-				top:[],
-				bottom:[],
-				right:[],
-				center:[]
-			};
 			
 			
 			// TODO
@@ -209,14 +211,17 @@ define([
 			// - min-size
 			// - tileSize
 			// - if still not fits, hide smart
+			console.log(dim)
 			for(var region in regions){
 				regions[region] = array.filter(children,function(_){
 					return _.region == region;
 				});
+			//}
+			//for(var region in regions){
 				// get max width/height
 				var prop = (region == "top" || region == "bottom") ? "height" : "width";
 				var val = 0;
-				array.forEach(regions[region], function(child){
+				array.forEach(regions[region], function(child,i){
 					// retrieve all dimension styles
 					// store the first time
 					if(!child._dim) {
@@ -229,13 +234,18 @@ define([
 							"maxHeight":""
 						};
 						for(var k in child._dim) {
-							child._dim[k] = domStyle.get(elm,k);
+							child._dim[k] = domStyle.get(child.domNode,k);
 						}
+						children[i]._dim = child._dim;
 					}
 					val = Math.max(val,Math.max(child._dim[prop],child._dim["min"+capitalize(prop)]));
 				});
-				// TODO don't update dim when nofit
-				dim = util.calcRegion(children,dim,val,changedRegionId, changedRegionSize);
+				// don't update dim when nofit
+				var fit = null;
+				while(!fit) {
+					fit = utils.calcRegion(regions[region],dim,val,changedRegionId, changedRegionSize);
+				}
+				dim = fit;
 			}
 		}
 	};
