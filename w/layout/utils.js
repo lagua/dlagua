@@ -97,20 +97,24 @@ define([
 						elmStyle.top = dim.t + dim.h + "px";
 					}
 				}else if(pos == "left" || pos == "right"){
+					if(prog<nextprog) {
+						// what to do?
+						prog++;
+					}
+					console.log("prog",prog)
 					// check if elm has height
 					// check if elmHeight <= dim.h, if not refit
 					// if fits, size to elm height and try to fit below
-					if(prog<nextprog) {
-						prog++;
-						
-					}
-					console.log("prog",prog)
 					if(child._dim.height) {
+						this._prog = 2;
 						if(child._dim.height<dim.h) {
-							// fit
+							// fit, my prog will be 2
 							sizeSetting.h = child._dim.height;
 						} else {
 							// nofit!
+							// - if minHeight: prog will be 3
+							// - else if tile prog will be 4
+							// - else prog will be 5
 							fit = false;
 							return;
 						}
@@ -196,8 +200,6 @@ define([
 				return child;
 			});
 			
-			
-			
 			// TODO
 			// - loop over regions
 			// per region:
@@ -224,6 +226,9 @@ define([
 				array.forEach(regions[region], function(child,i){
 					// retrieve all dimension styles
 					// store the first time
+					// TODO: when will this change?
+					// - dynamic CSS: map elements to resolvedContext
+					// - setStyle: extend dom-style to emit set+elm (extend _WidgetBase to include domNode getters/setters)
 					if(!child._dim) {
 						child._dim = {
 							"width":"",
@@ -242,8 +247,10 @@ define([
 				});
 				// don't update dim when nofit
 				var fit = null;
-				while(!fit) {
+				var safe = 6*children.length;
+				while(!fit && safe>0) {
 					fit = utils.calcRegion(regions[region],dim,val,changedRegionId, changedRegionSize);
+					safe--;
 				}
 				dim = fit;
 			}
