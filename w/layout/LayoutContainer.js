@@ -7,7 +7,9 @@ define("dlagua/w/layout/LayoutContainer", [
 
 	
 	return declare("dlagua.w.layout.LayoutContainer",[LayoutContainer],{
+		tileSize:50,
 		layout: function(){
+			layoutUtils.tileSize = this.tileSize;
 			layoutUtils.layoutChildren(this.domNode, this._contentBox, this._getOrderedChildren());
 		}
 	});
