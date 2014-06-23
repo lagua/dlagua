@@ -1,10 +1,14 @@
 define([
+	"dojo/_base/declare",
+	"dojo/_base/lang", // lang.mixin, lang.setObject
 	"dojo/_base/array", // array.filter array.forEach
 	"dojo/dom-class", // domClass.add domClass.remove
 	"dojo/dom-geometry", // domGeometry.marginBox
 	"dojo/dom-style", // domStyle.getComputedStyle
-	"dojo/_base/lang" // lang.mixin, lang.setObject
-], function(array, domClass, domGeometry, domStyle, lang){
+	"dcssstore/CssRules",
+	"dcssstore/_PatternMixin",
+	"dcssstore/_QueryMixin"
+], function(declare,lang,array, domClass, domGeometry, domStyle,CssRules,_PatternMixin,_QueryMixin){
 
 	// module:
 	//		dijit/layout/utils
@@ -28,6 +32,9 @@ define([
 			lang.mixin(widget, dim);
 		}
 	}
+	
+	var rulestore = new declare([CssRules,_PatternMixin,_QueryMixin])();
+	rulestore.open(); // not going to care if it isn't loaded
 
 	var utils = {
 		// summary:
@@ -224,7 +231,17 @@ define([
 				array.forEach(regions[region], function(child,i){
 					// retrieve all dimension styles
 					// store the first time
+					var elm = child.domNode;
 					if(!child._dim) {
+						var style = elm.style;
+						console.log(style)
+						var id = elm.id;
+						var classes = elm.className.split(" ");
+						var rules = rulestore.query("#"+id);
+						classes.forEach(function(_){
+							rules = rules.concat(rulestore.query("."+_));
+						});
+						console.log(rules);
 						child._dim = {
 							"width":"",
 							"height":"",
@@ -234,7 +251,7 @@ define([
 							"maxHeight":""
 						};
 						for(var k in child._dim) {
-							child._dim[k] = domStyle.get(child.domNode,k);
+							child._dim[k] = parseInt(style[k].replace("px",""),10);
 						}
 						children[i]._dim = child._dim;
 					}
