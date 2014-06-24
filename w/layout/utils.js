@@ -89,7 +89,7 @@ define([
 				if(changedRegionId && changedRegionId == child.id){
 					sizeSetting[child.region == "top" || child.region == "bottom" ? "h" : "w"] = changedRegionSize;
 				}
-				
+				if(i===0 && pos=="right") region.dim.l = dim.l + dim.w - max;
 				var prog = child._prog || 0;
 				//var nextprog = i<len-1 ? children[i+1]._prog : 0;
 				// set size && adjust record of remaining space.
@@ -155,7 +155,7 @@ define([
 							if(tileSize && tileSize<=region.dim.h) {
 								//console.log(pos,i,"tile!")
 								child._prog = 4;
-								sizeSetting.h = tileSize;
+								sizeSetting.w = sizeSetting.h = tileSize;
 							} else {
 								// nofit!
 								child._prog = 0;
@@ -167,10 +167,21 @@ define([
 							// hide
 							//console.log(pos,i,"hide!")
 							child._prog = 5;
-							sizeSetting.h = 0;
+							sizeSetting.w = sizeSetting.h = 0;
 							region.prog = 1;
 						}
 						sizeSetting.t = region.dim.t;
+						if(!("w" in sizeSetting)) {
+							// it wasn't set by tileSize or hide, so set it
+							if(child._dim.width || child._dim.minWidth) {
+								// fixed/min width
+								sizeSetting.w = Math.max(child._dim.width,child._dim.minWidth);
+							} else {
+								// auto
+								sizeSetting.w = child.w;
+							}
+						}
+						sizeSetting.l = region.dim.l;
 						size(child, sizeSetting);
 						if(pos == "left"){
 							// don't update if more may fit:
@@ -179,18 +190,21 @@ define([
 							// - when tileSize fits
 							if(!prog || refit) {
 								region.dim.h -= sizeSetting.h;
-								if(len>1 && child.w <= max) {
-									region.dim.t += sizeSetting.h;
-								}
 							}
 						}
+						// modify region dim
+						if(sizeSetting.w<region.dim.w){
+							// it fits, so update left
+							region.dim.l += sizeSetting.w;
+						} else {
+							region.dim.l = dim.l;
+							region.dim.t += sizeSetting.h;
+						}
+						// if last element update global dim
 						if(i===len-1) {
 							// modify global dim
 							dim.w -= max;
 							if(pos=="left") dim.l += max;
-						}
-						if(pos == "right"){
-							elm.style.left = dim.l + dim.w + "px";
 						}
 					}
 				}else if(pos == "client" || pos == "center"){
@@ -322,7 +336,7 @@ define([
 				});
 				regions[region].max = val;
 				regions[region].dim = lang.mixin({},dim);
-				// don't update dim when nofit
+				regions[region].dim[prop.charAt(0)] = val;
 				var fit = null;
 				var safe = 6*children.length;
 				while(!fit && safe>0) {
