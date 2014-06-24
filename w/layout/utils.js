@@ -79,12 +79,6 @@ define([
 				var elm = child.domNode,
 					pos = child.region;
 
-				// set elem to upper left corner of unused space; may move it later
-				var elmStyle = elm.style;
-				elmStyle.left = dim.l+"px";
-				elmStyle.top = dim.t+"px";
-				elmStyle.position = "absolute";
-
 				domClass.add(elm, "dijitAlign" + capitalize(pos));
 
 				// Size adjustments to make to this child widget
@@ -97,7 +91,6 @@ define([
 				}
 				
 				var prog = child._prog || 0;
-				console.log(child.id)
 				//var nextprog = i<len-1 ? children[i+1]._prog : 0;
 				// set size && adjust record of remaining space.
 				// note that setting the width of a <div> may affect its height.
@@ -108,7 +101,7 @@ define([
 					if(pos == "top"){
 						dim.t += child.h;
 					}else{
-						elmStyle.top = dim.t + dim.h + "px";
+						elm.style.top = dim.t + dim.h + "px";
 					}
 				}else if(pos == "left" || pos == "right"){
 					// check if elm has height
@@ -116,12 +109,16 @@ define([
 					// if fits, size to elm height and try to fit below
 					// prog: either it wasn't fitted or it was fitted, but must refit (prog<2<curProg)
 					// if curProg >=5 stop
-					if(!prog || (prog && prog===region.prog-2)) {
+					var refit = (prog && prog===region.prog-2);
+					if(refit) {
+						region.dim = dim;
+					}
+					if(!prog || refit) {
 						if(region.prog<2) {
 							if(child._dim.height) {
 								// fixed!
-								if(child._dim.height<=dim.h) {
-									console.log("fixed!")
+								if(child._dim.height<=region.dim.h) {
+									//console.log(pos,i,"fixed!")
 									child._prog = 2;
 									sizeSetting.h = child._dim.height;
 								} else {
@@ -136,16 +133,16 @@ define([
 								}
 							} else {
 								// else auto-height
-								console.log("auto!")
+								//console.log(pos,i,"auto!")
 								child._prog = 1;
-								sizeSetting.h = dim.h;
+								sizeSetting.h = region.dim.h;
 							}
 						} else if(region.prog<3) {
 							// min
-							if(child._dim.minHeight && child._dim.minHeight<=dim.h) {
-								console.log("min!")
+							if(child._dim.minHeight && child._dim.minHeight<=region.dim.h) {
+								//console.log(pos,i,"min!")
 								child._prog = 3;
-								sizeSetting.h = dim.h;
+								sizeSetting.h = region.dim.h;
 							} else {
 								// nofit!
 								child._prog = 0;
@@ -155,8 +152,8 @@ define([
 							}
 						} else if(region.prog<4) {
 							// tilesize
-							if(tileSize && tileSize<=dim.h) {
-								console.log("tile!")
+							if(tileSize && tileSize<=region.dim.h) {
+								//console.log(pos,i,"tile!")
 								child._prog = 4;
 								sizeSetting.h = tileSize;
 							} else {
@@ -168,33 +165,39 @@ define([
 							}
 						} else if(region.prog<5) {
 							// hide
-							console.log("hide!")
+							//console.log(pos,i,"hide!")
 							child._prog = 5;
 							sizeSetting.h = 0;
 							region.prog = 1;
 						}
-					}
-					size(child, sizeSetting);
-					dim.w -= child.w;
-					if(pos == "left"){
-						// don't update if more may fit:
-						// - into largest width
-						// - when (min/max-)height fits
-						// - when tileSize fits
-						if(len>1) {
-							
+						sizeSetting.t = region.dim.t;
+						size(child, sizeSetting);
+						if(pos == "left"){
+							// don't update if more may fit:
+							// - into largest width
+							// - when (min/max-)height fits
+							// - when tileSize fits
+							if(!prog || refit) {
+								region.dim.h -= sizeSetting.h;
+								if(len>1 && child.w <= max) {
+									region.dim.t += sizeSetting.h;
+								}
+							}
 						}
-						dim.l += child.w;
-					}
-					if(pos == "right"){
-						elmStyle.left = dim.l + dim.w + "px";
+						if(i===len-1) {
+							// modify global dim
+							dim.w -= max;
+							if(pos=="left") dim.l += max;
+						}
+						if(pos == "right"){
+							elm.style.left = dim.l + dim.w + "px";
+						}
 					}
 				}else if(pos == "client" || pos == "center"){
 					size(child, dim);
 				}
 			});
-			console.log(fit,region.prog)
-			return fit ? dim : false;
+			return fit;
 		},
 
 
@@ -283,6 +286,10 @@ define([
 					// - setStyle: extend dom-style to emit set+elm (extend _WidgetBase to include domNode getters/setters)
 					if(!child._dim) {
 						var style = elm.style;
+						// set elem to upper left corner of unused space; may move it later
+						elm.style.left = dim.l+"px";
+						elm.style.top = dim.t+"px";
+						elm.style.position = "absolute";
 						var id = elm.id;
 						var classes = elm.className.split(" ");
 						var rules = rulestore.query("#"+id);
@@ -290,21 +297,31 @@ define([
 							rules = rules.concat(rulestore.query("."+_));
 						});
 						child._dim = {
-							"width":"",
-							"height":"",
-							"minWidth":"",
-							"maxWidth":"",
-							"minHeight":"",
-							"maxHeight":""
+							"width":0,
+							"height":0,
+							"minWidth":0,
+							"maxWidth":0,
+							"minHeight":0,
+							"maxHeight":0
 						};
+						var cs = domStyle.getComputedStyle(elm);
+						var me = domGeometry.getMarginExtents(elm, cs);
+						var pb = domGeometry.getPadBorderExtents(elm, cs);
+						var cb = {w:me.w + pb.w,h:me.h+pb.h};
 						for(var k in child._dim) {
-							child._dim[k] = parseInt(style[k].replace("px",""),10);
+							if(style[k]) {
+								var mb = k.match(/w/i) ? cb.w : cb.h;
+								var s = domStyle.toPixelValue(elm,style[k]);
+								child._dim[k] = s + (s ? mb : 0);
+							}
 						}
-						children[i]._dim = child._dim;
+						//children[i]._dim = child._dim;
+						child[prop.charAt(0)] = domStyle.toPixelValue(elm,cs[prop])+cb[prop.charAt(0)];
 					}
-					val = Math.max(val,Math.max(child._dim[prop],child._dim["min"+capitalize(prop)]));
+					val = Math.max(val,Math.max(child._dim[prop],Math.max(child._dim["min"+capitalize(prop)],child[prop.charAt(0)])));
 				});
 				regions[region].max = val;
+				regions[region].dim = lang.mixin({},dim);
 				// don't update dim when nofit
 				var fit = null;
 				var safe = 6*children.length;
@@ -312,7 +329,6 @@ define([
 					fit = utils.calcRegion(regions[region],dim,changedRegionId, changedRegionSize);
 					safe--;
 				}
-				dim = fit;
 			}
 		}
 	};
