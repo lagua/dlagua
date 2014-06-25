@@ -39,9 +39,12 @@ define([
 			var mappedItem = {
 				id: item.id,
 				type: item.type,
+				model: item.model || "Page", // for ModelEditor 
+				key: item.key, // for ModelEditor
 				uri:"",
 				target:this.target,
-				__published:false,
+				published:item.published,
+				modified:item.modified,
 				__deleted: item.__deleted,
 				__new:false,
 				query:""
@@ -58,6 +61,9 @@ define([
 			if(ext) mappedItem.extension = ext.pop();
 			if(item["default"]) mappedItem.defaultInstance = item.locale+"/"+item["default"];
 			return mappedItem;
+		},
+		getItem:function(){
+			return this.mappedItem;
 		},
 		loadItem: function(item,postfix,newItem) {
 			// TODO: send item to the ref (if toItem=true)
@@ -98,7 +104,6 @@ define([
 			if(postfix==="") return;
 			var self = this;
 			d.then(function(){
-				self.mappedItem.__published = true;
 				if(oldItem.__deleted || moved) self.onChange(property,changeSet,"");
 			},function(){
 				if(!oldItem.__deleted && !moved) self.onChange(property,changeSet,"");
@@ -113,8 +118,9 @@ define([
 			this.own(
 				this.watch("currentItem", function(){
 					console.log("existrest currentItem update")
-					this.mappedItem = this.itemMapper(this.currentItem,this.postfix);
-					this.loadItem(this.mappedItem);
+					this.mappedItem = this.itemMapper(this.currentItem);
+					// published means there's a temp item
+					this.loadItem(this.mappedItem,this.mappedItem.published ? this.postfix : "");
 				}),
 				this.watch("changeSet", this.onChange)
 			);
@@ -149,27 +155,54 @@ define([
 			});
 			return dd;
 		},
-		save: function(data,publish,options) {
+		save: function(data,options) {
 			options = options || {};
+			var dd = new Deferred();
 			var item = this.mappedItem;
 			if(!item) {
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
-			var url = options.uri || item.uri;
-			if(options.uri) delete options.uri;
+			var uri = item.uri;
+			var published = options.published;
+			delete options.published;
+			var modified = options["last-modified"];
 			var _q = ioQuery.objectToQuery(options);
-			var dd = new Deferred();
 			//console.log(this)
-			// FIXME: what needs to get called back to where?
-			if(!publish && !this.mappedItem.extension) {
+			/*if(!publish && !this.mappedItem.extension) {
 				url += this.postfix;
 			} else if(publish && this.mappedItem.extension){
 				return new Deferred().resolve();
+			}*/
+			var url = _q ? uri+"?"+_q : uri;
+			var res = this.store.put(url,data,XMLOptions);
+			if(modified || published) {
+				return when(res.response,lang.hitch(this,function(resp){
+					var date = new Date(resp.getHeader("Date"));
+					var now = date.toISOString();
+					var update = {id:item.id,model:this.mappedItem.model};
+					var key = item.key;
+					if(modified) update[key ? key+"_modified" : "modified"] = now;
+					if(published) update[key ? key+"_published" : "published"] = now;
+					topic.publish("/components/"+this.id+"/update",update);
+					this.mappedItem = lang.mixin(item,update);
+					return res;
+				}));
 			}
-			if(_q) url += "?"+_q;
-			console.log(url)
-			return this.store.put(url,data,XMLOptions);
+			return res;
+		},
+		publish:function(){
+			var dd = new Deferred();
+			var item = this.mappedItem;
+			if(!item) {
+				dd.reject({id:undefined,response:"No item in service"});
+				return dd;
+			}
+			var uri = item.uri;
+			var postfix = item.published ? this.postfix : "";
+			return when(this.store.get(uri+postfix),lang.hitch(this,function(temp){
+				return this.save(temp,{published:true});
+			}));
 		},
 		deleteItem:function(item) {
 			var dd = new Deferred();
