@@ -75,7 +75,8 @@ define([
 			var len = children.length;
 			var fit = true;
 			var tileSize = this.tileSize;
-			array.forEach(children, function(child,i){
+			children.forEach(function(child,i){
+				if(!fit) return;
 				var elm = child.domNode,
 					pos = child.region;
 
@@ -89,7 +90,7 @@ define([
 				if(changedRegionId && changedRegionId == child.id){
 					sizeSetting[child.region == "top" || child.region == "bottom" ? "h" : "w"] = changedRegionSize;
 				}
-				if(i===0 && pos=="right") region.dim.l = dim.l + dim.w - max;
+				//if(i===0 && pos=="right") region.dim.l = dim.l + dim.w - max;
 				var prog = child._prog || 0;
 				//var nextprog = i<len-1 ? children[i+1]._prog : 0;
 				// set size && adjust record of remaining space.
@@ -111,66 +112,62 @@ define([
 					// if curProg >=5 stop
 					var refit = (prog && prog===region.prog-2);
 					if(refit) {
-						region.dim = dim;
+						region.prog = prog;
+						region.row = 0;
+						region.dim = lang.mixin({},dim);
+						region.dim.l = region.dim.t = 0;
+						region.dim.w = max;
 					}
 					if(!prog || refit) {
+						// FIXME we don't know yet how wide it will become
+						var h = region.dim.h;
 						if(region.prog<2) {
 							if(child._dim.height) {
 								// fixed!
-								if(child._dim.height<=region.dim.h) {
+								if(child._dim.height<=h) {
 									//console.log(pos,i,"fixed!")
-									child._prog = 2;
+									prog = 2;
 									sizeSetting.h = child._dim.height;
 								} else {
 									// nofit!
 									// - if minHeight: prog will be 3
 									// - else if tile prog will be 4
 									// - else prog will be 5
-									child._prog = 0;
-									region.prog++;
 									fit = false;
-									return;
 								}
 							} else {
 								// else auto-height
 								//console.log(pos,i,"auto!")
-								child._prog = 1;
-								sizeSetting.h = region.dim.h;
+								prog = 1;
+								sizeSetting.h = h;
 							}
-						} else if(region.prog<3) {
+						} else if(fit && region.prog<3 && child._dim.minHeight) {
 							// min
-							if(child._dim.minHeight && child._dim.minHeight<=region.dim.h) {
+							if(child._dim.minHeight<=h) {
 								//console.log(pos,i,"min!")
-								child._prog = 3;
-								sizeSetting.h = region.dim.h;
+								prog = 3;
+								sizeSetting.h = h;
 							} else {
 								// nofit!
-								child._prog = 0;
-								region.prog++;
 								fit = false;
-								return;
 							}
-						} else if(region.prog<4) {
+						} else if(fit && region.prog<4 && tileSize) {
 							// tilesize
-							if(tileSize && tileSize<=region.dim.h) {
+							if(tileSize<=h) {
 								//console.log(pos,i,"tile!")
-								child._prog = 4;
+								prog = 4;
 								sizeSetting.w = sizeSetting.h = tileSize;
 							} else {
 								// nofit!
-								child._prog = 0;
-								region.prog++;
 								fit = false;
-								return;
 							}
-						} else if(region.prog<5) {
+						} else if(fit && region.prog<5) {
 							// hide
 							//console.log(pos,i,"hide!")
-							child._prog = 5;
+							prog = 5;
 							sizeSetting.w = sizeSetting.h = 0;
 							region.prog = 1;
 						}
-						sizeSetting.t = region.dim.t;
 						if(!("w" in sizeSetting)) {
 							// it wasn't set by tileSize or hide, so set it
 							if(child._dim.width || child._dim.minWidth) {
@@ -181,30 +178,37 @@ define([
 								sizeSetting.w = child.w;
 							}
 						}
-						sizeSetting.l = region.dim.l;
-						size(child, sizeSetting);
-						if(pos == "left"){
-							// don't update if more may fit:
-							// - into largest width
-							// - when (min/max-)height fits
-							// - when tileSize fits
-							if(!prog || refit) {
-								region.dim.h -= sizeSetting.h;
+						sizeSetting.l = dim.l + (pos=="right" ? dim.w - region.dim.w : 0)+ region.dim.l;
+						sizeSetting.t = dim.t + region.dim.t;
+						if(fit) {
+							// don't update if more may fit into max
+							// modify region dim
+							if(region.dim.l+sizeSetting.w<=region.dim.w){
+								// it fits, so update left
+								region.dim.l += sizeSetting.w;
+								region.row = Math.max(region.row,sizeSetting.h);
+							} else {
+								// no fit, so fill height to what is currently set in this "row"
+								fit = false;
+								region.dim.l = 0;
+								region.dim.h -= region.row;
+								region.dim.t += region.row;
+								region.row = 0;
 							}
-						}
-						// modify region dim
-						if(sizeSetting.w<region.dim.w){
-							// it fits, so update left
-							region.dim.l += sizeSetting.w;
 						} else {
-							region.dim.l = dim.l;
-							region.dim.t += sizeSetting.h;
+							region.prog++;
 						}
-						// if last element update global dim
-						if(i===len-1) {
-							// modify global dim
-							dim.w -= max;
-							if(pos=="left") dim.l += max;
+						if(fit) {
+							size(child, sizeSetting);
+							child._prog = prog;
+							// if last element update global dim
+							if(!refit && i===len-1) {
+								// modify global dim
+								dim.w -= max;
+								if(pos=="left") dim.l += max;
+							}
+						} else {
+							child._prog = 0;
 						}
 					}
 				}else if(pos == "client" || pos == "center"){
@@ -267,7 +271,7 @@ define([
 				}
 				child.region = pos;
 				child._prog = 0;
-				if(!regions[pos]) regions[pos] = {id:pos,children:[],prog:1};
+				if(!regions[pos]) regions[pos] = {id:pos,children:[],prog:1,row:0};
 				return child;
 			});
 			
@@ -336,6 +340,8 @@ define([
 				});
 				regions[region].max = val;
 				regions[region].dim = lang.mixin({},dim);
+				regions[region].dim.t = 0;
+				regions[region].dim.l = 0;
 				regions[region].dim[prop.charAt(0)] = val;
 				var fit = null;
 				var safe = 6*children.length;
