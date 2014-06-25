@@ -235,6 +235,25 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 						}));
 					}
 				}));
+			}),
+			this.watch("updated",function(prop,oldValue,newValue){
+				this.updated = null;
+				var update = lang.mixin({},newValue);
+				var model = update.model;
+				delete update.model;
+				// FIXME hack for model filter
+				if(model !== "Page") return;
+				var res = this.model.store.get(update.id);
+				var save = lang.hitch(this,function(item) {
+					this.model.store.put(item);
+				});
+				if(res.then) {
+					res.then(function(item){
+						save(lang.mixin(item,update));
+					});
+				} else {
+					save(lang.mixin(res,update));
+				}
 			})
 		);
 		this.inherited(arguments);
