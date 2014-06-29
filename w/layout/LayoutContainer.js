@@ -8,9 +8,9 @@ define("dlagua/w/layout/LayoutContainer", [
 	
 	return declare("dlagua.w.layout.LayoutContainer",[LayoutContainer],{
 		tileSize:50,
+		allowHide:true,
 		layout: function(){
-			layoutUtils.tileSize = this.tileSize;
-			layoutUtils.layoutChildren(this.domNode, this._contentBox, this._getOrderedChildren());
+			layoutUtils.layoutChildren(this.domNode, this._contentBox, this._getOrderedChildren(),null,null,this.design,this.tileSize,this.allowHide);
 		}
 	});
 });
