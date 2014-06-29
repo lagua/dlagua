@@ -40,23 +40,29 @@ html,body {
 </head>
 <body class="claro">
 	<div id="basic" data-dojo-type=dlagua/w/layout/LayoutContainer style="width: 100%; height: 100%;">
-		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout1" region="left" layoutPriority="1" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
+		<div data-dojo-type="dijit/layout/ContentPane" id="topcp_layout1" region="top" style="background-color: #b39b86; width:300px"  tabindex="0">
+			top bar 1
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" layoutPriority="2" id="topcp_layout2" region="top" style="background-color: #b39b86; width:300px"  tabindex="0">
+			top bar 2
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout1" region="left" layoutPriority="3" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
 			left1
 		</div>
-		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout12" region="left" layoutPriority="2" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
+		<div data-dojo-type="dijit/layout/ContentPane" id="leftcp_layout2" region="left" layoutPriority="4" style="background-color: #acb386; width: 100px;height:100px;" tabindex="0">
 			left2
 		</div>
 		<div data-dojo-type="dijit/layout/ContentPane" id="rightcp_layout1" region="right" style="background-color: #acb386;"  tabindex="0">
 			right
 		</div>
-		<div data-dojo-type="dijit/layout/ContentPane" id="topcp_layout1" region="top" style="background-color: #b39b86; "  tabindex="0">
-			top bar
-		</div>
 		<div data-dojo-type="dijit/layout/ContentPane" id="centercp_layout1" region="center" style="background-color: #f5ffbf; padding: 10px;"  tabindex="0">
 			Here's some text.
 		</div>
-		<div data-dojo-type="dijit/layout/ContentPane" id="bottomcp_layout1" region="bottom" style="background-color: #b39b86;"  tabindex="0">
+		<div data-dojo-type="dijit/layout/ContentPane" id="bottomcp_layout1" layoutPriority="1" region="bottom" style="background-color: #b39b86;"  tabindex="0">
 			bottom bar
+		</div>
+		<div data-dojo-type="dijit/layout/ContentPane" id="bottomcp_layout2" layoutPriority="2" region="bottom" style="background-color: #b39b86;"  tabindex="0">
+			bottom bar 2
 		</div>
 	</div>
 </body>
