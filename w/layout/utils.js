@@ -74,10 +74,11 @@ define([
 			var max = region.max;
 			var len = children.length;
 			var fit = true;
-			var tileSize = this.tileSize;
 			children.forEach(function(child,i){
 				if(!fit) return;
-				var elm = child.domNode,
+				var tileSize = child.tileSize || this.tileSize,
+					allowHide = child.allowHide || this.allowHide,
+					elm = child.domNode,
 					pos = child.region;
 
 				domClass.add(elm, "dijitAlign" + capitalize(pos));
@@ -161,7 +162,7 @@ define([
 								// nofit!
 								fit = false;
 							}
-						} else if(fit && region.prog<5) {
+						} else if(fit && allowHide && region.prog<5) {
 							// hide
 							//console.log(pos,i,"hide!")
 							prog = 5;
@@ -214,7 +215,7 @@ define([
 				}else if(pos == "client" || pos == "center"){
 					size(child, dim);
 				}
-			});
+			},this);
 			return fit;
 		},
 
