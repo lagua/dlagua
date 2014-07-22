@@ -163,9 +163,10 @@ define([
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
-			var uri = item.uri;
 			var published = options.published;
 			delete options.published;
+			var postfix = item.published && !published ? ".temp" : "";
+			var uri = item.uri + postfix;
 			var modified = options["last-modified"];
 			var _q = ioQuery.objectToQuery(options);
 			//console.log(this)
