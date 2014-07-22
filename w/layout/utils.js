@@ -4,11 +4,8 @@ define([
 	"dojo/_base/array", // array.filter array.forEach
 	"dojo/dom-class", // domClass.add domClass.remove
 	"dojo/dom-geometry", // domGeometry.marginBox
-	"dojo/dom-style", // domStyle.getComputedStyle
-	"dcssstore/CssRules",
-	"dcssstore/_PatternMixin",
-	"dcssstore/_QueryMixin"
-], function(declare,lang,array, domClass, domGeometry, domStyle,CssRules,_PatternMixin,_QueryMixin){
+	"dojo/dom-style" // domStyle.getComputedStyle
+], function(declare,lang,array, domClass, domGeometry, domStyle){
 
 	// module:
 	//		dijit/layout/utils
@@ -38,9 +35,6 @@ define([
 		return A;
 	}
 	
-	var rulestore = new declare([CssRules,_PatternMixin,_QueryMixin])();
-	rulestore.open(); // not going to care if it isn't loaded
-
 	var utils = {
 		// summary:
 		//		Utility functions for doing layout
@@ -437,10 +431,12 @@ define([
 						elm.style.position = "absolute";
 						var id = elm.id;
 						var classes = elm.className.split(" ");
+						/*
 						var rules = rulestore.query("#"+id);
 						classes.forEach(function(_){
 							rules = rules.concat(rulestore.query("."+_));
 						});
+						*/
 						// we only want to know if these properties were set anywhere in the CSS
 						// when a percentage is set use it to recalc the w/h based on dim
 						var _chk = {}, _dim = {};
