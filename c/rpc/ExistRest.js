@@ -193,15 +193,24 @@ define([
 			return res;
 		},
 		publish:function(){
-			var dd = new Deferred();
+			var d = new Deferred();
 			var item = this.mappedItem;
 			if(!item) {
-				dd.reject({id:undefined,response:"No item in service"});
-				return dd;
+				d.reject({id:undefined,response:"No item in service"});
+				return d;
 			}
 			var uri = item.uri;
-			var postfix = item.published ? this.postfix : "";
-			return when(this.store.get(uri+postfix),lang.hitch(this,function(temp){
+			// publish first time: create tmp!
+			if(item.published) {
+				d = this.store.get(uri+this.postfix);
+			} else {
+				d = when(this.store.get(uri),lang.hitch(this,function(temp){
+					return when(this.store.put(uri+this.postfix,temp,XMLOptions),function(res){
+						return temp;
+					});
+				}));
+			}
+			return when(d,lang.hitch(this,function(temp){
 				return this.save(temp,{published:true});
 			}));
 		},
