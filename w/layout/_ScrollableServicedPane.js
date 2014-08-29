@@ -85,16 +85,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			domStyle.set(this.fixedHeader,"display","none");
 			params.fixedHeaderHeight = 0;
 		}
-		if(this.nativeScroll) {
-			domStyle.set(this.containerNode,{
-				overflow:"auto",
-				WebkitOverflowScrolling: "touch",
-				height:"100%"
-			});
-			this.useScrollBar = false;
-		} else {
-			this.init(params);
-		}
 		if(this.footer) {
 			node = dom.byId(this.fixedFooter);
 			if(node.parentNode == this.domNode){ // local footer
@@ -105,6 +95,16 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		} else {
 			domStyle.set(this.fixedFooter,"display","none");
 			params.fixedFooterHeight = 0;
+		}
+		if(this.nativeScroll) {
+			lang.mixin(this,params);
+			domStyle.set(this.containerNode,{
+				overflow:"auto",
+				WebkitOverflowScrolling: "touch"
+			});
+			this.useScrollBar = false;
+		} else {
+			this.init(params);
 		}
 		this.inherited(arguments);
 		if(this.count>this.maxCount) this.count = this.maxCount;
@@ -291,17 +291,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this.fixedFooterHeight = domGeometry.getMarginBox(this.fixedFooter).h;
 		}
 		this._appFooterHeight = (this.fixedFooterHeight && !this.isLocalFooter) ? this.fixedFooterHeight : 0;
-		if(!this._dim) this._dim = this.getDim();
-		if(this.nativeScroll) {
-			var h = this._dim.d.h;
-			domStyle.set(this.containerNode, "height",h+"px");			
-		} else {
-			var w = this._dim.v.w-(this._scrollBarV ? 13 : 0);
-			domStyle.set(this.containerNode,"width",w+"px");				
-		}
+		if(!this._dim || this.nativeScroll) this._dim = this.getDim();
 		if(this.header) {
 			this.fixedHeaderHeight = domGeometry.getMarginBox(this.fixedHeader).h;
 			domStyle.set(this.containerNode,this.nativeScroll ? "marginTop" : "paddingTop", this.fixedHeaderHeight + this._containerInitTop + "px");
+		}
+		if(this.nativeScroll) {
+			var h = this._dim.d.h;
+			domStyle.set(this.containerNode, "height",h+"px");
+		} else {
+			var w = this._dim.v.w-(this._scrollBarV ? 13 : 0);
+			domStyle.set(this.containerNode,"width",w+"px");				
 		}
 		if(!this.nativeScroll) this.resetScrollBar();
 		this.onTouchEnd();
