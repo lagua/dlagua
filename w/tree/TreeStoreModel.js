@@ -61,7 +61,7 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 					var parent = options.parent;
 					var i = 0,l = parent.childorder.length;
 					for(;i<l;i++) {
-						if(cid==parent.childorder[i]) break;
+						if(id==parent.childorder[i]) break;
 					}
 					parent.childorder.splice(i,1);
 					store.put.call(this,parent,{overwrite:true});
