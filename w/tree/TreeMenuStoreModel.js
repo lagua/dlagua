@@ -2,9 +2,10 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/aspect",
+	"dojo/when",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/tree/TreeStoreModel"
-],function(declare,lang,aspect,JsonRest,TreeStoreModel){
+],function(declare,lang,aspect,when,JsonRest,TreeStoreModel){
 
 return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	stores:{},
@@ -15,18 +16,21 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 			});
 		}
 		this.inherited(arguments);
-	},
-	getRoot:function(onItem){
-		// replace root children if they should come from another model
-		aspect.after(this,"onItem",lang.hitch(this,function(root){
-			if(root.type=="model" && root.model) {
-				var cpath = "../"+root.model+"/?locale="+root.locale;
-				if(root.sort) cpath+="&sort("+root.sort+")";
-				root.children = {"$ref":cpath};
-				return root;
+		var self = this;
+		var getChildren = this.store.getChildren;
+		this.store = lang.mixin(this.store,{
+			getChildren: function(item) {
+				var root = self.root;
+				if(root.type=="model" && root.model) {
+					var q = "../"+root.model+"/?locale="+root.locale;
+					if(root.sort) q+="&sort("+root.sort+")";
+					return this.query(q);
+				} else {
+					return getChildren.call(this,item);
+				}
+			
 			}
-		}),true);
-		this.inherited(arguments);
+		});
 	}
 });
 
