@@ -10,22 +10,9 @@ define([
 	"dojo/store/Cache",
 	"dojo/store/Observable",
 	"dlagua/w/tree/SimpleQueryEngine",
-	"dijit/tree/ObjectStoreModel"
-],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,SimpleQueryEngine,ObjectStoreModel){
-return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
-	root : null,
-	store: null,
-	loaded:false,
-	rootId : "",
-	rootType:"locale",
-	locale:"",
-	parentAttr: "__parent",
-	showOnlyChildren : false,
-	labelAttr: "name",
-	idProperty:"id",
-	_loading:false,
-	cancelLoading:false,
-	deferItemLoadingUntilExpand:true,
+	"dlagua/w/tree/TreeStoreModel"
+],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,SimpleQueryEngine,TreeStoreModel){
+return declare("dlagua.w.tree.TreeStoreModel", [TreeStoreModel], {
 	constructor : function(args) {
 		lang.mixin(this, args);
 		if(this.rootId) {
@@ -53,7 +40,6 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 				return res;
 			}
 		});
-		var self = this;
 		aspect.around(store,"remove",function(remove){
 			return function(id,options){
 				options = options || {};
@@ -110,24 +96,6 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 		});
 		var master = new Observable(store);
 		this.store = new Cache(master,new Memory({idProperty:"id"}));
-	},
-	getParent:function(item,callback,errback){
-		if(item.parent) {
-			var res = this.store.get(item.parent);
-			if(res.then) {
-				res.then(callback);
-			} else {
-				callback(res);
-			}
-		} else {
-			errback("No parent item found!");
-		}
-	},
-	mayHaveChildren : function(item) {
-		return item ? item.hasOwnProperty("childorder") : false;
-	},
-	isItem: function(item){
-		return (typeof item == 'object') && item && !(item instanceof Date);
 	}
 });
 });
