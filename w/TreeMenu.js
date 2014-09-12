@@ -238,7 +238,7 @@ define([
 				return;
 			}
 			console.log("TreeMenu _loadFromId",this.currentId)
-			if(!this.model.loaded) {
+			/*if(!this.model.loaded) {
 				console.log("not loaded, deferring loadFromId")
 				if(!this._lh) this._lh = aspect.after(this.model,"onLoad",lang.hitch(this,this._loadFromId));
 				return;
@@ -246,6 +246,7 @@ define([
 			if(this._lh) this._lh.remove();
 			this._lh = null;
 			var self = this;
+			*/
 			this._checkTruncate(this.currentId);
 		},
 		_createTreeNode: function(args) {
