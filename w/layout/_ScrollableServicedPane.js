@@ -317,9 +317,12 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		if(this.nativeScroll) {
 			// summary:
 			//		Returns various internal dimensional information needed for calculation.
+			var h = this.containerNode.style.height;
+			var st = this.containerNode.scrollTop;
+			this.containerNode.style.height = "auto";
 			var d = {};
 			// content width/height
-			d.c = {h:this.containerNode.scrollHeight, w:this.containerNode.offsetWidth};
+			d.c = {h:this.containerNode.offsetHeight, w:this.containerNode.offsetWidth};
 	
 			// view width/height
 			d.v = {h:this.domNode.offsetHeight + this._appFooterHeight, w:this.domNode.offsetWidth};
@@ -328,6 +331,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 	
 			// overflowed width/height
 			d.o = {h:d.c.h - d.v.h + this.fixedHeaderHeight + this.fixedFooterHeight + this._appFooterHeight, w:d.c.w - d.v.w};
+			this.containerNode.style.height = h;
+			this.containerNode.scrollTop = st;
 			return d;
 		}
 		return this.inherited(arguments);
