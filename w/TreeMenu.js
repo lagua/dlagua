@@ -52,16 +52,13 @@ define([
 			);
 			this.inherited(arguments);
 		},
-		_loadFromItem:function(prop,oldValue,newValue){
+		_loadFromItem:function(prop,o,n){
 			console.log("TreeMenu loading currentItem ",this.currentItem)
-			var reload;
-			var n = this.currentItem;
-			var o = this.model.root;
-			for(var k in this.currentItem) {
-				//if(k=="__truncated" || k=="__loaded") continue;
-				var props = this.reloadTriggerProperties.split(",");
-				if(o) {
-					var reload = false;
+			var reload = false;
+			if(o) {
+				for(var k in this.currentItem) {
+					//if(k=="__truncated" || k=="__loaded") continue;
+					var props = this.reloadTriggerProperties.split(",");
 					for(var i=0;i<props.length;i++) {
 						var p = props[i];
 						if(p in n && p in o && n[p]!=o[p]) {
@@ -80,15 +77,9 @@ define([
 			// summary:
 			//		Initial load of the tree.
 			//		Load root node (possibly hidden) and it's children.
-			if(this.model._loading) {
-				console.log("treemenu model not loaded!")
-				this.model.cancel();
-				return;
-			}
 			this.model.getRoot(
 				lang.hitch(this, function(item){
 					if(!item) {
-						this.model._loading = false;
 						return;
 					}
 					var rn = (this.rootNode = this.tree._createTreeNode({
@@ -238,15 +229,6 @@ define([
 				return;
 			}
 			console.log("TreeMenu _loadFromId",this.currentId)
-			/*if(!this.model.loaded) {
-				console.log("not loaded, deferring loadFromId")
-				if(!this._lh) this._lh = aspect.after(this.model,"onLoad",lang.hitch(this,this._loadFromId));
-				return;
-			}
-			if(this._lh) this._lh.remove();
-			this._lh = null;
-			var self = this;
-			*/
 			this._checkTruncate(this.currentId);
 		},
 		_createTreeNode: function(args) {

@@ -203,13 +203,21 @@ define([
 				array.forEach(toResolve, function(rel){
 					var link = data[rel][refattr];
 					// TODO make store xdomain capable
-					parent.store.query(link).then(function(res){
-						data[rel] = res;
+					if(link) {
+						parent.store.query(link).then(function(res){
+							data[rel] = res;
+							total--;
+							if(total==0) {
+								d.resolve(data);
+							}
+						});
+					} else {
+						console.error("Link "+link+" for "+parent.id+" could not be resolved.");
 						total--;
 						if(total==0) {
 							d.resolve(data);
 						}
-					});
+					}
 				});
 				if(!skipX) {
 					array.forEach(toResolveX, function(x){

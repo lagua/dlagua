@@ -171,7 +171,7 @@ return declare("dlagua.c.App", [Stateful], {
 			return par[index]!=stripar[index];
 		});
 		var newView = this.getView(item.view || item.state);
-		var view = this.checkView(par.join("/"),newView);
+		var view = this.checkView(path,newView);
 		if(view) {
 			return when(this.rebuild(view).then(lang.hitch(this,function(){
 				this.startup();
