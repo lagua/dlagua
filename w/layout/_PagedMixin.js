@@ -15,7 +15,7 @@ define([
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
-		pageThreshold:50,
+		pageThreshold:25,
 		childTemplate:"",
 		snap:false,
 		pageButtons:true,
@@ -209,7 +209,7 @@ define([
 				var dy = y+py;
 				// FIXME: for border, but margin may differ
 				if(dy==1 || dy==-1) dy = 0;
-				if(dy!=0 && !this._bounce) this._bounce = {x:0,y:-y};
+				if(dy!=0 && !this._bounce && !this.nativeScroll) this._bounce = {x:0,y:-y};
 			}
 			this.pageStore(py);
 			if(this.selectedIndex==index) return;
