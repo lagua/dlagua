@@ -103,7 +103,7 @@ define([
 							if(link.rel==c) {
 								var href = link.href.split("?")[0];
 								var par = href.split("/");
-								while(par.length && !cschemaUri) cschemaUri = par.pop();
+								while(par.length && (!cschemaUri || cschemaUri.match(/{|}|\.}/g))) cschemaUri = par.pop();
 								break;
 							}
 						}
