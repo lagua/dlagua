@@ -30,10 +30,9 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 		var getChildren = this.store.getChildren;
 		this.store = lang.mixin(this.store,{
 			getChildren: function(item) {
-				var root = self.root;
-				if(root.type=="model" && root.model) {
-					var q = "../"+root.model+"/?locale="+root.locale;
-					if(root.sort) q+="&sort("+root.sort+")";
+				if(item.type=="model" && item.model) {
+					var q = "../"+item.model+"/?locale="+(item.locale || self.locale);
+					if(item.sort) q+="&sort("+item.sort+")";
 					return this.query(q);
 				} else {
 					return getChildren.call(this,item);
