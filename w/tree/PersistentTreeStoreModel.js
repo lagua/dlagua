@@ -9,9 +9,9 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dojo/store/Observable",
-	"dlagua/w/tree/SimpleQueryEngine",
+	"dlagua/w/tree/RqlQueryEngine",
 	"dlagua/w/tree/TreeStoreModel"
-],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,SimpleQueryEngine,TreeStoreModel){
+],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,Observable,RqlQueryEngine,TreeStoreModel){
 return declare("dlagua.w.tree.TreeStoreModel", [TreeStoreModel], {
 	constructor : function(args) {
 		lang.mixin(this, args);
@@ -26,7 +26,7 @@ return declare("dlagua.w.tree.TreeStoreModel", [TreeStoreModel], {
 			if(this.locale) this.query.locale = this.locale;
 		}
 		var store = lang.mixin(this.store,{
-			queryEngine:SimpleQueryEngine,
+			queryEngine:RqlQueryEngine,
 			getChildren: function(item) {
 				// TODO use item.children._ref;
 				var res = this.query({parent:item.id},{parent:item});
