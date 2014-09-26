@@ -234,12 +234,20 @@ define([
 		_createTreeNode: function(args) {
 	        return new TreeNode(args);
 	    },
-	    onClick:function(item,node) {
+	    _onExpandoClick:function(msg){
+			var node = msg.node;
+			if(this.foldersArePages) this.onActivate(node.item);
+			this.inherited(arguments);
+		},
+		onActivate:function(item){
 			if(item.type=="link") {
 				location.href=item.url;
 			} else {
 				this._pubItem(item);
 			}
+		},
+	    onClick:function(item,node) {
+			this.onActivate(item);
 		}
 	});
 	
