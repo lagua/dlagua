@@ -2,6 +2,8 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/_base/fx",
+	"dojo/fx",
+	"dojo/fx/easing",
 	"dojo/request",
 	"dojo/dom",
 	"dojo/dom-construct",
@@ -12,9 +14,8 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
-	"dojo/text!./templates/ScrollableServicedPane.html",
-	"dojox/mobile/compat"
-],function(declare,lang,fx,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+	"dojo/text!./templates/ScrollableServicedPane.html"
+],function(declare,lang,fx,dfx,easing,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 	
 return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _TemplatedMixin],{
 	itemnodesmap:null,
@@ -237,6 +238,19 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this.containerNode.scrollLeft = pos.x;
 			this.containerNode.scrollTop = pos.y;
 		}
+	},
+	slideTo:function(to,duration,easing) {
+		var self = this;
+		var s = dfx.slideTo({
+			node: this.containerNode,
+			duration: duration*1000,
+			left: to.x,
+			top: to.y,
+			easing: (easing == "ease-out") ? easing.quadOut : easing.linear,
+			onEnd: function(){
+				self.onFlickAnimationEnd();
+			}
+		}).play();
 	},
 	rebuild:function(item) {
 		this.currentService = item.service;
