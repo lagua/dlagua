@@ -34,7 +34,7 @@ define([
 		rootModel:"",
 		model:null,
 		showRoot:false,
-		openOnClick:false,
+		openOnClick:true,
 		persist:false,
 		storeTarget:"",
 		currentId:"",
