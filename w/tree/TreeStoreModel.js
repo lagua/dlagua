@@ -8,9 +8,9 @@ define([
 	"dojo/io-query",
 	"dojo/store/Memory",
 	"dojo/store/Cache",
-	"dlagua/w/tree/SimpleQueryEngine",
+	"dlagua/w/tree/RqlQueryEngine",
 	"dijit/tree/ObjectStoreModel"
-],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,SimpleQueryEngine,ObjectStoreModel){
+],function(declare,lang,array,Deferred,aspect,when,ioQuery,Memory,Cache,RqlQueryEngine,ObjectStoreModel){
 return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	root : null,
 	store: null,
@@ -23,6 +23,7 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	labelAttr: "name",
 	idProperty:"id",
 	_loading:false,
+	refAttr:"_ref",
 	cancelLoading:false,
 	deferItemLoadingUntilExpand:true,
 	constructor : function(args) {
@@ -38,10 +39,11 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 			if(this.locale) this.query.locale = this.locale;
 		}
 		var store = lang.mixin(this.store,{
-			queryEngine:SimpleQueryEngine,
+			queryEngine:RqlQueryEngine,
+			refAttr:this.refAttr,
 			getChildren: function(item) {
 				// TODO use item.children._ref;
-				var res = this.query({parent:item.id},{parent:item});
+				var res = this.query(item.children[this.refAttr],{parent:item});
 				if(item.childorder) {
 					when(res,function(children){
 						children.sort(function(a,b){
