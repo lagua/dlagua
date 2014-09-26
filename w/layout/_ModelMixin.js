@@ -45,44 +45,46 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		if(this._started) return;
 		// support templateModule for now
 		if(this.templateModule) this.templatePath = require.toUrl(this.templateModule)+"/"+this.templatePath;
-		if(this.store) {
-			this.stores[this.store.target] = this.store;
-			this.template = this.getTemplate();
+		this.template = this.getTemplate();
+		if(this.template) {
 			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
 					this._tplo = tplo;
-					var openStore = lang.hitch(this,function(){
-						this.store = this.stores[this.store.target] = new Observable(this.store);
-						
-						var results = this.store.query();
-						results.forEach(lang.hitch(this,this.addItem));
-						
-						this.own(
-							results.observe(lang.hitch(this,function(item, removed, inserted){
-								if(removed > -1){ // existing object removed
-									this._removeItemById(item[this.idProperty]);
-								}
-								if(inserted > -1){ // new or updated object inserted
-									this.addItem(item);
-									this.currentId = item[this.idProperty];
-								}
-							})),
-							this.watch("newItem",function(name,oldItem,item){
-								this.store.add(item);
-								this.newItem = null;
-							}),
-							this.watch("removeItem",function(name,oldId,id){
-								this.store.remove(id);
-								this.removeItem = null;
-							})
-						);
-					});
-					if(this.store.open) {
-						this.store.open().then(openStore);
-					} else { 
-						openStore();
+					if(this.store) {
+						this.stores[this.store.target] = this.store;
+						var openStore = lang.hitch(this,function(){
+							this.store = this.stores[this.store.target] = new Observable(this.store);
+							
+							var results = this.store.query();
+							results.forEach(lang.hitch(this,this.addItem));
+							
+							this.own(
+								results.observe(lang.hitch(this,function(item, removed, inserted){
+									if(removed > -1){ // existing object removed
+										this._removeItemById(item[this.idProperty]);
+									}
+									if(inserted > -1){ // new or updated object inserted
+										this.addItem(item);
+										this.currentId = item[this.idProperty];
+									}
+								})),
+								this.watch("newItem",function(name,oldItem,item){
+									this.store.add(item);
+									this.newItem = null;
+								}),
+								this.watch("removeItem",function(name,oldId,id){
+									this.store.remove(id);
+									this.removeItem = null;
+								})
+							);
+						});
+						if(this.store.open) {
+							this.store.open().then(openStore);
+						} else { 
+							openStore();
+						}
 					}
-				})); 
+				}));
 			}));
 		}
 		this.inherited(arguments);

@@ -2,31 +2,21 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/topic",
+	"dojo/aspect",
+	"dojo/request",
+	"dojo/when",
 	"dojo/io-query",
 	"dojo/store/JsonRest",
 	"rql/parser",
-	"rql/query",
 	"dijit/form/FilteringSelect",
 	"dlagua/w/Subscribable"
-],function(declare,lang,topic,ioQuery,JsonRest,rqlParser,rqlQuery,FilteringSelect,Subscribable){
-var LocaleRest = declare("dlagua.c.store.LocaleRest",[JsonRest],{
-	locales:null,
-	idProperty:"id",
-	target:"/model/Nls/",
-	query: function(query, options){
-		var qo = new rqlParser.parseQuery(ioQuery.objectToQuery(query));
-		qo = qo["in"]("id",this.locales);
-		query = "?"+qo.toString();
-		arguments[0] = query;
-		return this.inherited(arguments);
-	}
-});
+],function(declare,lang,topic,aspect,request,when,ioQuery,JsonRest,rqlParser,FilteringSelect,Subscribable){
 var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscribable], {
 	locale:"",
 	locale_extra:"",
 	store:null,
-	searchAttr:"local",
-	labelAttr:"local",
+	searchAttr:"locale",
+	labelAttr:"locale",
 	style:"width:80px",
 	currentId:"",
 	autoComplete:true,
@@ -41,15 +31,34 @@ var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscr
 		if(args.locale_extra) {
 			locstr+=","+args.locale_extra;
 		}
-		this.store = new LocaleRest({
-			locales: locstr.split(",")
+		var locales = locstr.split(",");
+		var store = new JsonRest({
+			idProperty:"id",
+			target:"/model/Nls/"
 		});
+		aspect.around(store,"query",function(oriQuery){
+			return function(query, options){
+				var qo = new rqlParser.parseQuery(ioQuery.objectToQuery(query));
+				return when(request("/model/Page/?type=locale"),function(res){
+					res.forEach(function(item){
+						if(locales.indexOf(item.locale)==-1) {
+							locales.push(item.locale);
+						}
+					});
+					qo = qo["in"]("id",locales);
+					return oriQuery.call(store,"?"+qo.toString(),options);
+				});
+			}
+		});
+		args.store = store;
 		args.value = args.locale;
 		this.own(
 			this.watch("currentId",function(){
 				console.log(this.currentId)
 			})
 		);
+		lang.mixin(this,args);
+		this.inherited(arguments);
 	}
 });
 
