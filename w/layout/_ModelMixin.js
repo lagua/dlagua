@@ -13,13 +13,12 @@ define([
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
-	"dojo/store/Memory",
-	"dojo/store/Cache",
-	"dojo/store/Observable",
+	//"dojo/store/Memory",
+	//"dojo/store/Cache",
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(require,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,Memory,Cache,Observable,jsonref,rqlQuery,rqlParser) {
+],function(reqr,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,jsonref,rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
@@ -39,53 +38,56 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	total:Infinity,
 	filterByItemProperties:"",
 	useItemChildren:false,
+	persistentStore:false,
 	_tplo:null,
 	partials:"",
 	startup:function(){
 		if(this._started) return;
 		// support templateModule for now
-		if(this.templateModule) this.templatePath = require.toUrl(this.templateModule)+"/"+this.templatePath;
+		if(this.templateModule) this.templatePath = reqr.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.template = this.getTemplate();
-		if(this.template) {
-			this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-				this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-					this._tplo = tplo;
-					if(this.store) {
-						this.stores[this.store.target] = this.store;
-						var openStore = lang.hitch(this,function(){
-							this.store = this.stores[this.store.target] = new Observable(this.store);
-							
-							var results = this.store.query();
+		// use Observable if has persistent
+		if(this.persistentStore && this.store) {
+			this.stores[this.store.target] = this.store;
+			var openStore = lang.hitch(this,function(Observable){
+				this.store = this.stores[this.store.target] = new Observable(this.store);
+				
+				var results = this.store.query();
+				if(this.template) {
+					this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+						this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+							this._tplo = tplo;
 							results.forEach(lang.hitch(this,this.addItem));
-							
-							this.own(
-								results.observe(lang.hitch(this,function(item, removed, inserted){
-									if(removed > -1){ // existing object removed
-										this._removeItemById(item[this.idProperty]);
-									}
-									if(inserted > -1){ // new or updated object inserted
-										this.addItem(item);
-										this.currentId = item[this.idProperty];
-									}
-								})),
-								this.watch("newItem",function(name,oldItem,item){
-									this.store.add(item);
-									this.newItem = null;
-								}),
-								this.watch("removeItem",function(name,oldId,id){
-									this.store.remove(id);
-									this.removeItem = null;
-								})
-							);
-						});
-						if(this.store.open) {
-							this.store.open().then(openStore);
-						} else { 
-							openStore();
+						}));
+					}));
+				}
+				this.own(
+					results.observe(lang.hitch(this,function(item, removed, inserted){
+						if(removed > -1){ // existing object removed
+							this._removeItemById(item[this.idProperty]);
 						}
-					}
-				}));
-			}));
+						if(inserted > -1){ // new or updated object inserted
+							this.addItem(item);
+							this.currentId = item[this.idProperty];
+						}
+					})),
+					this.watch("newItem",function(name,oldItem,item){
+						this.store.add(item);
+						this.newItem = null;
+					}),
+					this.watch("removeItem",function(name,oldId,id){
+						this.store.remove(id);
+						this.removeItem = null;
+					})
+				);
+			});
+			if(this.store.open) {
+				this.store.open().then(function(){
+					reqr(["dojo/store/Observable"],openStore);
+				});
+			} else { 
+				reqr(["dojo/store/Observable"],openStore);
+			}
 		}
 		this.inherited(arguments);
 		this.own(
@@ -525,7 +527,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		tpl = tpl.replace(/\{\{&gt;/g,"{{>");
 		var d = new Deferred();
 		if(reqs.length) {
-			require(reqs,function(){
+			reqr(reqs,function(){
 				d.resolve({
 					tpl:tpl,
 					partials:partials
