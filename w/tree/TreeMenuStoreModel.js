@@ -18,10 +18,10 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	},
 	mayHaveChildren : function(item) {
 		if(item) {
-			if(item.type=="page" || item.type=="locale") {
-				return item.hasOwnProperty("childorder") 
-			} else {
+			if(item.type=="model") {
 				return item.hasOwnProperty("children");
+			} else {
+				return item.hasOwnProperty("childorder");
 			}
 		}
 	},
