@@ -11,10 +11,10 @@ define([
 	"dlagua/w/layout/_ScrollableServicedPane",
 	"dlagua/w/layout/_FormMixin",
 	"dlagua/w/layout/_ModelMixin",
-	"dlagua/w/layout/_PageKeysMixin",
+	//"dlagua/w/layout/_PageKeysMixin",
 	"dlagua/w/layout/_PagedMixin",
 	"dlagua/w/Subscribable"
-],function(declare,_SSP,_FormMixin,_ModelMixin,_PageKeysMixin,_PagedMixin,Subscribable){
+],function(declare,_SSP,_FormMixin,_ModelMixin,_PagedMixin,Subscribable){
 return declare("dlagua.w.layout.ScrollableServicedPane",[_SSP, _FormMixin, _ModelMixin, _PageKeysMixin, _PagedMixin, Subscribable],{
 	nativeScroll:true,
 	noCover:false
