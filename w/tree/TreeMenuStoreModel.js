@@ -17,7 +17,7 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 		onItem(this.root);
 	},
 	mayHaveChildren : function(item) {
-		return item ? item.hasOwnProperty("childorder") || item.hasOwnProperty("children") : false;
+		return item ? (["page","locale"].indexOf(item.type)>-1 && item.hasOwnProperty("childorder")) || item.hasOwnProperty("children") : false;
 	},
 	constructor:function(args) {
 		if(!args.store) {
