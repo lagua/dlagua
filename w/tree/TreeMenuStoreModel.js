@@ -17,7 +17,13 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 		onItem(this.root);
 	},
 	mayHaveChildren : function(item) {
-		return item ? (["page","locale"].indexOf(item.type)>-1 && item.hasOwnProperty("childorder")) || item.hasOwnProperty("children") : false;
+		if(item) {
+			if(item.type=="page" || item.type=="locale") {
+				return item.hasOwnProperty("childorder") 
+			} else {
+				return item.hasOwnProperty("children");
+			}
+		}
 	},
 	constructor:function(args) {
 		if(!args.store) {
