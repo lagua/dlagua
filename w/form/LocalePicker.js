@@ -32,14 +32,18 @@ var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscr
 			locstr+=","+args.locale_extra;
 		}
 		var locales = locstr.split(",");
-		var store = new JsonRest({
+		var store = args.store || new JsonRest({
 			idProperty:"id",
 			target:"/model/Nls/"
+		});
+		var pageStore = new JsonRest({
+			idProperty:"id",
+			target:"/model/Page/"
 		});
 		aspect.around(store,"query",function(oriQuery){
 			return function(query, options){
 				var qo = new rqlParser.parseQuery(ioQuery.objectToQuery(query));
-				return when(request("/model/Page/?type=locale"),function(res){
+				return when(pageStore.query("?type=locale"),function(res){
 					res.forEach(function(item){
 						if(locales.indexOf(item.locale)==-1) {
 							locales.push(item.locale);
