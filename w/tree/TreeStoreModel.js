@@ -72,7 +72,13 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 		}
 	},
 	mayHaveChildren : function(item) {
-		return item ? item.hasOwnProperty("childorder") : false;
+		if(item) {
+			if(item.model) {
+				return item.hasOwnProperty("children");
+			} else {
+				return item.hasOwnProperty("childorder");
+			}
+		}
 	},
 	isItem: function(item){
 		return (typeof item == 'object') && item && !(item instanceof Date);
