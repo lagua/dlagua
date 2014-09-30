@@ -26,8 +26,7 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	refAttr:"_ref",
 	cancelLoading:false,
 	deferItemLoadingUntilExpand:true,
-	constructor : function(args) {
-		lang.mixin(this, args);
+	getRoot:function(){
 		if(this.rootId) {
 			this.query = {
 				id:this.rootId
@@ -38,6 +37,10 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 			};
 			if(this.locale) this.query.locale = this.locale;
 		}
+		this.inherited(arguments);
+	},
+	constructor : function(args) {
+		lang.mixin(this, args);
 		var store = lang.mixin(this.store,{
 			queryEngine:RqlQueryEngine,
 			refAttr:this.refAttr,

@@ -15,21 +15,10 @@ define([
 return declare("dlagua.w.tree.TreeStoreModel", [TreeStoreModel], {
 	constructor : function(args) {
 		lang.mixin(this, args);
-		if(this.rootId) {
-			this.query = {
-				id:this.rootId
-			};
-		} else if(this.rootType) {
-			this.query = {
-				type:this.rootType
-			};
-			if(this.locale) this.query.locale = this.locale;
-		}
 		var store = lang.mixin(this.store,{
 			queryEngine:RqlQueryEngine,
 			getChildren: function(item) {
-				// TODO use item.children._ref;
-				var res = this.query({parent:item.id},{parent:item});
+				var res = this.query(item.children[this.refAttr],{parent:item});
 				if(item.childorder) {
 					when(res,function(children){
 						children.sort(function(a,b){
