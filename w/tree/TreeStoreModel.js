@@ -73,8 +73,8 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	},
 	mayHaveChildren : function(item) {
 		// if the item has a model, try children
-		if(item) {
-			if(item.hasOwnProperty("model") && item.type!="form") {
+		if(item && item.type!="form") {
+			if(item.hasOwnProperty("model")) {
 				return item.hasOwnProperty("children");
 			} else {
 				return item.hasOwnProperty("childorder");
