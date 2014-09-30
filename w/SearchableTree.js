@@ -121,7 +121,7 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 			this.rootNode.destroyRecursive();
 			this.rootNode = null;
 		}
-		if(this.model.loaded) this.model.loaded = false;
+		delete this.model.root;
 		this._itemNodesMap={};
 		this._loadDeferred = new Deferred();
 		this._load();
