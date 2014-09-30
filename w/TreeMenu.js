@@ -76,7 +76,7 @@ define([
 			//		Initial load of the tree.
 			//		Load root node (possibly hidden) and it's children.
 			// always load currentItem as root, it will never come from a query
-			this.model.root = lang.mixin({},this.currentItem);
+			if(this.currentItem) this.model.root = lang.mixin({},this.currentItem);
 			this.model.getRoot(
 				lang.hitch(this, function(item){
 					if(!item) {
