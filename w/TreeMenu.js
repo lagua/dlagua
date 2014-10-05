@@ -45,10 +45,7 @@ define([
 			this.own(
 				this.watch("currentItem",this._loadFromItem),
 				this.watch("currentId",this._loadFromId),
-				aspect.after(this,"onLoad",lang.hitch(this,function(){
-					// always try to load currentId when the tree loads
-					this._loadFromId();
-				}))
+				aspect.after(this,"currentItem",lang.hitch(this,this._loadFromId))
 			);
 			this.inherited(arguments);
 		},
