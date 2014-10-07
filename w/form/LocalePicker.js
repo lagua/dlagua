@@ -15,7 +15,7 @@ var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscr
 	locale:"",
 	locale_extra:"",
 	store:null,
-	searchAttr:"locale",
+	searchAttr:"local",
 	labelAttr:"local",
 	style:"width:80px",
 	currentId:"",
