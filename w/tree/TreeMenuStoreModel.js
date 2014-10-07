@@ -16,6 +16,16 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 		//		Calls onError on error.
 		onItem(this.root);
 	},
+	mayHaveChildren : function(item) {
+		// if the item has a model, try children
+		if(item && item.type!="form") {
+			if(item.hasOwnProperty("model")) {
+				return item.hasOwnProperty("children") && item.children.length>0;
+			} else {
+				return item.hasOwnProperty("childorder") && item.childorder.length>0;
+			}
+		}
+	},
 	constructor:function(args) {
 		if(!args.store) {
 			this.store = new JsonRest({
