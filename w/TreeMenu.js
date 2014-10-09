@@ -45,7 +45,9 @@ define([
 			this.own(
 				this.watch("currentItem",this._loadFromItem),
 				this.watch("currentId",this._loadFromId),
-				aspect.after(this,"currentItem",lang.hitch(this,this._loadFromId))
+				aspect.after(this,"onLoad",lang.hitch(this,function(){
+					this._loadFromId();
+				}))
 			);
 			this.inherited(arguments);
 		},
