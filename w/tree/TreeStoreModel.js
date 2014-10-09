@@ -73,12 +73,9 @@ return declare("dlagua.w.tree.TreeStoreModel", [ObjectStoreModel], {
 	},
 	mayHaveChildren : function(item) {
 		// if the item has a model, try children
-		if(item && item.type!="form") {
-			if(item.hasOwnProperty("model")) {
-				return item.hasOwnProperty("children");
-			} else {
-				return item.hasOwnProperty("childorder");
-			}
+		if(item && item.hasOwnProperty("childorder") && item.childorder.length>0) {
+			console.log("has children",item)
+			return true;
 		}
 	},
 	isItem: function(item){

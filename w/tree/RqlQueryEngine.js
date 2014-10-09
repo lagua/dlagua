@@ -4,6 +4,7 @@ define([
 	"rql/js-array",
 	"rql/query"
 ], function (lang,ioQuery, arrayEngine,rqlQuery) {
+	var store;
 	return function(query, options){
 		switch(typeof query){
 			default:
@@ -15,7 +16,14 @@ define([
 				}
 				break;
 			case "string":
-				query = query.charAt(0)=="?" ? query.substr(1) : query;
+				var par = query.split("?");
+				if(par.length>0) {
+					query = par.pop();
+					var t = par.pop();
+					if(t && t!=store.target) {
+						// FIXME: what to do?
+					}
+				}
 				// fall through
 		}
 		function execute(array){
@@ -35,6 +43,7 @@ define([
 			return results;
 		}
 		//execute.matches = query;
+		store = this;
 		return execute;
 	};
 });

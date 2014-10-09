@@ -257,6 +257,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(!this.stores[target]) {
 				this.store = new JsonRest({
 					target:target,
+					headers:this.headers || {},
 					schemaUri:schemaUri
 				});
 				this.stores[target] = this.store;// new Cache(this.store, new Memory());
