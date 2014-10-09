@@ -20,6 +20,27 @@ define([
 	"dijit/registry"
 ],function(require,declare,lang,array,fx,request,Deferred,when,all,aspect,dhash,dom,domStyle,domConstruct,Memory,Cache,JsonRest,rqlArray,registry){
 	
+	function sortRels(rels) {
+		var sorted = [];
+		// iterate through results and move correct item to sorted
+		var beforeId = null, len = rels.length;
+		// if item wasn't found, escape
+		while(rels.length && len>0) {
+			var rel = rels.pop();
+			if(!rel.data) rel.data = {before:null};
+			if(rel.data.before==beforeId) {
+				// update safety
+				len = rels.length;
+				beforeId = rel.id;
+				sorted.unshift(rel);
+			} else {
+				rels.unshift(rel);
+				len--;
+			}
+		}
+		return sorted.concat(rels);
+	}
+	
 	var wrappedreq = function(req) {
 		var d = new Deferred();
 		require(req,function(){
@@ -712,7 +733,8 @@ return declare("dlagua.c.Renderer",null,{
 			},
 			getChildren:function(item,filter) {
 				return when(this.get(item.id),function(item) {
-					var outgoing = filter ? rqlArray.query(filter,{},item.outgoing_relationships || []) : item.outgoing_relationships;
+					var rels = sortRels(item.outgoing_relationships);
+					var outgoing = filter ? rqlArray.query(filter,{},rels) : item.outgoing_relationships;
 					return all(outgoing.map(function(rel){
 						 return self.nodeStore.get(rel.end[self.refProperty].replace("../Node/",""));
 					}));
