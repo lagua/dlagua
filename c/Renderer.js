@@ -21,24 +21,25 @@ define([
 ],function(require,declare,lang,array,fx,request,Deferred,when,all,aspect,dhash,dom,domStyle,domConstruct,Memory,Cache,JsonRest,rqlArray,registry){
 	
 	function sortRels(rels) {
+		var tmp = rels.slice(0);
 		var sorted = [];
 		// iterate through results and move correct item to sorted
-		var beforeId = null, len = rels.length;
+		var beforeId = null, len = tmp.length;
 		// if item wasn't found, escape
-		while(rels.length && len>0) {
-			var rel = rels.pop();
+		while(tmp.length && len>0) {
+			var rel = tmp.pop();
 			if(!rel.data) rel.data = {before:null};
 			if(rel.data.before==beforeId) {
 				// update safety
-				len = rels.length;
+				len = tmp.length;
 				beforeId = rel.id;
 				sorted.unshift(rel);
 			} else {
-				rels.unshift(rel);
+				tmp.unshift(rel);
 				len--;
 			}
 		}
-		return sorted.concat(rels);
+		return sorted.concat(tmp);
 	}
 	
 	var wrappedreq = function(req) {
@@ -734,7 +735,7 @@ return declare("dlagua.c.Renderer",null,{
 			getChildren:function(item,filter) {
 				return when(this.get(item.id),function(item) {
 					var rels = sortRels(item.outgoing_relationships);
-					var outgoing = filter ? rqlArray.query(filter,{},rels) : item.outgoing_relationships;
+					var outgoing = filter ? rqlArray.query(filter,{},rels) : rels;
 					return all(outgoing.map(function(rel){
 						 return self.nodeStore.get(rel.end[self.refProperty].replace("../Node/",""));
 					}));
