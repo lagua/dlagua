@@ -19,6 +19,7 @@ return declare("dlagua.c.App", [Stateful], {
 	locale:"",
 	servicetype:"",
 	useLocale:true,
+	useGlobalLocale:true,
 	depth:0,
 	meta:{},
 	replaced:[],
@@ -284,8 +285,7 @@ return declare("dlagua.c.App", [Stateful], {
 			})),
 			this.watch("locale",function(){
 				if(!this.locale) return;
-				dojo.locale = this.locale.replace("_","-");
-				if(window.fluxProcessor) fluxProcessor.setLocale(dojo.locale.split("-")[0]);
+				if(this.useGlobalLocale) dojo.locale = this.locale.replace("_","-");
 				this.localechanged = true;
 				topic.publish("/components/"+this.id+"/locale-change",this.locale);
 			}),
