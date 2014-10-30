@@ -98,6 +98,8 @@ define([
 					locale:this.locale,
 					type:this.rootType
 				};
+			} else {
+				this.query.locale = this.locale;
 			}
 			// since we have children with _refs, resolve children first
 			return this.store.query(this.query,{start:0,count:100});
