@@ -7,6 +7,20 @@ define([
 	"dlagua/w/Subscribable"
 ],function(declare,lang,array,Deferred,_Tree,Subscribable) {
 
+	function shimmedPromise(/*Deferred|Promise*/ d){
+		// summary:
+		//		Return a Promise based on given Deferred or Promise, with back-compat addCallback() and addErrback() shims
+		//		added (TODO: remove those back-compat shims, and this method, for 2.0)
+
+		return lang.delegate(d.promise || d, {
+			addCallback: function(callback){
+				this.then(callback);
+			},
+			addErrback: function(errback){
+				this.otherwise(errback);
+			}
+		});
+	}
 
 var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 	_found:null,
@@ -125,7 +139,62 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 		this._itemNodesMap={};
 		this._loadDeferred = new Deferred();
 		this._load();
-	}
+	},
+	_setPathsAttr: function(/*Item[][]|String[][]*/ paths){
+		// summary:
+		//		Select the tree nodes identified by passed paths.
+		// paths:
+		//		Array of arrays of items or item id's
+		// returns:
+		//		Promise to indicate when the set is complete
+
+		var tree = this;
+
+		function selectPath(path, nodes){
+			// Traverse path, returning Promise for node at the end of the path.
+			// The next path component should be among "nodes".
+			var nextPath = path.shift();
+			var nextNode = array.filter(nodes, function(node){
+				return node.getIdentity() == nextPath;
+			})[0];
+			if(!!nextNode){
+				if(path.length){
+					return tree._expandNode(nextNode).then(function(){
+						return selectPath(path, nextNode.getChildren());
+					});
+				}else{
+					// Successfully reached the end of this path
+					return nextNode;
+				}
+			}else{
+				throw new Tree.PathError("Could not expand path at " + nextPath);
+			}
+		}
+
+		// Let any previous set("path", ...) commands complete before this one starts.
+		// TODO for 2.0: make the user do this wait themselves?
+		return shimmedPromise(this.pendingCommandsPromise = this.pendingCommandsPromise.always(function(){
+			// We may need to wait for some nodes to expand, so setting
+			// each path will involve a Deferred. We bring those deferreds
+			// together with a dojo/promise/all.
+			return all(array.map(paths, function(path){
+				// normalize path to use identity
+				path = array.map(path, function(item){
+					return item && lang.isObject(item) ? tree.model.getIdentity(item) : item;
+				});
+
+				if(path.length){
+					return selectPath(path, [tree.rootNode]);
+				}else{
+					throw new Tree.PathError("Empty path");
+				}
+			}));
+		}).then(function setNodes(newNodes){
+			// After all expansion is finished, set the selection to last element from each path
+			tree.set("selectedNodes", newNodes);
+			return tree.paths;
+		}));
+	},
 });
 
 Tree._TreeNode = _Tree._TreeNode;
