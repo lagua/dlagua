@@ -3,19 +3,20 @@ define([
 "dojo/_base/array",
 "dojo/dom",
 "dojo/i18n",
-"dojo/date",
 "dojo/date/locale",
-"dojo/date/stamp",
 "dojo/aspect",
 "dojox/uuid/generateRandomUuid",
 "dojox/timing"
-],function(lang,array,dom,i18n,date,dlocale,stamp,aspect,generateRandomUuid,timing){
+],function(lang,array,dom,i18n,dlocale,aspect,generateRandomUuid,timing){
 
 lang.getObject("dlagua.c.date.locale", true);
 
 var format = function(val,options) {
 	if(!options.autoupdate && val==="") return val;
 	var date;
+	options = lang.mixin({},options);
+	var _ref = options._ref; 
+	delete options._ref;
 	var txt = "", oritxt = "";
 	if(options.selector=="time") {
 		switch(options.timePart) {
@@ -23,13 +24,13 @@ var format = function(val,options) {
 				date = new Date(parseInt(val,10)*60*1000);
 			break;
 			default:
-				date = new stamp.fromISOString(val);
+				date = new Date(val);
 			break;
 		}
 	} else {
-		date = new stamp.fromISOString(val);
+		date = new Date(val);
 	}
-	if(options._ref.ref && options._ref.ref.locale) options.locale = options._ref.ref.locale.replace("_","-");
+	//if(_ref.ref && _ref.ref.locale) options.locale = _ref.ref.locale.replace("_","-");
 	if(!options.ignoreZeroTimes || date.getHours()+date.getMinutes()+date.getSeconds()>0){
 		oritxt = txt = dlocale.format(date,options);
 	}
@@ -41,8 +42,8 @@ var format = function(val,options) {
 		var diff = date.difference(date,now,"millisecond");
 		var thresholds = (options.updateThresholds || [60*1000,60*60*1000,24*60*60*1000,7*24*60*60*1000,30*24*60*60*1000]);
 		// TODO: from locale
-		var locale = i18n.normalizeLocale(options.locale);
-		var lb = i18n.getLocalization("dlagua.c.date", "interval", locale);
+		//var locale = i18n.normalizeLocale(options.locale);
+		var lb = i18n.getLocalization("dlagua.c.date", "interval");
 		var markers = (options.updateMarkers || ["{moments} {ago}","{value} {minute} {ago}","{value} {hour} {ago}","{value} {day} {ago}","{value} {week} {ago}"]);
 		if(diff<limit) {
 			var x = 0;
