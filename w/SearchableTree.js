@@ -3,9 +3,10 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
 	"dojo/Deferred",
+	"dojo/promise/all",
 	"dlagua/w/CollapsingTree",
 	"dlagua/w/Subscribable"
-],function(declare,lang,array,Deferred,_Tree,Subscribable) {
+],function(declare,lang,array,Deferred,all,_Tree,Subscribable) {
 
 	function shimmedPromise(/*Deferred|Promise*/ d){
 		// summary:
