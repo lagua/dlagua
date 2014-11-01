@@ -8,9 +8,8 @@ define([
 	"dojo/keys",
 	"dojo/json",
 	"dijit/Dialog",
-	"dforma/Builder",
-	"dlagua/x/Aes"
-], function(lang, array, domConstruct, ioQuery,Deferred, request, keys, JSON, Dialog, Builder, Aes){
+	"dforma/Builder"
+], function(lang, array, domConstruct, ioQuery,Deferred, request, keys, JSON, Dialog, Builder){
 
 	var auth = function(url,params){
 		params = params || {};
@@ -60,10 +59,9 @@ define([
 		};
 		var doAuth = function(data) {
 			form.set("message","");
-			var password = token ? Aes.Ctr.encrypt(data.password, token, 256) : data.password;
 			var req = {
 				"user":userPrefix+data.user,
-				"password":password
+				"password":data.password
 			};
 			if(json) {
 				lang.mixin(req,{
