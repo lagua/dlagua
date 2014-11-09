@@ -166,13 +166,14 @@ return declare("dlagua.c.App", [Stateful], {
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
 		var path = item.path;
-		var par = path.split("/");
-		var stripar = this.stripPath.split("/");
-		par = array.filter(par,function(item,index){
-			return par[index]!=stripar[index];
-		});
 		var newView = this.getView(item.view || item.state);
-		var view = this.checkView(path,newView);
+		var view;
+		// check truncated first!
+		if(item.__truncated) {
+			view = this.checkView(item.__truncated,newView);
+		} else {
+			view = this.checkView(path,newView);
+		}
 		if(view) {
 			return when(this.rebuild(view).then(lang.hitch(this,function(){
 				this.startup();
