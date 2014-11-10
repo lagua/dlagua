@@ -10,6 +10,8 @@ define([
 	"dojo/hash"
 ],function(declare,lang,array,Deferred,Stateful,topic,on,when,dhash){
 
+	window.onbeforeappunload = function() {};
+	
 return declare("dlagua.c.App", [Stateful], {
 	currentItem:null,
 	path:"",
@@ -163,6 +165,24 @@ return declare("dlagua.c.App", [Stateful], {
 		return reset;
 	},
 	onItem: function(oldValue,newValue){
+		// first check to see if we should navigate away...
+		if(oldValue) {
+			var block = onbeforeappunload();
+			if(block) {
+				if(!confirm(block)) {
+					var par = oldValue.path.split("/");
+					var locale = this.useLocale ? oldValue.locale : this.locale;
+					var stripar = this.stripPath.split("/");
+					par = array.filter(par,function(item,index){
+						return par[index]!=stripar[index];
+					});
+					var hash = (this.indexable ? "!" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
+					this.set("changeFromApp", true);
+					dhash(hash);
+					return;
+				}
+			}
+		}
 		var item = lang.mixin({},this.currentItem);
 		console.log("onItem",item)
 		var path = item.path;
