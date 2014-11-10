@@ -195,7 +195,7 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 			tree.set("selectedNodes", newNodes);
 			return tree.paths;
 		}));
-	},
+	}
 });
 
 Tree._TreeNode = _Tree._TreeNode;
