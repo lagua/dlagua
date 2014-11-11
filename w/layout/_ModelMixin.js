@@ -546,7 +546,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		return this.model || this.currentItem.model;
 	},
 	getTemplate:function(templateDir,suffix){
-		var xtemplate = "";
+		var tpath="",xtemplate = "";
 		suffix = suffix && !this.filterById ? "_"+suffix : "";
 		var locale = this.locale;
 		if(!this.childTemplate) {
@@ -554,8 +554,10 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(!item) return;
 			if(item.locale) locale = item.locale;
 			if(!templateDir) templateDir = this.templateDir;
-			if(item[this.templateProperty]) {
-				var tpath = item[this.templateProperty];
+			if(item.template) {
+				tpath = item.template;
+			} else if(item[this.templateProperty]) {
+				tpath = item[this.templateProperty];
 				/*if(this.templateProperty=="path" && this.filterById) {
 					var ar = tpath.split("/");
 					var i;
@@ -566,8 +568,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 					}
 					tpath = ar.splice(0,i).join("/");
 				}*/
-				xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 			}
+			if(tpath) xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 		}
 		return locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	}
