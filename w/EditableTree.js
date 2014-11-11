@@ -44,7 +44,7 @@ var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 		return message;
 	},
 	_onAddClick:function(){
-		var tree = this.tree; 
+		var tree = this.tree;
 		tree.dialog.set("title",this._getMessage("add"));
 		tree.createForm();
 		tree.dialog.show();
@@ -138,7 +138,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 		// trigger for item activation
 	},
 	_checkTruncate:function(path){
-		this.selectNodeByField(this.currentId,"path",true).then(lang.hitch(this,function(result){
+		this.selectNodeByField(path,"path",true).then(lang.hitch(this,function(result){
 			if(result) {
 				if(!this.selectedItem) return;
 				var node = this.getNodesByItem(this.selectedItem)[0];
