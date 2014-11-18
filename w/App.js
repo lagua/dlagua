@@ -3,13 +3,13 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/topic",
-	"dijit/layout/LayoutContainer",
+	"dlagua/w/layout/Container",
 	"dijit/Viewport",
 	"dlagua/c/App",
 	"dlagua/w/Subscribable"
-],function(declare,lang,array,topic,LayoutContainer,Viewport,App,Subscribable){
+],function(declare,lang,array,topic,Container,Viewport,App,Subscribable){
 
-return declare("dlagua.w.App", [LayoutContainer,App,Subscribable], {
+return declare("dlagua.w.App", [Container,App,Subscribable], {
 	flipSize:890,
 	_checkFlip:function(){
 		var box = Viewport.getEffectiveBox();
