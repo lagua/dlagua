@@ -53,14 +53,13 @@ return declare("dlagua.c.App", [Stateful], {
 	},
 	hashToItem: function(hash) {
 		hash = hash.charAt(0)=="!" ? hash.substr(1) : hash;
-		var locale,path;
 		// concat stripPath:
 		var restar = hash.split("/");
-		if(this.useLocale) locale = restar.shift();
+		var locale = this.useLocale ? restar.shift() : this.meta.inferred.locale;
 		if(this.stripPath) {
 			restar = this.stripPath.split("/").concat(restar);
 		}
-		path = restar.join("/");
+		var path = restar.join("/");
 		var item = {
 			locale:locale,
 			path:path,
