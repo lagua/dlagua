@@ -39,8 +39,20 @@ define([
 				len--;
 			}
 		}
-		return sorted.concat(tmp);
+		var tlen = tmp.length;
+		if(tlen>0) {
+			console.warn("Order will be reset!")
+			// force order, also flag for save!
+			// since before of the last of sorted is null, add it to the rels to update
+			if(sorted.length>0) {
+				tmp.unshift(sorted.pop());
+				tlen++;
+			}
+			return sorted.concat(tmp);
+		}
+		return sorted;
 	}
+	
 	
 	var wrappedreq = function(req) {
 		var d = new Deferred();
@@ -362,22 +374,6 @@ return declare("dlagua.c.Renderer",null,{
 						this.meta.domain = lang.mixin(this.meta.domain,node.data);
 						this.meta.inferred = lang.mixin(this.meta.inferred,node.data);
 						domainNode = node;
-						// determine locale asap
-						var rest;
-						var hash = dhash();
-						var hashar = hash.split(":");
-						if(hashar.length>1 && !hashar[0].match(/\?|\//)) {
-							rest = hashar[1];
-						} else {
-							rest = hash;
-						}
-						if(rest) {
-							hashar = rest.split("/");
-							var locale = hashar[0];
-							if(locale) {
-								this.meta.inferred.locale = locale;
-							}
-						}
 						// pull in domain requires
 						if(node.data.require) {
 							var reqs = [];
@@ -395,6 +391,7 @@ return declare("dlagua.c.Renderer",null,{
 						// insert css first
 						appNode = node;
 						mid = this.toMid(node.data.appType);
+						// determine locale asap
 						var createApp = lang.hitch(this,function(App){
 							if(!App) {
 								require([mid],function(App){
@@ -421,6 +418,7 @@ return declare("dlagua.c.Renderer",null,{
 								var hash = dhash() || this.defaultHash;
 								if(hash) {
 									var item = this.hashToItem(hash);
+									this.meta.inferred.locale = item.locale;
 									this.infer(item.path);
 								}
 							}
@@ -736,8 +734,12 @@ return declare("dlagua.c.Renderer",null,{
 				return when(this.get(item.id),function(item) {
 					var rels = sortRels(item.outgoing_relationships);
 					var outgoing = filter ? rqlArray.query(filter,{},rels) : rels;
-					return all(outgoing.map(function(rel){
-						 return self.nodeStore.get(rel.end[self.refProperty].replace("../Node/",""));
+					return all(outgoing.map(function(rel,index){
+						 return when(self.nodeStore.get(rel.end[self.refProperty].replace("../Node/","")),function(node){
+							 if(!node.data) node.data = {};
+							 node.data.order = index;
+							 return node;
+						 });
 					}));
 				});
 			}
