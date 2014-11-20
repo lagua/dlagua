@@ -311,8 +311,8 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			domStyle.set(this.containerNode,this.nativeScroll ? "marginTop" : "paddingTop", this.fixedHeaderHeight + this._containerInitTop + "px");
 		}
 		if(this.nativeScroll) {
-			var h = this._dim.d.h;
-			domStyle.set(this.containerNode, "height",h+"px");
+			//var h = this._dim.d.h;
+			//domStyle.set(this.containerNode, "height",h+"px");
 		} else {
 			var w = this._dim.v.w-(this._scrollBarV ? 13 : 0);
 			domStyle.set(this.containerNode,"width",w+"px");				
