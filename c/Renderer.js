@@ -261,7 +261,7 @@ return declare("dlagua.c.Renderer",null,{
 				}
 				this.theme = theme;
 				var app = domainNode.data.app;
-				var path = app ? "/resources/themes/"+theme : "/rest/themes/"+theme;
+				var path = app ? "/themes/"+theme : "/rest/themes/"+theme;
 				var files = ["master","widget","flow"];
 				var proms = [];
 				var d = new Deferred();
