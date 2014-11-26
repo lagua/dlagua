@@ -11,7 +11,7 @@ define([
 	"dijit/_Contained",
 	"mustache/mustache",
 	"dlagua/c/templa/Mixin"
-],function(declare,lang,array,domGeometry,request,Deferred,stamp,_Widget,_Templated,_Contained,Mustache,Mixin) {
+],function(declare,lang,array,domGeometry,request,Deferred,stamp,_Widget,_Templated,_Contained,mustache,Mixin) {
 
 	return declare("dlagua.w.layout.TemplaMixin", [], {
 		resolveProperties:null,
@@ -19,7 +19,7 @@ define([
 		data:null,
 		mixeddata:null,
 		applyTemplate: function(tpl,partials){
-			this.set("content",Mustache.to_html(tpl,this.mixeddata,partials));
+			this.set("content",mustache.to_html(tpl,this.mixeddata,partials));
 		},
 		_load:function(resolved, d){
 			d = d || new Deferred();

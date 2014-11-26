@@ -26,6 +26,18 @@ define([
 			return module.set(node, name, value);
 		};
 	}
+	// jQuery's dirty custom selectors
+	var filters = {
+		hidden: function( elem ) {
+			// Support: Opera <= 12.12
+			// Opera reports offsetWidths and offsetHeights less than zero on some elements
+			return elem.offsetWidth <= 0 && elem.offsetHeight <= 0;
+		},
+		visible: function( elem ) {
+			return !filters.hidden( elem );
+		}
+	};
+	
 	var attr = query.NodeList._adaptWithCondition(getSet(domAttr), magicGuard);
 	lang.extend(query.NodeList,{
 		ready:ready,
@@ -160,10 +172,16 @@ define([
 		}
 	});
 	$ = query;
+	var pseudos = /:(:?[^ ,:.]+)/g;
 	$ = lang.mixin(function(selector,context){
 		if ( typeof selector === "string" ) {
 			if ( selector[0] === "<" && selector[ selector.length - 1 ] === ">" && selector.length >= 3 ) {
 				return query(domConstruct.place(selector,context || document.body));
+			}
+			// hacky test for custom pseudo filters
+			if(selector.match(pseudos)) {
+				var pseudo = selector.replace(pseudos,"$1");
+				if(filters[pseudo]) return filters[pseudo](context);
 			}
 		}
 		return lang.mixin(query.apply(this, arguments), $.fn);
