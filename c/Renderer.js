@@ -348,6 +348,7 @@ return declare("dlagua.c.Renderer",null,{
 					all(outgoing.map(lang.hitch(this,function(node,index){
 						var mid;
 						var d = new Deferred();
+						node._index = index;
 						switch(node.data.type) {
 							case "widget":
 								mid = this.toMid(node.data.dojoType);
@@ -371,6 +372,11 @@ return declare("dlagua.c.Renderer",null,{
 						}
 						return d;
 					}))).then(function(outgoing){
+						/*outgoing.sort(function(a,b){
+							if(a._index < b._index) return -1;
+							if (a._index > b._index) return 1;
+							return 0;
+						});*/
 						all(outgoing.map(function(_){
 							console.log(_.data.id);
 							return self._addRecursive(_,node);
@@ -503,8 +509,8 @@ return declare("dlagua.c.Renderer",null,{
 						d.resolve(node);
 					break;
 					case "restservice":
-						var Service = widget.Service;
-						delete widget.Service;
+						var Service = node.Service;
+						delete node.Service;
 						// TODO set other refProperty if not ContentPane
 						if(innode && innode.dojoo) {
 							node.data.ref = innode.dojoo;
