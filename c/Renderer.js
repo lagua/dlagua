@@ -334,7 +334,7 @@ return declare("dlagua.c.Renderer",null,{
 		this.nodeStore.getChildren(node,node.data.type=="widget" ? "type!=has_model&type!=has_datastore" : "").then(lang.hitch(this,function(outgoing) {
 			var d = new Deferred();
 			if(outgoing.length) {
-				d.then(function(node){
+				d.then(lang.hitch(this,function(node){
 					if(node.data.type=="app") {
 						views = outgoing.filter(function(_){
 							return _.data.type=="view"; 
@@ -344,14 +344,43 @@ return declare("dlagua.c.Renderer",null,{
 						view = outgoing[0];
 						console.warn("view is "+view.data.id,outgoing)
 					}
-					all(outgoing.map(function(_){
-						return self._addRecursive(_,node);
-					})).then(function(nodes){
-						node.children = nodes;
-						self.nodes[node.id] = node;
-						dd.resolve(node);
+					// do async stuff here
+					all(outgoing.map(lang.hitch(this,function(node,index){
+						var mid;
+						var d = new Deferred();
+						switch(node.data.type) {
+							case "widget":
+								mid = this.toMid(node.data.dojoType);
+								this.getModelOrStore(node).then(function(){
+									wrappedreq([mid]).then(function(Widget){
+										node.Widget = Widget;
+										d.resolve(node);
+									});
+								});
+								break;
+							case "restservice":
+								mid = this.toMid(node.data.restType);
+								wrappedreq([mid]).then(function(Service){
+									node.Service = Service;
+									d.resolve(node);
+								});
+								break;
+							default:
+								d.resolve(node);
+								break;
+						}
+						return d;
+					}))).then(function(outgoing){
+						all(outgoing.map(function(_){
+							console.log(_.data.id);
+							return self._addRecursive(_,node);
+						})).then(function(nodes){
+							node.children = nodes;
+							self.nodes[node.id] = node;
+							dd.resolve(node);
+						});
 					});
-				});
+				}));
 			} else {
 				d.then(function(node){
 					self.nodes[node.id] = node;
@@ -425,7 +454,7 @@ return declare("dlagua.c.Renderer",null,{
 							d.resolve(node);
 						});
 						this.addTheme().then(function(){
-							createApp()
+							createApp();
 						});
 					break;
 					case "view":
@@ -455,54 +484,36 @@ return declare("dlagua.c.Renderer",null,{
 						d.resolve(node);
 						break;
 					case "widget":
-						mid = this.toMid(node.data.dojoType);
-						this.getModelOrStore(node).then(function(){
-							require([mid],function(Widget){
-								var widget = node.dojoo = new Widget(node.data);
-								// connector for claro
-								self.onAddWidget(widget);
-								// it should have incoming
-								if(innode && innode.dojoo) {
-									var index = "last";
-									if(node.data.order) {
-										var order = node.data.order;
-										var children = innode.dojoo.getChildren();
-										var l = children.length;
-										if(l>0 && children[l-1].order>=order) {
-											index = 0;
-											for(var i=0;i<l;i++){
-												var c = children[i];
-												if(c.order && c.order>node.data.order) break;
-												index++;
-											}
-										}
-									}
-									if(widget.domNode) {
-										innode.dojoo.addChild(widget,index);
-									} else {
-										aspect.after(widget,"ready",function(){
-											innode.dojoo.addChild(widget);
-										});
-									}
-								}
-								//self.getSubscriptions(node,outgoing);
-								d.resolve(node);
-							});
-						});
+						var Widget = node.Widget;
+						delete node.Widget;
+						var widget = node.dojoo = new Widget(node.data);
+						// connector for conecta
+						self.onAddWidget(widget);
+						// it should have incoming
+						if(innode && innode.dojoo) {
+							if(widget.domNode) {
+								innode.dojoo.addChild(widget,"last");
+							} else {
+								aspect.after(widget,"ready",function(){
+									innode.dojoo.addChild(widget);
+								});
+							}
+						}
+						//self.getSubscriptions(node,outgoing);
+						d.resolve(node);
 					break;
 					case "restservice":
+						var Service = widget.Service;
+						delete widget.Service;
 						// TODO set other refProperty if not ContentPane
-						mid = this.toMid(node.data.restType);
 						if(innode && innode.dojoo) {
 							node.data.ref = innode.dojoo;
 						} else {
 							node.data.ref = this;
 						}
-						require([mid],function(Service){
-							var service = node.dojoo = new Service(node.data);
-							if(innode && innode.dojoo) innode.dojoo.restservice = service;
-							d.resolve(node);
-						});
+						var service = node.dojoo = new Service(node.data);
+						if(innode && innode.dojoo) innode.dojoo.restservice = service;
+						d.resolve(node);
 					break;
 					case "subscription":
 						// widget.subscribe should be dlagua/c/subscribe, via dlagua/c/Subscribable
@@ -736,8 +747,6 @@ return declare("dlagua.c.Renderer",null,{
 					var outgoing = filter ? rqlArray.query(filter,{},rels) : rels;
 					return all(outgoing.map(function(rel,index){
 						 return when(self.nodeStore.get(rel.end[self.refProperty].replace("../Node/","")),function(node){
-							 if(!node.data) node.data = {};
-							 node.data.order = index;
 							 return node;
 						 });
 					}));
