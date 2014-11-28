@@ -130,7 +130,7 @@ return declare("dlagua.c.Renderer",null,{
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["inferred"]) {
-			var node = this.nodes[id];
+			var node = this.nodeStore.get(id);
 			var meta = this.getMeta(node);
 			if(node.created) {
 				if(node.dojoo) {
@@ -159,7 +159,7 @@ return declare("dlagua.c.Renderer",null,{
 		var k,v;
 		var reset = [];
 		for(var id in this.replaced["i18n"]) {
-			var node = this.nodes[id];
+			var node = this.nodeStore.get(id);
 			var meta = this.getMeta(node);
 			if(node.created) {
 				if(node.dojoo) {
@@ -189,7 +189,7 @@ return declare("dlagua.c.Renderer",null,{
 		var incoming = node.incoming_relationships;
 		var innodes = [];
 		for(var i=0;i<incoming.length;i++) {
-			var innode = this.nodes[incoming[i].start];
+			var innode = this.nodeStore.get(incoming[i].start);
 			if(!type || (type && innode.data.type==type)) {
 				innode = this.replaceMeta(innode);
 				innodes.push(innode.data.id);
@@ -276,7 +276,7 @@ return declare("dlagua.c.Renderer",null,{
 		var self = this;
 		return all([this.nodeStore.getChildren(node,"type=has_model").then(lang.hitch(this,function(outgoing) {
 			return all(outgoing.map(lang.hitch(this,function(mnode){
-				this.nodes[mnode.id] = mnode;
+				//this.nodeStore.get(mnode.id) = mnode;
 				mnode = this.replaceMeta(mnode);
 				var mid = this.toMid(mnode.data.modelType);
 				return wrappedreq([mid]).then(function(Model){
@@ -292,7 +292,7 @@ return declare("dlagua.c.Renderer",null,{
 		})),
 		this.nodeStore.getChildren(node,"type=has_datastore").then(lang.hitch(this,function(outgoing) {
 			return all(outgoing.map(lang.hitch(this,function(dsnode){
-				this.nodes[dsnode.id] = dsnode;
+				//this.nodes[dsnode.id] = dsnode;
 				dsnode = this.replaceMeta(dsnode);
 				var mid = this.toMid(dsnode.data.storeType);
 				return wrappedreq([mid]).then(function(Store){
@@ -305,7 +305,7 @@ return declare("dlagua.c.Renderer",null,{
 	getModules:function(node) {
 		return this.nodeStore.getChildren(node,"type=has_module").then(lang.hitch(this,function(outgoing) {
 			return all(outgoing.map(lang.hitch(this,function(mnode){
-				this.nodes[mnode.id] = mnode;
+				//this.nodes[mnode.id] = mnode;
 				mnode = this.replaceMeta(mnode);
 				return wrappedreq([mnode.data.url]);
 			})));
@@ -315,7 +315,7 @@ return declare("dlagua.c.Renderer",null,{
 		if(!node.dojoo) return;
 		for(var i=0; i<outgoing.length;i++) {
 			if(outgoing[i].type=="has_subscription") {
-				var snode = this.nodes[outgoing[i].end];
+				var snode = this.nodeStore.get(outgoing[i].end);
 				snode = this.replaceMeta(snode);
 				if(snode.data.channel && node.dojoo.subscribe) {
 					node.dojoo.subscribe(snode.data.channel, snode.data);
@@ -326,10 +326,54 @@ return declare("dlagua.c.Renderer",null,{
 	toMid: function(type) {
 		return type.replace(/\./g,"/");
 	},
+	_loadRecursive:function(node,innode) {
+		var self = this;
+		var mid;
+		var dd = new Deferred();
+		this.nodeStore.getChildren(node,node.data.type=="widget" ? "type!=has_model&type!=has_datastore" : "").then(lang.hitch(this,function(outgoing) {
+			if(outgoing.length) {
+				all(outgoing.map(lang.hitch(this,function(node,index){
+					var mid;
+					var d = new Deferred();
+					switch(node.data.type) {
+						case "widget":
+							mid = this.toMid(node.data.dojoType);
+							this.getModelOrStore(node).then(function(){
+								wrappedreq([mid]).then(function(Widget){
+									node.Widget = Widget;
+									d.resolve(node);
+								});
+							});
+							break;
+						case "restservice":
+							mid = this.toMid(node.data.restType);
+							wrappedreq([mid]).then(function(Service){
+								node.Service = Service;
+								d.resolve(node);
+							});
+							break;
+						default:
+							d.resolve(node);
+							break;
+					}
+					return d;
+				}))).then(function(outgoing){
+					all(outgoing.map(function(_){
+						return self._loadRecursive(_,node);
+					})).then(function(nodes){
+						dd.resolve(node);
+					});
+				});
+			} else {
+				dd.resolve(node);
+			}
+		}));
+		return dd;
+	},
 	_addRecursive:function(node,innode) {
 		var self = this;
 		var mid;
-		node = this.nodes[node.id] || node;
+		node = this.nodeStore.get(node.id) || node;
 		var dd = new Deferred();
 		this.nodeStore.getChildren(node,node.data.type=="widget" ? "type!=has_model&type!=has_datastore" : "").then(lang.hitch(this,function(outgoing) {
 			var d = new Deferred();
@@ -344,52 +388,16 @@ return declare("dlagua.c.Renderer",null,{
 						view = outgoing[0];
 						console.warn("view is "+view.data.id,outgoing)
 					}
-					// do async stuff here
-					all(outgoing.map(lang.hitch(this,function(node,index){
-						var mid;
-						var d = new Deferred();
-						node._index = index;
-						switch(node.data.type) {
-							case "widget":
-								mid = this.toMid(node.data.dojoType);
-								this.getModelOrStore(node).then(function(){
-									wrappedreq([mid]).then(function(Widget){
-										node.Widget = Widget;
-										d.resolve(node);
-									});
-								});
-								break;
-							case "restservice":
-								mid = this.toMid(node.data.restType);
-								wrappedreq([mid]).then(function(Service){
-									node.Service = Service;
-									d.resolve(node);
-								});
-								break;
-							default:
-								d.resolve(node);
-								break;
-						}
-						return d;
-					}))).then(function(outgoing){
-						/*outgoing.sort(function(a,b){
-							if(a._index < b._index) return -1;
-							if (a._index > b._index) return 1;
-							return 0;
-						});*/
-						all(outgoing.map(function(_){
-							console.log(_.data.id);
-							return self._addRecursive(_,node);
-						})).then(function(nodes){
-							node.children = nodes;
-							self.nodes[node.id] = node;
-							dd.resolve(node);
-						});
+					all(outgoing.map(function(_){
+						console.log(_.data.id);
+						return self._addRecursive(_,node);
+					})).then(function(nodes){
+						node.children = nodes;
+						dd.resolve(node);
 					});
 				}));
 			} else {
 				d.then(function(node){
-					self.nodes[node.id] = node;
 					dd.resolve(node);
 				});
 			}
@@ -683,13 +691,14 @@ return declare("dlagua.c.Renderer",null,{
 	load:function(root) {
 		this.root = root;
 		if(root.data.refProperty) this.refProperty = root.data.refProperty;
-		this.nodes = {};
-		this._addRecursive(root).then(lang.hitch(this,function(node){
-			var loader = dom.byId("loader");
-			if(loader) domStyle.set(loader,"display","none");
-			this.startup();
-			fx.fadeIn({node:this.domNode,duration:500}).play();
-			this.ready(node);
+		this._loadRecursive(root).then(lang.hitch(this,function(node){
+			this._addRecursive(root).then(lang.hitch(this,function(node){
+				var loader = dom.byId("loader");
+				if(loader) domStyle.set(loader,"display","none");
+				this.startup();
+				fx.fadeIn({node:this.domNode,duration:500}).play();
+				this.ready(node);
+			}));
 		}));
 	},
 	_init:function(){
