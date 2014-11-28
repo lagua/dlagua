@@ -43,6 +43,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 	locale:"",
 	path:"",
 	newData:null,
+	scrollDir:"v",
 	servicetype:"",
 	labelAttr:"title",
 	templateProperty:"path",
@@ -91,7 +92,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			node = dom.byId(this.fixedFooter);
 			if(node.parentNode == this.domNode){ // local footer
 				this.isLocalFooter = true;
-				node.style.bottom = "0px";
+				//node.style.bottom = "0px";
 			}
 			params.fixedFooterHeight = node.offsetHeight;
 		} else {
@@ -100,10 +101,10 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		}
 		if(this.nativeScroll) {
 			lang.mixin(this,params);
-			domStyle.set(this.containerNode,{
+			/*domStyle.set(this.containerNode,{
 				overflow:"auto",
 				WebkitOverflowScrolling: "touch"
-			});
+			});*/
 			this.useScrollBar = false;
 		} else {
 			this.init(params);
