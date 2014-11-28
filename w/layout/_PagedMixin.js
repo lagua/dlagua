@@ -5,17 +5,20 @@ define([
 	"dojo/_base/window",
 	"dojo/topic",
 	"dojo/on",
+	"dojo/aspect",
 	"dojo/keys",
 	"dojo/dom-class",
 	"dojo/dom-geometry",
 	"dijit/typematic",
 	"dijit/form/Button",
-	"dojox/timing"
-],function(declare,lang,array,win,topic,on,keys,domClass,domGeometry,typematic,Button,timing) {
+	"dojox/timing",
+	"dojox/fx/scroll"
+],function(declare,lang,array,win,topic,on,aspect,keys,domClass,domGeometry,typematic,Button,timing,scroll) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
 		pageThreshold:25,
+		scrollTransition:500,
 		childTemplate:"",
 		snap:false,
 		pageButtons:true,
@@ -60,7 +63,7 @@ define([
 					"class":"dlaguaScrollableServicedPaneNextButton"
 				});
 				this.own(
-					typematic.addListener(this.nextButton, this.domNode, {
+					/*typematic.addListener(this.nextButton, this.domNode, {
 						keyCode: keys.DOWN_ARROW, 
 						ctrlKey: false, 
 						altKey: false, 
@@ -73,7 +76,9 @@ define([
 						altKey: false, 
 						shiftKey: false, 
 						metaKey: false
-					}, this, this.skipPrev, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					}, this, this.skipPrev, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),*/
+					aspect.after(this.nextButton,"onClick",lang.hitch(this,this.skipNext)),
+					aspect.after(this.prevButton,"onClick",lang.hitch(this,this.skipPrev)),
 					this.watch("focused",function(){
 						if(this.focused) {
 							try{ this.domNode.focus(); }catch(e){/*quiet*/}
@@ -160,7 +165,15 @@ define([
 				y = items[n].marginBox.t - top;
 			}
 			if(this.nativeScroll) {
-				items[n].domNode.scrollIntoView();
+				if(this.scrollTransition) {
+					new scroll({
+						node: items[n].domNode,
+						win: this.containerNode,
+						duration: this.scrollTransition
+					}).play();
+				} else {
+					items[n].domNode.scrollIntoView();
+				}
 			} else {
 				this.slideTo({x:0,y:-y},0.3,"ease-out");
 			}
@@ -212,6 +225,8 @@ define([
 				if(dy!=0 && !this._bounce && !this.nativeScroll) this._bounce = {x:0,y:-y};
 			}
 			this.pageStore(py);
+			this.prevButton.set("disabled",index<=0);
+			this.nextButton.set("disabled",index>=len-1);
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
 			this.selectedItem = items[index];
@@ -225,18 +240,32 @@ define([
 			if(this._loading || this.servicetype!="model") return;
 			// get proximate item
 			// BIG FIXME!: py is NOT safe for borders / gutters
-			var py = this.getPos().y;
 			var li = this.getChildren();
 			var len = li.length;
 			if(!len) return;
-			var y1=0, y2=0, i=0;
-			var y = (this.header ? this.fixedHeaderHeight + this._containerInitTop : 0);
-			// won't work for inline items
-			for(;i<len;i++) {
-				y1 = y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h);
-				y2 = li[i].marginBox.t+(0.5*li[i].marginBox.h);
-				if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
-				y = li[i].marginBox.t;
+			var p = this.getPos();
+			if(this.scrollDir=="v") {
+				var py = p.y;
+				var y1=0, y2=0, i=0;
+				var y = (this.header ? this.fixedHeaderHeight + this._containerInitTop : 0);
+				// won't work for inline items
+				for(;i<len;i++) {
+					y1 = y-(0.5*li[(i>0 ? i-1 : i)].marginBox.h);
+					y2 = li[i].marginBox.t+(0.5*li[i].marginBox.h);
+					if(-py>=y1 && -py<y2 && !li[i].data.hidden) break;
+					y = li[i].marginBox.t;
+				}
+			} else if(this.scrollDir=="h") {
+				var px = p.x;
+				var x1=0, x2=0, i=0;
+				var x = 0;
+				// won't work for inline items
+				for(;i<len;i++) {
+					x1 = x-(0.5*li[(i>0 ? i-1 : i)].marginBox.w);
+					x2 = li[i].marginBox.l+(0.5*li[i].marginBox.w);
+					if(-px>=x1 && -px<x2 && !li[i].data.hidden) break;
+					x = li[i].marginBox.l;
+				}
 			}
 			if(i>=len) i=0;
 			this.setSelectedItem(i);
@@ -256,6 +285,8 @@ define([
 			// select currentId for #anchor simulation
 			if(this.currentId) {
 				this.selectItemByCurrentId();
+			} else {
+				this.checkSelectedItem();
 			}
 		}
 	});
