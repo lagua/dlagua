@@ -273,18 +273,38 @@ return declare("dlagua.c.Renderer",null,{
 		}));
 	},
 	getModelOrStore:function(node) {
+		if(node.modelNode) {
+			var mnode = node.modelNode;
+			delete node.modelNode;
+			var Model = mnode.Model;
+			delete mnode.Model;
+			mnode = this.replaceMeta(mnode);
+			if(mnode.data.childrenAttrs) mnode.data.childrenAttrs = mnode.data.childrenAttrs.split(",");
+			// TODO id omzetten naar gebruikte id
+			if(mnode.data.search) mnode.data.query = "?id="+encodeURIComponent(mnode.data.search);
+			this.getModelOrStore(mnode);
+			node.data.model = mnode.model = new Model(mnode.data);
+			return mnode;
+		}
+		if(node.storeNode) {
+			var dsnode = node.storeNode;
+			delete node.storeNode;
+			var Store = dsnode.Store;
+			delete dsnode.Store;
+			dsnode = this.replaceMeta(dsnode);
+			node.data.store = dsnode.store = new Store(dsnode.data);
+			return dsnode;
+		}
+	},
+	loadModelOrStore:function(node) {
 		var self = this;
 		return all([this.nodeStore.getChildren(node,"type=has_model").then(lang.hitch(this,function(outgoing) {
 			return all(outgoing.map(lang.hitch(this,function(mnode){
-				//this.nodeStore.get(mnode.id) = mnode;
-				mnode = this.replaceMeta(mnode);
 				var mid = this.toMid(mnode.data.modelType);
 				return wrappedreq([mid]).then(function(Model){
-					if(mnode.data.childrenAttrs) mnode.data.childrenAttrs = mnode.data.childrenAttrs.split(",");
-					// TODO id omzetten naar gebruikte id
-					if(mnode.data.search) mnode.data.query = "?id="+encodeURIComponent(mnode.data.search);
-					return self.getModelOrStore(mnode).then(function(){
-						node.data.model = mnode.model = new Model(mnode.data);
+					mnode.Model = Model;
+					node.modelNode = mnode;
+					return self.loadModelOrStore(mnode).then(function(){
 						return mnode;
 					});
 				});
@@ -292,11 +312,10 @@ return declare("dlagua.c.Renderer",null,{
 		})),
 		this.nodeStore.getChildren(node,"type=has_datastore").then(lang.hitch(this,function(outgoing) {
 			return all(outgoing.map(lang.hitch(this,function(dsnode){
-				//this.nodes[dsnode.id] = dsnode;
-				dsnode = this.replaceMeta(dsnode);
 				var mid = this.toMid(dsnode.data.storeType);
 				return wrappedreq([mid]).then(function(Store){
-					node.data.store = dsnode.store = new Store(dsnode.data);
+					node.storeNode = dsnode;
+					dsnode.Store = Store;
 					return dsnode;
 				});
 			})));
@@ -338,7 +357,7 @@ return declare("dlagua.c.Renderer",null,{
 					switch(node.data.type) {
 						case "widget":
 							mid = this.toMid(node.data.dojoType);
-							this.getModelOrStore(node).then(function(){
+							this.loadModelOrStore(node).then(function(){
 								wrappedreq([mid]).then(function(Widget){
 									node.Widget = Widget;
 									d.resolve(node);
@@ -498,6 +517,7 @@ return declare("dlagua.c.Renderer",null,{
 						d.resolve(node);
 						break;
 					case "widget":
+						this.getModelOrStore(node);
 						var Widget = node.Widget;
 						delete node.Widget;
 						var widget = node.dojoo = new Widget(node.data);
