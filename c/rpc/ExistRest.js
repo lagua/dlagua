@@ -155,6 +155,16 @@ define([
 			});
 			return dd;
 		},
+		updateItem:function(date,published,modified){
+			var item = this.mappedItem;
+			var now = date.toISOString();
+			var update = {id:item.id,model:this.mappedItem.model};
+			var key = item.key;
+			if(modified) update[key ? key+"_modified" : "modified"] = now;
+			if(published) update[key ? key+"_published" : "published"] = now;
+			topic.publish("/components/"+this.id+"/update",update);
+			this.mappedItem = lang.mixin(item,update);
+		},
 		save: function(data,options) {
 			options = options || {};
 			var dd = new Deferred();
@@ -165,7 +175,7 @@ define([
 			}
 			var published = options.published;
 			delete options.published;
-			var postfix = item.published && !published ? ".temp" : "";
+			var postfix = item.published && !published ? this.postfix : "";
 			var uri = item.uri + postfix;
 			var modified = options["last-modified"];
 			var _q = ioQuery.objectToQuery(options);
@@ -180,13 +190,7 @@ define([
 			if(modified || published) {
 				return when(res.response,lang.hitch(this,function(resp){
 					var date = new Date(resp.getHeader("Date"));
-					var now = date.toISOString();
-					var update = {id:item.id,model:this.mappedItem.model};
-					var key = item.key;
-					if(modified) update[key ? key+"_modified" : "modified"] = now;
-					if(published) update[key ? key+"_published" : "published"] = now;
-					topic.publish("/components/"+this.id+"/update",update);
-					this.mappedItem = lang.mixin(item,update);
+					this.updateItem(date,published,modified);
 					return res;
 				}));
 			}
