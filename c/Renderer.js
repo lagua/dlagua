@@ -133,14 +133,15 @@ return declare("dlagua.c.Renderer",null,{
 			var node = this.nodeStore.get(id);
 			var meta = this.getMeta(node);
 			if(node.created) {
-				if(node.dojoo) {
-					node.dojoo = registry.byId(node.data.id);
+				// get rendered object from page
+				var dojoo = node.dojoo ? registry.byId(node.data.id) : null;
+				if(dojoo) {
 					for(k in this.replaced["inferred"][id]) {
 						v = this.replaced["inferred"][id][k];
 						if(typeof v == "string") {
 							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
-							reset.push({dojoo:node.dojoo,key:k,value:newv});
+							reset.push({dojoo:dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
 						}
 					}
@@ -162,14 +163,15 @@ return declare("dlagua.c.Renderer",null,{
 			var node = this.nodeStore.get(id);
 			var meta = this.getMeta(node);
 			if(node.created) {
-				if(node.dojoo) {
-					node.dojoo = registry.byId(node.data.id);
+				// get rendered object from page
+				var dojoo = node.dojoo ? registry.byId(node.data.id) : null;
+				if(dojoo) {
 					for(k in this.replaced["i18n"][id]) {
 						v = this.replaced["i18n"][id][k];
 						if(typeof v == "string") {
 							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
 							//console.log("reset",k,v,newv)
-							reset.push({dojoo:node.dojoo,key:k,value:newv});
+							reset.push({dojoo:dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
 						}
 					}
@@ -275,9 +277,9 @@ return declare("dlagua.c.Renderer",null,{
 	getModelOrStore:function(node) {
 		if(node.modelNode) {
 			var mnode = node.modelNode;
-			delete node.modelNode;
+			//delete node.modelNode;
 			var Model = mnode.Model;
-			delete mnode.Model;
+			//delete mnode.Model;
 			mnode = this.replaceMeta(mnode);
 			if(mnode.data.childrenAttrs) mnode.data.childrenAttrs = mnode.data.childrenAttrs.split(",");
 			// TODO id omzetten naar gebruikte id
@@ -288,9 +290,9 @@ return declare("dlagua.c.Renderer",null,{
 		}
 		if(node.storeNode) {
 			var dsnode = node.storeNode;
-			delete node.storeNode;
+			//delete node.storeNode;
 			var Store = dsnode.Store;
-			delete dsnode.Store;
+			//delete dsnode.Store;
 			dsnode = this.replaceMeta(dsnode);
 			node.data.store = dsnode.store = new Store(dsnode.data);
 			return dsnode;
@@ -519,7 +521,7 @@ return declare("dlagua.c.Renderer",null,{
 					case "widget":
 						this.getModelOrStore(node);
 						var Widget = node.Widget;
-						delete node.Widget;
+						//delete node.Widget;
 						var widget = node.dojoo = new Widget(node.data);
 						// connector for conecta
 						self.onAddWidget(widget);
@@ -538,7 +540,7 @@ return declare("dlagua.c.Renderer",null,{
 					break;
 					case "restservice":
 						var Service = node.Service;
-						delete node.Service;
+						//delete node.Service;
 						// TODO set other refProperty if not ContentPane
 						if(innode && innode.dojoo) {
 							node.data.ref = innode.dojoo;
