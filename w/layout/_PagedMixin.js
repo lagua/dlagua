@@ -225,8 +225,10 @@ define([
 				if(dy!=0 && !this._bounce && !this.nativeScroll) this._bounce = {x:0,y:-y};
 			}
 			this.pageStore(py);
-			this.prevButton.set("disabled",index<=0);
-			this.nextButton.set("disabled",index>=len-1);
+			if(this.pageButtons) {
+				this.prevButton.set("disabled",index<=0);
+				this.nextButton.set("disabled",index>=len-1);
+			}
 			if(this.selectedIndex==index) return;
 			this.selectedIndex = index;
 			this.selectedItem = items[index];
