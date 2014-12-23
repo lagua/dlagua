@@ -220,9 +220,10 @@ define([
 					}
 				});
 				if(!skipX) {
+					var service = parent.xuriService ? parent.xuriService : parent.base+"rest/"+parent.locale;
 					array.forEach(toResolveX, function(x){
 						var link = data[x];
-						request(parent.base+"rest/"+parent.locale+"/"+link,{
+						request(service+"/"+link,{
 							failOk:true
 						}).then(function(res){
 							data[x] = res;
