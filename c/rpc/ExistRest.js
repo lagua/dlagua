@@ -6,9 +6,10 @@ define([
 	"dojo/when",
 	"dojo/io-query",
 	"dojo/topic",
+	"dojo/aspect",
 	"dlagua/w/Subscribable",
 	"dlagua/c/store/PlainRest"
-], function(declare, lang, request, Deferred, when, ioQuery, topic, Subscribable, PlainRest){
+], function(declare, lang, request, Deferred, when, ioQuery, topic, aspect, Subscribable, PlainRest){
 	// module:
 	//   lagua/c/rpc/ExistRest
 	var XMLOptions = {
@@ -36,26 +37,19 @@ define([
 		_query:null,
 		itemMapper:function(item) {
 			// TODO: add mappedIdProperty
-			var mappedItem = {
-				id: item.id,
-				type: item.type,
-				model: item.model || "Page", // for ModelEditor 
-				key: item.key, // for ModelEditor
-				uri:"",
+			var mappedItem = lang.mixin(item,{
+				uri:item.locale+"/"+item.path,
 				target:this.target,
-				published:item.published,
-				modified:item.modified,
-				__deleted: item.__deleted,
 				__new:false,
 				query:""
-			};
+			});
+			if(!mappedItem.model) mappedItem.model = "Page"; // for ModelEditor 
 			console.log("mappeditem",mappedItem)
 			// remove deleted from original item
 			delete item["__deleted"];
 			if(!mappedItem.deleted && this._query) {
 				mappedItem.query = "?"+ioQuery.objectToQuery({_query:this._query});
 			}
-			mappedItem.uri = item.locale+"/"+item.path;
 			var doc = item.path.split("/").pop();
 			var ext = doc.match(/\.(xml|htm|html|xhtml)$/);
 			if(ext) mappedItem.extension = ext.pop();
@@ -91,7 +85,10 @@ define([
 			})));
 			return d;
 		},
-		onChange: function(property,changeSet,postfix){
+		setDirty:function(dirty){
+			if(this.mappedItem) this.mappedItem.__dirty = dirty;
+		},
+		onChange: function(property,oldChangeSet,changeSet,postfix){
 			if(postfix!=="") postfix = this.postfix;
 			var newItem = this.itemMapper(this.changeSet[0],postfix);
 			var oldItem = this.itemMapper(this.changeSet[1],postfix);
@@ -104,9 +101,9 @@ define([
 			if(postfix==="") return;
 			var self = this;
 			d.then(function(){
-				if(oldItem.__deleted || moved) self.onChange(property,changeSet,"");
+				if(oldItem.__deleted || moved) self.onChange(property,null,changeSet,"");
 			},function(){
-				if(!oldItem.__deleted && !moved) self.onChange(property,changeSet,"");
+				if(!oldItem.__deleted && !moved) self.onChange(property,null,changeSet,"");
 			});
 		},
 		postscript: function(mixin){
@@ -122,7 +119,15 @@ define([
 					// published means there's a temp item
 					this.loadItem(this.mappedItem,this.mappedItem.published ? this.postfix : "");
 				}),
-				this.watch("changeSet", this.onChange)
+				this.watch("changeSet", this.onChange),
+				aspect.after(window,"onbeforeunload",lang.hitch(this,function(){
+					if(this.mappedItem && this.mappedItem.__dirty)
+						return "Some changes may not be saved. Are you sure you want to leave this page?";
+				}),true),
+				aspect.after(window,"onbeforeappunload",lang.hitch(this,function(){
+					if(this.mappedItem && this.mappedItem.__dirty)
+						return "Some changes may not be saved. Are you sure you want to leave this page?";
+				}),true)
 			);
 		},
 		newPage: function(data) {
@@ -155,30 +160,29 @@ define([
 			});
 			return dd;
 		},
-		updateItem:function(date,published,modified){
+		updateItem:function(date,options){
 			var item = this.mappedItem;
 			var now = date.toISOString();
-			var update = {id:item.id,model:this.mappedItem.model};
+			var update = {id:item.id,model:item.model};
 			var key = item.key;
-			if(modified) update[key ? key+"_modified" : "modified"] = now;
-			if(published) update[key ? key+"_published" : "published"] = now;
+			if(options.modified) update[key ? key+"_modified" : "modified"] = now;
+			if(options.published) update[key ? key+"_published" : "published"] = now;
 			topic.publish("/components/"+this.id+"/update",update);
 			this.mappedItem = lang.mixin(item,update);
 		},
 		save: function(data,options) {
 			options = options || {};
+			var published = options.published;
+			var modified = options.modified;
 			var dd = new Deferred();
 			var item = this.mappedItem;
 			if(!item) {
 				dd.reject({id:undefined,response:"No item in service"});
 				return dd;
 			}
-			var published = options.published;
-			delete options.published;
 			var postfix = item.published && !published ? this.postfix : "";
 			var uri = item.uri + postfix;
-			var modified = options["last-modified"];
-			var _q = ioQuery.objectToQuery(options);
+			var _q = ioQuery.objectToQuery(modified ? {"last-modified":item.modified} : {});
 			//console.log(this)
 			/*if(!publish && !this.mappedItem.extension) {
 				url += this.postfix;
@@ -187,10 +191,13 @@ define([
 			}*/
 			var url = _q ? uri+"?"+_q : uri;
 			var res = this.store.put(url,data,XMLOptions);
+			when(res,function(){
+				item.__dirty = false;
+			});
 			if(modified || published) {
 				return when(res.response,lang.hitch(this,function(resp){
 					var date = new Date(resp.getHeader("Date"));
-					this.updateItem(date,published,modified);
+					this.updateItem(date,options);
 					return res;
 				}));
 			}
