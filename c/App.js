@@ -165,24 +165,24 @@ return declare("dlagua.c.App", [Stateful], {
 	},
 	onItem: function(oldValue,newValue){
 		// first check to see if we should navigate away...
+		var item;
 		if(oldValue) {
 			var block = onbeforeappunload();
 			if(block) {
 				if(!confirm(block)) {
-					var par = oldValue.path.split("/");
-					var locale = this.useLocale ? oldValue.locale : this.locale;
-					var stripar = this.stripPath.split("/");
-					par = array.filter(par,function(item,index){
-						return par[index]!=stripar[index];
-					});
-					var hash = (this.indexable ? "!" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
-					this.set("changeFromApp", true);
-					dhash(hash);
-					return;
+					item = lang.mixin({},oldValue);
+					var hash = this.itemToHash(item);
+					if(dhash()!=hash) {
+						this.set("changeFromApp", true);
+						dhash(hash);
+					} else {
+						// republish
+					}
+					return new Deferred().reject();
 				}
 			}
 		}
-		var item = lang.mixin({},this.currentItem);
+		item = lang.mixin({},newValue);
 		console.log("onItem",item)
 		var path = item.path;
 		var newView = this.getView(item.view || item.state);
@@ -198,7 +198,7 @@ return declare("dlagua.c.App", [Stateful], {
 				this.startup();
 				this.resize();
 				// reset item to trigger stuff below
-				return this.onItem(oldValue,this.currentItem);
+				return this.onItem(oldValue,newValue);
 			})));
 		}
 		// this will cause entire rebuild
@@ -261,14 +261,9 @@ return declare("dlagua.c.App", [Stateful], {
 			array.forEach(reset,function(r){
 				r.dojoo.set(r.key,r.value);
 			});
+			topic.publish("/components/"+this.id+"/page-change",item);
 			if(pathchanged || localechanged) {
-				topic.publish("/components/"+this.id+"/page-change",item);
-				var par = path.split("/");
-				var stripar = this.stripPath.split("/");
-				par = array.filter(par,function(item,index){
-					return par[index]!=stripar[index];
-				});
-				var hash = (this.indexable ? "!" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
+				var hash = this.itemToHash(item);
 				var chash = dhash();
 				if(!fromHash && !fromRoot && !item.__truncated && chash!=hash) this.set("changeFromApp", true);
 				if(!fromRoot) {
@@ -281,15 +276,23 @@ return declare("dlagua.c.App", [Stateful], {
 				} else {
 					this.path = path;
 				}
-				d.resolve(true);
-			} else {
-				topic.publish("/components/"+this.id+"/page-change",item);
-				d.resolve(true);
 			}
+			d.resolve(true);
 			if(item.id) this.set("pageId",item.id);
 			//delete this.d;
 		}));
 		//return d;
+	},
+	itemToHash:function(item){
+		var path = item.__truncated ? item.__truncated : item.path;
+		var locale = this.useLocale ? item.locale : this.locale;
+		var par = path.split("/");
+		var stripar = this.stripPath.split("/");
+		par = array.filter(par,function(item,index){
+			return par[index]!=stripar[index];
+		});
+		var hash = (this.indexable ? "!" : "")+(this.useLocale ? locale : "")+(par.length && this.useLocale ? "/" : "")+par.join("/");
+		return hash;
 	},
 	startup: function(){
 		if(this._started) return;
