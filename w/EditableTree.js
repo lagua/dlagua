@@ -9,17 +9,19 @@ define([
 	"dojo/topic",
 	"dojo/when",
 	"dojo/keys",
+	"dojo/query",
 	"dojo/dom-style",
 	"dojo/dom-class",
 	"dijit/Dialog",
 	"dijit/Menu",
 	"dijit/MenuItem",
+	"dijit/registry",
 	"rql/query",
 	"dforma/Builder",
 	"dojox/widget/Toaster",
 	"dlagua/w/SearchableTree",
-	"dijit/tree/dndSource"
-],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,domStyle,domClass,Dialog,Menu,MenuItem,rqlQuery,Builder,Toaster,SearchableTree,dndSource){
+	"./tree/dndSource"
+],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,query,domStyle,domClass,Dialog,Menu,MenuItem,registry,rqlQuery,Builder,Toaster,SearchableTree,dndSource){
 
 var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
 	addChild:function(child){
@@ -159,8 +161,18 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 			}
 		}));
 	},
+	_setSelection:function(){
+		query(".dijitTreeRowSelected",this.domNode).forEach(function(elm){
+			var node = registry.getEnclosingWidget(elm);
+			console.warn(node);
+			node.setSelected(false);
+		});
+		var nodes = this._itemNodesMap[this.selectedItem.id];
+		nodes.forEach(function(node){
+			node.setSelected(true);
+		});
+	},
 	loadFromId:function(){
-		var self = this;
 		if(!this.model.root) {
 			console.log("model was not loaded",this.model.locale)
 			this._lh = aspect.after(this,"onLoad",lang.hitch(this,this.loadFromId));
@@ -171,11 +183,15 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 			this._lh = null;
 		}
 		console.log("EditableTree currentId ", this.currentId)
-		if(this.selectedItem && this.selectedItem.path==this.currentId) return;
+		if(this.selectedItem && this.selectedItem.path==this.currentId) {
+			this._setSelection();
+			return;
+		}
 		var d = new Deferred();
-		d.then(function(){
-			self._checkTruncate(self.currentId);
-		});
+		d.then(lang.hitch(this,function(){
+			this._checkTruncate(this.currentId);
+			this._setSelection();
+		}));
 		if(!this._loaded) {
 			var h = aspect.after(this,"onLoad",function(){
 				h.remove();

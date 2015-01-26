@@ -36,6 +36,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	start:0,
 	count:25,
 	total:Infinity,
+	localizedTemplate:true,
 	filterByItemProperties:"",
 	useItemChildren:false,
 	persistentStore:false,
@@ -571,7 +572,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			}
 			if(tpath) xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 		}
-		return locale+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
+		return (this.localizedTemplate ? locale : "")+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
 	}
 });
 
