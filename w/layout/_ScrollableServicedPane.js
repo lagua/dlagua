@@ -397,7 +397,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		if(this.loadingAnimation && this.footer) {
 			domClass.remove(this.fixedFooter,"dlaguaScrollableServicedPaneLoading");
 		}
-		if(this.useScrollBar) {
+		if(this.useScrollBar && !this.nativeScroll) {
 			this.showScrollBar();
 			this.slideScrollBarTo(this.getPos(), 0.3, "ease-out");
 		}
