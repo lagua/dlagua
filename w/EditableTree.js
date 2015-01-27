@@ -167,6 +167,7 @@ var Tree = declare("dlagua.w.EditableTree",[SearchableTree], {
 			console.warn(node);
 			node.setSelected(false);
 		});
+		if(!this.selectedItem) return;
 		var nodes = this._itemNodesMap[this.selectedItem.id];
 		nodes.forEach(function(node){
 			node.setSelected(true);
