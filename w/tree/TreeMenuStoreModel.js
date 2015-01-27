@@ -19,8 +19,11 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	mayHaveChildren : function(item) {
 		// if the item has a model, try children
 		if(item && item.type!="form") {
-			if(item.hasOwnProperty("model")) {
-				return item.hasOwnProperty("children");
+			if(item.hasOwnProperty("model") && item.hasOwnProperty("menuProperties")) {
+				var props = item.menuProperties.replace(/\s*,\s*/g, ",").split(",");
+				for(var i=0;i<props.length;i++){
+					if(item.hasOwnProperty(props[i])) return true;
+				}
 			} else {
 				return item.hasOwnProperty("childorder") && item.childorder.length>0;
 			}
