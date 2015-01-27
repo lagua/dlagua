@@ -793,7 +793,11 @@ return declare("dlagua.c.Renderer",null,{
 		// get domain node by looking for app relations
 		this.relStore.query({type:"has_app"}).then(function(res) {
 			if(res && res.length) {
-				self.nodeStore.get(res[0].from.replace("Node/","")).then(lang.hitch(self,self.load));
+				// this should be requested with an ancestor query
+				self.nodeStore.query("?limit(500)").then(function(){
+					var node = self.nodeStore.get(res[0].from.replace("Node/",""));
+					self.load(node);
+				});
 			}
 		});
 	},
