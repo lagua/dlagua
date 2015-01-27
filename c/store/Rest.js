@@ -1,12 +1,6 @@
-define([
-	"dojo/_base/declare",
-	"dojo/_base/lang",
-	"dojo/request",
-	"dstore/Memory"
-], function(declare,lang,request,Memory) {
-	return declare("dlagua.c.store.LocalStore", [Memory],{
+define(["dojo/_base/declare","dojo/_base/lang","dojo/request", "dstore/Rest"], function(declare,lang,request,Rest) {
+	return declare("dlagua.c.store.Rest", [Rest],{
 		schemaUri:"",
-		persistent:false,
 		hrProperty:"",
 		idProperty:"id",
 		getSchema:function(schemaUri,options){
@@ -17,9 +11,6 @@ define([
 					accept:"application/json"
 				}
     		});
-		},
-		clear:function(){
-			this.data = [];
 		}
 	});
 

@@ -16,9 +16,8 @@ define([
 	"rql/query",
 	"rql/js-array",
 	"dojox/mobile/i18n",
-	"dojo/store/Observable",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,Observable,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,FormData) {
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -91,14 +90,14 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			if(item.filter) this.orifilter = this.filter = item.filter;
 			if(!this.stores[target]) {
 				if(!this.externalStore) {
-					this.store = new Observable(new FormData({
+					this.store = new FormData({
 						local:item.localStorage,
 						identifier: "id",
 						persistent:item.persistentStorage,
 						model:model,
 						schemaModel:schemaModel,
 						service:item.service
-					}));
+					});
 				} else {
 					this.store.target = target;
 					this.store.schemaUri = schemaUri;
@@ -108,8 +107,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				this.store = this.stores[target];
 			}
 			if(item.autoSelect && !this.store.query().length) {
-				var id = this.store.put({});
-				this.store.selectedId = id;
+				var obj = this.store[this.store.putSync ? "putSync" : "put"]({});
+				this.store.selectedId = lang.isObject(obj) ? obj.id : obj;
 				this.store.newdata = true;
 			}
 			this.rebuild(item);
