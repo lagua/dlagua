@@ -718,7 +718,11 @@ return declare("dlagua.c.Renderer",null,{
 				var loader = dom.byId("loader");
 				if(loader) domStyle.set(loader,"display","none");
 				this.startup();
-				fx.fadeIn({node:this.domNode,duration:500}).play();
+				fx.fadeIn({
+					node:this.domNode,
+					duration:500,
+					onEnd:lang.hitch(this,"resize")
+				}).play();
 				this.ready(node);
 			}));
 		}));

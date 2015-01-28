@@ -340,7 +340,6 @@ return declare("dlagua.c.App", [Stateful], {
 		} else {
 			topic.publish("/dojo/hashchange",hash);
 		}
-		this.resize();
 	}
 });
 
