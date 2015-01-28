@@ -338,10 +338,9 @@ return declare("dlagua.c.App", [Stateful], {
 		if(!hash) {
 			if(this.defaultHash) dhash(this.defaultHash);
 		} else {
-			//setTimeout(function(){
-				topic.publish("/dojo/hashchange",hash);
-			//},100);
+			topic.publish("/dojo/hashchange",hash);
 		}
+		this.resize();
 	}
 });
 
