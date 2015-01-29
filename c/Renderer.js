@@ -62,6 +62,13 @@ define([
 		return d;
 	};
 	
+	var inferType = function(val){
+		var nint = parseInt(val,10);
+		if(nint == val) return nint;
+		if(val == "true" || val == "false") return val==="true";
+		return val;
+	};
+	
 	// set private app node and views
 	var domainNode,appNode,views,view,curPath;
 	
@@ -104,7 +111,7 @@ return declare("dlagua.c.Renderer",null,{
 			if(i=="id" || i=="type") continue;
 			v = node.data[i];
 			if(typeof v == "string" && v.indexOf("{"+type)>-1) {
-				newv = lang.replace(v,meta).replace("undefined","");
+				newv = lang.replace(v,meta).replace(/undefined|null/,"");
 				if(v!=newv) {
 					if(v.indexOf("{i18n.")>-1) {
 						// keep track of what is replaced
@@ -118,9 +125,7 @@ return declare("dlagua.c.Renderer",null,{
 						if(!this.replaced["inferred"][node.id]) this.replaced["inferred"][node.id] = {};
 						this.replaced["inferred"][node.id][i] = v;
 					}
-					var nint = parseInt(newv,10);
-					if(nint == newv) newv = nint;
-					node.data[i] = newv;
+					node.data[i] = inferType(newv);
 				}
 			}
 		}
@@ -140,14 +145,11 @@ return declare("dlagua.c.Renderer",null,{
 						v = this.replaced["inferred"][id][k];
 						if(typeof v == "string") {
 							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							//console.log("reset",k,v,newv)
 							reset.push({dojoo:dojoo,key:k,value:newv});
-							//node.dojoo.set(k,newv);
 						}
 					}
 				}
 			} else {
-				//console.log("reset inferred: ",id,k,v);
 				for(k in this.replaced["inferred"][id]) {
 					v = this.replaced["inferred"][id][k];
 					if(typeof v == "string") node.data[k] = v;
@@ -170,14 +172,12 @@ return declare("dlagua.c.Renderer",null,{
 						v = this.replaced["i18n"][id][k];
 						if(typeof v == "string") {
 							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							//console.log("reset",k,v,newv)
 							reset.push({dojoo:dojoo,key:k,value:newv});
 							//node.dojoo.set(k,newv);
 						}
 					}
 				}
 			} else {
-				//console.log("reset i18n: ",id,k,v);
 				for(k in this.replaced["i18n"][id]) {
 					v = this.replaced["i18n"][id][k];
 					if(typeof v == "string") node.data[k] = v;
@@ -243,7 +243,6 @@ return declare("dlagua.c.Renderer",null,{
 			rel:"stylesheet",
 			type:"text/css",
 			onload:function(){
-				console.warn(this);
 				d.resolve(this);
 			}
 		},h);
@@ -407,7 +406,7 @@ return declare("dlagua.c.Renderer",null,{
 						outgoing = self.getRoutes(curPath);
 						curPath = null;
 						view = outgoing[0];
-						console.warn("view is "+view.data.id,outgoing)
+						console.log("view is "+view.data.id,outgoing)
 					}
 					all(outgoing.map(function(_){
 						console.log(_.data.id);
@@ -429,7 +428,7 @@ return declare("dlagua.c.Renderer",null,{
 				}
 				node.created = true;
 				if(innode && innode.dojoo && innode.data.type=="widget") innode.dojoo = registry.byId(innode.data.id);
-				console.log((self.created ? "re" : "")+"creating ",node.data.type,node.data.id)
+				//console.log((self.created ? "re" : "")+"creating ",node.data.type,node.data.id)
 				if(node.data.type!="domain") node = this.replaceMeta(node);
 				switch(node.data.type) {
 					case "domain":
