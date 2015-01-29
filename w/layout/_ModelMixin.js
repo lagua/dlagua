@@ -572,7 +572,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			}
 			if(tpath) xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 		}
-		return (this.localizedTemplate ? locale : "")+"/"+(this.childTemplate ? this.childTemplate : xtemplate);
+		return (this.localizedTemplate ? locale+"/" : "")+(this.childTemplate ? this.childTemplate : xtemplate);
 	}
 });
 
