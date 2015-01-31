@@ -181,19 +181,22 @@ define([
 			if(typeof resolveProps == "string") {
 				resolveProps = resolveProps.split(",");
 			}
-			if(resolveProps.length) {
-				array.forEach(schema.links, function(link){
-					if(array.indexOf(resolveProps,link.rel)==-1) return;
-					if(link.resolution=="lazy" && data[link.rel]) {
-						toResolve.push(link.rel);
-					}
-				});
-			}
 			for(var k in schema.properties) {
 				var p = schema.properties[k];
-				if(p.format == "xuri") {
+				if(p.type=="string" && p.format == "xuri") {
 					toResolveX.push(k);
+				} else if((p.type=="string" && p.format=="xhtml") || p.type=="array"){
+					resolveProps.push(k);
 				}
+			}
+			if(resolveProps.length) {
+				array.forEach(schema.links, function(link){
+					var rel = link.rel;
+					if(array.indexOf(resolveProps,rel)==-1) return;
+					if(link.resolution=="lazy" && data[rel]) {
+						toResolve.push(rel);
+					}
+				});
 			}
 			var cnt = toResolve.length;
 			var cntx = toResolveX.length;
@@ -202,15 +205,42 @@ define([
 			if(total>0) {
 				array.forEach(toResolve, function(rel){
 					var link = data[rel][refattr];
-					// TODO make store xdomain capable
+					var isXML = false;
 					if(link) {
-						parent.store.query(link).then(function(res){
-							data[rel] = res;
-							total--;
-							if(total==0) {
-								d.resolve(data);
-							}
-						});
+						if(schema.properties[rel]) {
+							var p = schema.properties[rel];
+							isXML = p.type=="string" && p.format=="xhtml";
+						}
+						if(isXML) {
+							var t = parent.store.target;
+							request(t+link,{
+								failOk:true
+							}).then(function(res){
+								data[rel] = res;
+								total--;
+								if(total==0) {
+									d.resolve(data);
+								}
+							},function(err){
+								total--;
+								if(total==0) {
+									d.resolve(data);
+								}
+							});
+						} else {
+							parent.store.query(link).then(function(res){
+								data[rel] = res;
+								total--;
+								if(total==0) {
+									d.resolve(data);
+								}
+							},function(err){
+								total--;
+								if(total==0) {
+									d.resolve(data);
+								}
+							});
+						}
 					} else {
 						console.error("Link "+link+" for "+parent.id+" could not be resolved.");
 						total--;
