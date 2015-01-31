@@ -54,9 +54,11 @@ var form = function(val,options) {
 	return button(val,{
 		_parsable:_parsable,
 		onClick:function(){
-			var id = ref.stores[target].put(data);
-			ref.stores[target].selectedId = id;
-			ref.stores[target].newdata = true;
+			var store = ref.stores[target];
+			// FIXME handle dstore async here? what to do if no store?
+			var obj = store[store.putSync ? "putSync" : "put"](data);
+			store.selectedId = obj.id;
+			store.newdata = true;
 			hash(action);
 		}
 	});
