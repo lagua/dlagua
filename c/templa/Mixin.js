@@ -19,6 +19,13 @@ define([
 	"mustache/mustache"
 ],function(declare,lang,array,win,fx,Stateful,on,sniff,topic,dom,domConstruct,domStyle,domAttr,query,djson,ToggleButton,generateRandomUuid,mustache) {
 
+var inferType = function(val){
+	var nint = parseInt(val,10);
+	if(nint == val) return nint;
+	if(val == "true" || val == "false") return val==="true";
+	return val;
+};
+
 return declare("dlagua.c.templa.Mixin",[Stateful],{
 	set:function(key,value) {
 		if(this.parent && key=="value" && this[key]!=value) this.parent.set("__dirty",true);
@@ -46,7 +53,7 @@ return declare("dlagua.c.templa.Mixin",[Stateful],{
 			}
 			if(!lang.isArray(props)) props = [props];
 			// let value be first arg
-			props.unshift(render(val));
+			props.unshift(inferType(render(val)));
 			return fn.apply(this,props);
 		};
 	},
