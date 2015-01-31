@@ -213,9 +213,9 @@ define([
 			var uri = item.uri;
 			// publish first time: create tmp!
 			if(item.published) {
-				d = this.store.get(uri+this.postfix);
+				d = this.store.get(uri+this.postfix,XMLOptions);
 			} else {
-				d = when(this.store.get(uri),lang.hitch(this,function(temp){
+				d = when(this.store.get(uri,XMLOptions),lang.hitch(this,function(temp){
 					return when(this.store.put(uri+this.postfix,temp,XMLOptions),function(res){
 						return temp;
 					});
