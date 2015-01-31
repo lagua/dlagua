@@ -267,7 +267,7 @@ return declare("dlagua.c.Renderer",null,{
 				var proms = [];
 				var d = new Deferred();
 				for(var i=0;i<3;i++) {
-					proms.push(this.addCss(path+"/"+files[i]+".css"));
+					proms.push(this.addCss(path+"/"+files[i]+".css?r="+Math.random()));
 				}
 				return all(proms);
 			}));
