@@ -26,7 +26,7 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 		var x = $("#audio_"+id);
 		if(x.length && x.mediaelementplayer){
 			x.mediaelementplayer({
-				audioWidth : (options.width || 280),
+				audioWidth : (options.width || 300),
 				success : function(me) {
 					on(me,"play",function(){
 						console.log("play "+id);
