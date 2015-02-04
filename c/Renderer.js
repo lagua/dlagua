@@ -437,6 +437,22 @@ return declare("dlagua.c.Renderer",null,{
 						this.meta.domain = lang.mixin(this.meta.domain,node.data);
 						this.meta.inferred = lang.mixin(this.meta.inferred,node.data);
 						domainNode = node;
+						var domd = new Deferred();
+						// resolve metadata if have
+						if(node.data.metaservice) {
+							domd = request(node.data.metaservice,{
+								sync:true,
+								handleAs:"json",
+								headers:{
+									accept:"application/json",
+									"content-type":"application/json"
+								}
+							}).then(lang.hitch(this,function(res){
+								lang.mixin(this.meta.domain,res[0].data);
+							}));
+						} else {
+							domd.resolve();
+						}
 						// pull in domain requires
 						if(node.data.require) {
 							var reqs = [];
@@ -444,10 +460,14 @@ return declare("dlagua.c.Renderer",null,{
 								reqs.push(lang.trim(req.replace(/\./g,"/")));
 							});
 							require(reqs,function(){
-								d.resolve(node);
+								domd.then(function(){
+									d.resolve(node);
+								});
 							});
 						} else {
-							d.resolve(node);
+							domd.then(function(){
+								d.resolve(node);
+							});
 						}
 					break;
 					case "app":
