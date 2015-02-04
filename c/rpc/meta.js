@@ -6,12 +6,12 @@ define([
 
 lang.getObject("dlagua.c.rpc", true);
 
-var MetaService = function(data) {
+var meta = function(data) {
 	var result = {};
 	var query = data.query;
 	var hasQ = query && query.charAt(0)=="?";
 	var qstr = query ? hasQ ? query : "?" + query : "";
-	request(data.target+qstr,{
+	return request(data.target+qstr,{
 		sync:true,
 		handleAs:"json",
 		headers:{
@@ -29,7 +29,7 @@ var MetaService = function(data) {
 	});
 }
 
-dlagua.c.rpc.MetaService = MetaService;
-return MetaService;
+dlagua.c.rpc.meta = meta;
+return meta;
 
 });
