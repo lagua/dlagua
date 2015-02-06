@@ -24,21 +24,9 @@ define([
 	}
 
 var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
-	_found:null,
 	persist:false,
-	search: function(lookfor, buildme, item, field, returnfield, d) {
-		if(d===undefined) {
-			d = new Deferred();
-			// new search resets found
-			this._found = null;
-		}
-		if(!d) return;
-		if(this._found) {
-			if(item.__parent && item.__parent.__onChildrenSearched) {
-				item.__parent.__onChildrenSearched();
-			}
-			return d;
-		}
+	search: function(lookfor, buildme, item, field, returnfield) {
+		var d = new Deferred();
 		var self = this;
 		if(!returnfield) returnfield = field;
 		var m = this.model;
@@ -46,28 +34,34 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 		var rval = item && item[returnfield];
 		if(array.indexOf(buildme,rval)==-1) buildme.push(rval);
 		if(val == lookfor) {
-			this._found = item;
 			// call childrensearched also here!
 			d.resolve(buildme);
 		} else {
 			//console.log("lookup",item[field],val,lookfor);
-			// should we get children?
-			if(!d.isResolved() && m.mayHaveChildren(item)) {
-				m.getChildren(item,function(children){
-					var len = children.length;
-					if(!len || self._found) {
-						if(!d.isResolved()) {
-							console.warn("cancelling search");
-							d.resolve(buildme);
+				// should we get children?
+				if(m.mayHaveChildren(item)) {
+					m.getChildren(item,function(children){
+						var len = children.length;
+						if(!len) {
+							if(!d.isResolved()) {
+								console.warn("cancelling search");
+								d.resolve(buildme);
+							}
+						} else {
+							all(array.map(children,function(child){
+								var buildmebranch = buildme.slice(0);
+								return self.search(lookfor, buildmebranch, child, field, returnfield);
+							})).then(function(result){
+								var val = result.filter(function(_){
+									return !!_;
+								}).pop();
+								d.resolve(val);
+							})
 						}
-					} else {
-						array.forEach(children,function(child){
-							var buildmebranch = buildme.slice(0);
-							self.search(lookfor, buildmebranch, child, field, returnfield, d);
-						});
-					}
-				});
-			}
+					});
+				} else {
+					d.resolve();
+				}
 		}
 		return d;
 	},
@@ -81,10 +75,11 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 		function searchPart(part,target){
 			self.search(part, buildme, target, field, returnfield).then(function(result){
 				if(result) {
-					var found = self._found;
-					if(parts.length && found) {
+					var last = result[result.length-1];
+					if(parts.length) {
+						var found = self._itemNodesMap[last][0].item;
 						sparts.push(parts.shift());
-						searchPart(sparts.join("/"),found)
+						searchPart(sparts.join("/"),found);
 					} else {
 						console.log(result)
 						d.resolve(result);
