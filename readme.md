@@ -1,5 +1,5 @@
-dlagua, an app boilerplate for dojo and Persevere 2.0
-===========================================================
+dlagua, an app boilerplate for dojo and Persevere 2.0 or similar HTTP interface
+================================================================================
 
 dlagua is the workhorse of Lagua Web Solutions. It mirrors the structure of the dojo toolkit loosly, where
 * c = core (e.g. dojo)
@@ -69,10 +69,10 @@ Please note that in this example, the locale property uses a slightly different 
 In order to be able to edit html pages, they are stored in a REST capable service. This could be the file system, or you could set up some service that stores and retrieves HTML directly (like the formidable eXist database).
 If the type property is changed to "persvr", another persevere model can be specified to load using the built-in mustache.js template engine! Other supported services are Atom (also templated with mustache.js) and XForms (requiring a special setup with Betterform).
 
-Visit http://lagua.nl to discover more ways of setting up and using dlagua apps and for production-ready solutions including a CMS, client-side template editing and theming!
+Visit http://lagua.nl to discover more ways of setting up and using dlagua apps and for production-ready solutions including a CMS, client-side template editing and theming.
 
 Reference:
 * http://dojotoolkit.org
 * http://persvr.org
-* http://exist-db.org
-* http://betterform.de
+* https://github.com/lagua/dforma
+* https://github.com/lagua/xrst
