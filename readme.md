@@ -1,4 +1,4 @@
-dlagua, an app boilerplate for dojo and Persevere 2.0 or similar HTTP interface
+dlagua, an app boilerplate for Dojo Toolit and Persevere or similar HTTP interface
 ================================================================================
 
 dlagua is the workhorse of Lagua Web Solutions. It mirrors the structure of the dojo toolkit loosly, where
