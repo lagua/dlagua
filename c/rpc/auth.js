@@ -16,8 +16,9 @@ define([
 		var d = new Deferred();
 		var sessionParam = params.sessionParam;
 		var method = params.method || "post";
-		var json = params.json;
+		var jsonrpc = params.jsonrpc;
 		var userPrefix = params.userPrefix || "";
+		var prefixOptout = params.prefixOptout || false;
 		var duration = params.duration;
 		var token;
 		var authDialog;
@@ -33,8 +34,8 @@ define([
 			var req = request[method](requrl,{
 				failOk:true,
 				handleAs:"json",
-				data: json ? JSON.stringify(data) : data,
-				headers: json ? {
+				data: jsonrpc ? JSON.stringify(data) : data,
+				headers: jsonrpc ? {
 					"Accept":"application/json",
 					"Content-Type":"application/json"
 				} : {}
@@ -59,11 +60,12 @@ define([
 		};
 		var doAuth = function(data) {
 			form.set("message","");
+			var user = (data.prefixedUser[0] ? userPrefix : "")+data.user;
 			var req = {
-				"user":userPrefix+data.user,
+				"user":user,
 				"password":data.password
 			};
-			if(json) {
+			if(jsonrpc) {
 				lang.mixin(req,{
 					"id":"call-id",
 					"method":"authenticate"
@@ -85,7 +87,41 @@ define([
 				style: "text-align:left;",
 				content: "<div style=\"margin-bottom:10px\">Please login</div>"
 			});
+			var controls = [{
+				type:"input",
+				name:"user",
+				required:true,
+				onKeyPress:function(e) {
+					if(e.charOrCode==keys.ENTER) {
+						form.submit();
+					}
+				}
+			},{
+				label:"password",
+				name:"password",
+				type:"password",
+				required:true,
+				onKeyPress:function(e) {
+					if(e.charOrCode==keys.ENTER) {
+						form.submit();
+					}
+				}
+			}];
+			if(prefixOptout){
+				controls.unshift({
+					name:"prefixedUser",
+					title:"Use prefix",
+					type:"checkbox",
+					value:true,
+					onKeyPress:function(e) {
+						if(e.charOrCode==keys.ENTER) {
+							form.submit();
+						}
+					}
+				});
+			}
 			form = new Builder({
+				"class":"authform",
 				style:"max-height:300px;width:400px;overflow:auto",
 				submit: function(){
 					if(!this.validate()) return;
@@ -93,33 +129,14 @@ define([
 					doAuth(data);
 				},
 				data:{
-					controls:[{
-						type:"input",
-						name:"user",
-						required:true,
-						onKeyPress:function(e) {
-							if(e.charOrCode==keys.ENTER) {
-								form.submit();
-							}
-						}
-					},{
-						label:"password",
-						name:"password",
-						type:"password",
-						required:true,
-						onKeyPress:function(e) {
-							if(e.charOrCode==keys.ENTER) {
-								form.submit();
-							}
-						}
-					}]
+					controls:controls
 				}
 			}).placeAt(authDialog.containerNode);
 			authDialog.show();
 			if(errmsg) form.set("message",errmsg);
 		};
 		
-		var req = json ? {
+		var req = jsonrpc ? {
 			"id":"call-id",
 			"method":"verify"
 		} : {};
