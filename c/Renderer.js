@@ -406,6 +406,7 @@ return declare("dlagua.c.Renderer",null,{
 						outgoing = self.getRoutes(curPath);
 						curPath = null;
 						view = outgoing[0];
+						if(view) this.set("view",view.data.id);
 						console.log("view is "+view.data.id,outgoing)
 					}
 					all(outgoing.map(function(_){
@@ -724,6 +725,7 @@ return declare("dlagua.c.Renderer",null,{
 		if(!newView) newView = view;
 		var oldView = view;
 		view = newView;
+		this.set("view",view.data.id);
 		return this.nodeStore.getChildren(newView).then(lang.hitch(this,function(outgoing) {
 			this._destroyView(oldView,outgoing);
 			return this._addRecursive(newView,appNode);
