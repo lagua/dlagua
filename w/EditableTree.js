@@ -20,7 +20,7 @@ define([
 	"dforma/Builder",
 	"dojox/widget/Toaster",
 	"dlagua/w/SearchableTree",
-	"./tree/dndSource"
+	"dijit/tree/dndSource"
 ],function(declare,lang,array,event,Deferred,on,aspect,topic,when,keys,query,domStyle,domClass,Dialog,Menu,MenuItem,registry,rqlQuery,Builder,Toaster,SearchableTree,dndSource){
 
 var TreeNode = declare("dlagua.w._EditableTreeNode",[SearchableTree._TreeNode],{
