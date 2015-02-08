@@ -5,13 +5,14 @@ define([
 	"dojo/dom-geometry",
 	"dojo/request",
 	"dojo/Deferred",
+	"dojo/promise/all",
 	"dojo/date/stamp",
 	"dijit/_Widget",
 	"dijit/_Templated",
 	"dijit/_Contained",
 	"mustache/mustache",
 	"dlagua/c/templa/Mixin"
-],function(declare,lang,array,domGeometry,request,Deferred,stamp,_Widget,_Templated,_Contained,mustache,Mixin) {
+],function(declare,lang,array,domGeometry,request,Deferred,all,stamp,_Widget,_Templated,_Contained,mustache,Mixin) {
 
 	return declare("dlagua.w.layout.TemplaMixin", [], {
 		resolveProperties:null,
@@ -49,17 +50,6 @@ define([
 			if(!d) d = new Deferred();
 			var parent = this.getParent();
 			var refattr = parent.refAttribute || "$ref";
-			item.__onChildDone = function(){
-				if(this.__childrenDone) this.__childrenDone--;
-				if(!this.__childrenDone || this.__childrenDone == 0) {
-					if(this.__parent) { 
-						delete this.__onChildDone;
-						delete this.__childrenDone;
-						this.__parent.__onChildDone();
-					}
-					d.resolve(this);
-				}
-			};
 			this.resolveLinks(item,schema,resolveProps,skipX).then(lang.hitch(this,function(resolved){
 				resolved.__resolved = true;
 				var children;
@@ -94,10 +84,11 @@ define([
 					// we need a new schema for the children to resolve their xuris..
 					// it must be in schema.links, but we should be sure that we get the correct schema
 					var schemalinks = schema && schema.links || [];
-					item.__childrenDone = 0;
+					var proms = {};
+					var self = this;
 					for(var c in children) {
-						var cschemaUri;
-						var self = this;
+						proms[c] = new Deferred();
+						var cschemaUri = "";
 						for(var i=0;i<schemalinks.length;i++){
 							var link = schemalinks[i];
 							if(link.rel==c) {
@@ -107,34 +98,27 @@ define([
 								break;
 							}
 						}
+						var child = {name:c,items:children[c]};
+						var cd = new Deferred();
 						if(cschemaUri) {
-							item.__childrenDone += children[c].length;
-							var child = {items:children[c]};
-							this.getSchema(cschemaUri).then(function(childSchema) {
-								array.forEach(child.items,function(cidata,i){
-									this._mixinRecursive(cidata,childSchema,[],mu_mixin).then(function(data){
-										children[c][i] = data;
-									});
-								},self);
-							});
+							cd = this.getSchema(cschemaUri);
 						} else {
-							item.__childrenDone += children[c].length;
-							var child = {items:children[c]};
-							array.forEach(child.items,function(cidata,i){
-								this._mixinRecursive(cidata,null,[],mu_mixin).then(function(data){
-									children[c][i] = data;
-								});
-							},self);
+							cd.resolve();
 						}
+						cd.then(lang.hitch(child,function(childSchema) {
+							// this == child
+							all(array.map(this.items,function(cidata,i){
+								return self._mixinRecursive(cidata,childSchema,[],mu_mixin);
+							})).then(lang.hitch(this,function(data){
+								proms[this.name].resolve(data);
+							}));
+						}));
 					}
-					// final check to see if there's any children left
-					var cnt = 0;
-					for(var c in children) {
-						cnt++;
-					}
-					if(cnt===0) item.__onChildDone();
+					all(proms).then(function(ret){
+						d.resolve(item);
+					});
 				} else {
-					item.__onChildDone();
+					d.resolve(item);
 				}
 			}));
 			return d;
@@ -203,6 +187,7 @@ define([
 			var total = cnt;
 			if(!skipX) total += cntx;
 			if(total>0) {
+				console.log("total",total)
 				array.forEach(toResolve, function(rel){
 					var link = data[rel][refattr];
 					var isXML = false;
@@ -218,11 +203,13 @@ define([
 							}).then(function(res){
 								data[rel] = res;
 								total--;
+								console.log("total1s",total)
 								if(total==0) {
 									d.resolve(data);
 								}
 							},function(err){
 								total--;
+								console.log("total1f",total)
 								if(total==0) {
 									d.resolve(data);
 								}
@@ -231,11 +218,13 @@ define([
 							parent.store.query(link).then(function(res){
 								data[rel] = res;
 								total--;
+								console.log("total2s",total)
 								if(total==0) {
 									d.resolve(data);
 								}
 							},function(err){
 								total--;
+								console.log("total2f",total)
 								if(total==0) {
 									d.resolve(data);
 								}
@@ -244,6 +233,7 @@ define([
 					} else {
 						console.error("Link "+link+" for "+parent.id+" could not be resolved.");
 						total--;
+						console.log("total3f",total)
 						if(total==0) {
 							d.resolve(data);
 						}
@@ -258,6 +248,7 @@ define([
 						}).then(function(res){
 							data[x] = res;
 							total--;
+							console.log("total4s",total)
 							if(total==0) {
 								d.resolve(data);
 							}
@@ -265,6 +256,7 @@ define([
 						function(){
 							data[x] = "";
 							total--;
+							console.log("total4f",total)
 							if(total==0) {
 								d.resolve(data);
 							}

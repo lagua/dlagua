@@ -75,11 +75,26 @@ var Tree = declare("dlagua.w.SearchableTree",[_Tree, Subscribable],{
 		function searchPart(part,target){
 			self.search(part, buildme, target, field, returnfield).then(function(result){
 				if(result) {
-					var last = result[result.length-1];
 					if(parts.length) {
-						var found = self._itemNodesMap[last][0].item;
 						sparts.push(parts.shift());
-						searchPart(sparts.join("/"),found);
+						var newpath = sparts.join("/");
+						var last = result[result.length-1];
+						var found;
+						if(self._itemNodesMap[last]) found = self._itemNodesMap[last][0].item;
+						if(found) {
+							searchPart(newpath,found);
+						} else {
+							var req = self.model.store.get(last);
+							var dd;
+							if(req.then) {
+								dd = req;
+							} else {
+								dd = new Deferred().resolve(req);
+							}
+							dd.then(function(found){
+								searchPart(newpath,found);
+							});
+						}
 					} else {
 						console.log(result)
 						d.resolve(result);

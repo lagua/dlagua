@@ -13,13 +13,13 @@ lang.setObject(module.id.replace(/\//g, "."), exports);
 exports.replace = function(val,options) {
 	var pat = options.pattern;
 	var rep = options.replace;
-	if(typeof pat=="string" && typeof rep=="string"){
-		val = val.replace(options.pattern,rep);
-	} else if(pat instanceof Array && rep instanceof Array){
+	if(pat instanceof Array){
+		rep = rep instanceof Array ? rep : [rep];
 		for(var i=0,l=pat.length;i<l;i++){
 			val = val.replace(pat[i],rep[i] || "");
 		}
-	} else if(typeof rep=="object" && rep instanceof Array){
+	} else if(rep instanceof Array){
+		// FIXME
 		val = val.replace(options.pattern,function(){
 			var args = Array.prototype.slice.call(arguments);
 			var match = args.shift();
@@ -29,6 +29,8 @@ exports.replace = function(val,options) {
 			}
 			return ret;
 		});
+	} else {
+		val = val.replace(options.pattern,rep);
 	}
 	return val;
 };
