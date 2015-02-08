@@ -14,7 +14,8 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
-	"dojo/text!./templates/ScrollableServicedPane.html"
+	"dojo/text!./templates/ScrollableServicedPane.html",
+	"dlagua/c/string/toProperCase"
 ],function(declare,lang,fx,dfx,easing,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 	
 return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _TemplatedMixin],{
@@ -223,9 +224,17 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this.template = this.getTemplate();
 		}
 		// set servicetype now as last resort
+		// remove all classes for servicetype
+		var cls = " " + this.domNode.className + " ";
+		cls = cls.replace(/\sdlagua(model|form|atom|page)Service\s/ig, " ");
+		cls = lang.trim(cls);
+		this.domNode.className = cls;
+		domClass.add(this.domNode,"dlagua"+this.servicetype.toProperCase()+"Service");
 		switch(this.servicetype) {
 			case "model":
+				break;
 			case "form":
+				break;
 			case "atom":
 				// find in mixin
 				break;
