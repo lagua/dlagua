@@ -1,23 +1,9 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
-	"dojo/_base/array",
-	"dojo/_base/window",
-	"dojo/_base/fx",
 	"dojo/Stateful",
-	"dojo/on",
-	"dojo/sniff",
-	"dojo/topic",
-	"dojo/dom",
-	"dojo/dom-construct",
-	"dojo/dom-style",
-	"dojo/dom-attr",
-	"dojo/query",
-	"dojo/_base/json",
-	"dijit/form/ToggleButton",
-	"dojox/uuid/generateRandomUuid",
-	"mustache/mustache"
-],function(declare,lang,array,win,fx,Stateful,on,sniff,topic,dom,domConstruct,domStyle,domAttr,query,djson,ToggleButton,generateRandomUuid,mustache) {
+	"dojo/_base/json"
+],function(declare,lang,win,Stateful,djson) {
 
 var inferType = function(val){
 	var nint = parseInt(val,10);
