@@ -239,10 +239,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			var schemaUri = item.service+"Class/"+model;
 			// reset if triggered by currentItem
 			if(arguments.length>0) {
-				if(this.orisort) this.sort = this.orisort;
-				this.orisort = "";
-				if(this.orifilter) this.filter = this.orifilter;
-				this.orifilter = "";
+				this.sort = "";
+				this.filter = "";
 				if(this.orifilters) this.filters = this.orifilters;
 				this.orifilters = null;
 			}
@@ -254,7 +252,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				this.count = this._oricount;
 			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
-			if(item.filter) this.orifilter = this.filter = item.filter;
+			if(item.filter) this.filter = item.filter;
 			if(!this.stores[target]) {
 				this.store = new JsonRest({
 					target:target,
