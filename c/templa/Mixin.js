@@ -3,7 +3,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/Stateful",
 	"dojo/_base/json"
-],function(declare,lang,win,Stateful,djson) {
+],function(declare,lang,Stateful,djson) {
 
 var inferType = function(val){
 	var nint = parseInt(val,10);
