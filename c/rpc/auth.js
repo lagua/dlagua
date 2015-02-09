@@ -60,7 +60,7 @@ define([
 		};
 		var doAuth = function(data) {
 			form.set("message","");
-			var user = (data.prefixedUser[0] ? userPrefix : "")+data.user;
+			var user = (prefixOptout && data.prefixedUser[0] ? userPrefix : "")+data.user;
 			var req = {
 				"user":user,
 				"password":data.password
