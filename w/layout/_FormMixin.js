@@ -9,15 +9,45 @@ define([
 	"dojo/Deferred",
 	"dojo/promise/all",
 	"dojo/dom-class",
+	"dojo/json",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
-	"dforma/Builder",
+	"dlagua/w/form/Builder",
+	"dojo/text!./resources/controlmap.json",
 	"dforma/jsonschema",
 	"rql/query",
 	"rql/js-array",
 	"dojox/mobile/i18n",
 	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,ScrollableServicedPaneItem,TemplaMixin,Builder,jsonschema,rqlQuery,jsArray,i18n,FormData) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,JSON,ScrollableServicedPaneItem,TemplaMixin,Builder,controlmapjson,jsonschema,rqlQuery,jsArray,i18n,FormData) {
+
+var controlmap = JSON.parse(controlmapjson);
+
+function coerce(data,schema) {
+	// summary:
+	// Given an input value, this method is responsible
+	// for converting it to the appropriate type for storing on the object.
+	for(var k in schema.properties) {
+		var type = schema.properties[k].type;
+		var value = data[k];
+		if(type) {
+			if (type === 'string') {
+				data[k] = '' + value;
+			} else if (type === 'number') {
+				value = +value;
+			} else if (type === 'boolean') {
+				value = !!value;
+			} else if (type === 'array') {
+				if(!(value instanceof Array)) value = new Array();
+			} else if (type === 'object') {
+				if(!(value instanceof Object)) value = new Object();
+			} else if (typeof type === 'function' && !(value instanceof type)) {
+				value = new type(value);
+			}
+			data[k] = value;
+		}
+	}
+}
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -151,13 +181,19 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						return;
 					}
 				}
+				var data = {}
+				coerce(data,schema);
 				listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
 					store:this.store,
 					label:schema.title,
 					hint:schema.description,
-					data:{
-						controls:jsonschema.schemaToControls(schema),
+					configProperty:"config",
+					data:data,
+					config:{
+						controls:jsonschema.schemaToControls(schema,data,{
+							controlmap:controlmap
+						}),
 						submit:submit ? {label: submit} : {}
 					},
 					submit: function(){
@@ -255,7 +291,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				});
 				this.own(aspect.after(listItem,"layout",function(){
 					setTimeout(function(){
-						if(self._beingDestroyed) return;
+						if(self._beingDestroyed || self.nativeScroll) return;
 						self._dim = self.getDim();
 						self.slideTo({x:0,y:0}, 0.3, "ease-out");
 						if(self.useScrollBar) {
