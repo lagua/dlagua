@@ -11,8 +11,10 @@ define([
 	"dijit/_Templated",
 	"dijit/_Contained",
 	"mustache/mustache",
-	"dlagua/c/templa/Mixin"
-],function(declare,lang,array,domGeometry,request,Deferred,all,stamp,_Widget,_Templated,_Contained,mustache,Mixin) {
+	"dlagua/c/templa/Mixin",
+	"dojo/dom-attr",
+	"dojo/query"
+],function(declare,lang,array,domGeometry,request,Deferred,all,stamp,_Widget,_Templated,_Contained,mustache,Mixin,domAttr,query) {
 
 	return declare("dlagua.w.layout.TemplaMixin", [], {
 		resolveProperties:null,
@@ -21,6 +23,10 @@ define([
 		mixeddata:null,
 		applyTemplate: function(tpl,partials){
 			this.set("content",mustache.to_html(tpl,this.mixeddata,partials));
+			// IE style workaround
+			query("*[data-style]",this.domNode).forEach(function(_){
+				domAttr.set(_,"style",domAttr.get(_,"data-style"));
+			});
 		},
 		_load:function(resolved, d){
 			d = d || new Deferred();
@@ -173,11 +179,13 @@ define([
 					resolveProps.push(k);
 				}
 			}
+			var schemalinks = {}
 			if(resolveProps.length) {
 				array.forEach(schema.links, function(link){
 					var rel = link.rel;
 					if(array.indexOf(resolveProps,rel)==-1) return;
 					if(link.resolution=="lazy" && data[rel]) {
+						if(!link.href.match(/{|}/g)) schemalinks[rel] = link.href;
 						toResolve.push(rel);
 					}
 				});
@@ -189,7 +197,7 @@ define([
 			if(total>0) {
 				console.log("total",total)
 				array.forEach(toResolve, function(rel){
-					var link = data[rel][refattr];
+					var link = data[rel][refattr] || schemalinks[rel];
 					var isXML = false;
 					if(link) {
 						if(schema.properties[rel]) {
@@ -215,7 +223,7 @@ define([
 								}
 							});
 						} else {
-							parent.store.query(link).then(function(res){
+							parent.store.get(link).then(function(res){
 								data[rel] = res;
 								total--;
 								console.log("total2s",total)
