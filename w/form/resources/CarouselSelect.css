@@ -1,0 +1,15 @@
+.dlaguaCarouselSelect {
+	text-align:center;
+}
+
+.dlaguaCarouselSelectContainer {
+    margin: 0 auto;
+    transform-style: preserve-3d;
+  	perspective: 800px;
+	perspective-origin: 50% 0%;
+}
+
+.dlaguaCarouselSelect-child {
+	position: absolute;
+	transition: all 1s ease 0s;
+}
