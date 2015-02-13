@@ -4,7 +4,7 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/_base/lang",
-	"dijit/_Widget",
+	"dijit/_WidgetBase",
 	"dijit/_Container",
 	"dijit/_Contained"
 	//"dijit/layout/_LayoutWidget",
@@ -14,7 +14,7 @@ define([
 	// module:
 	//		dijit/layout/LayoutContainer
 
-	var Container = declare("dlagua.w.layout.Container", [_Widget, _Container, _Contained], {
+	var Container = declare("dlagua.w.layout.Container", [_WidgetBase, _Container, _Contained], {
 		baseClass: "dlaguaLayoutContainer",
 		layout: function(){
 			//layoutUtils.layoutChildren(this.domNode, this._contentBox, this._getOrderedChildren());
@@ -85,7 +85,7 @@ define([
 
 			this.inherited(arguments);
 		}
-		
+
 	});
 
 	return Container;
