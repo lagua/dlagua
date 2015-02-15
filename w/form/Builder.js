@@ -14,6 +14,9 @@ define([
 				case "lookup":
 					req = "dijit/form/FilteringSelect";
 				break;
+				case "list":
+					req = "dlagua/w/form/List";
+				break;
 			}
 			return req;
 		}

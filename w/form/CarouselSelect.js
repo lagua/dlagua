@@ -58,18 +58,20 @@ define([
 			}));
 			this.inherited(arguments);
 		},
+		_updateColors:function(prop,oldVal,newVal){
+			var parent = this.getParent();
+			var colors = parent.mixeddata && parent.mixeddata.colors ? parent.mixeddata.colors : [];
+			var color = colors.filter(function(_){
+				return _.name==newVal.color;
+			}).pop();
+			if(color) this.previewNode.style.color = color.code;
+		},
 		startup:function(){
 			if(this._started) return;
 			this.inherited(arguments);
 			var parent = this.getParent();
 			this.own(
-				parent.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
-					var colors = parent.mixeddata && parent.mixeddata.colors ? parent.mixeddata.colors : [];
-					var color = parent.mixeddata.colors.filter(function(_){
-						return _.name==newVal.color;
-					}).pop();
-					if(color) this.previewNode.style.color = color.code;
-				}))
+				parent.watch("value",lang.hitch(this,"_updateColors"))
 			);
 		},
 		_page:function(d) {
