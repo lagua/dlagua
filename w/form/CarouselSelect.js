@@ -60,7 +60,8 @@ define([
 		},
 		_updateColors:function(prop,oldVal,newVal){
 			var parent = this.getParent();
-			var colors = parent.mixeddata && parent.mixeddata.colors ? parent.mixeddata.colors : [];
+			var value = parent.get("value");
+			var colors = value.colors ? value.colors : [];
 			var color = colors.filter(function(_){
 				return _.name==newVal.color;
 			}).pop();
