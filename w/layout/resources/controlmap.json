@@ -18,6 +18,7 @@
 			"time":"time",
 			"email":"email",
 			"phone":"phone",
+			"radiogroup":"radiogroup",
 			"text":"textarea",
 			"carousel":"carousel",
 			"lookup":"lookup",
@@ -28,7 +29,6 @@
 			"*":"repeat",
 			"grid":"grid",
 			"select":"select",
-			"radiogroup":"radiogroup",
 			"list":"list"
 		},
 		"object":{
