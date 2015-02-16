@@ -290,19 +290,21 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 						});
 						if(!this.useItemChildren){
 							results.total.then(lang.hitch(this,function(total){
-								this.total = total;
-								if(total===0 || isNaN(total)) this.ready();
+								this.total = parseInt(total,10);
+								if(this.total===0 || isNaN(this.total)) this.ready();
 							}));
 							results.forEach(lang.hitch(this,this.addItem));
 						} else {
 							results.then(lang.hitch(this,function(res){
-								this.total = res[0].children.length;
+								res = (!res || !res.length) ? [] : res;
+								var children = res.length && res[0].children ? res[0].children : [];
+								this.total = children.length;
 								if(this.total===0 || isNaN(this.total)) this.ready();
-								jsonref.refAttribute = "$ref";
+								var refattr = jsonref.refAttribute = this.refAttribute;//"$ref";
 								var store = this.store;
 								var item = jsonref.resolveJson(res[0],{
 									loader:function(callback,d){
-										store.get(this["$ref"]).then(function(item){
+										store.get(this[refattr]).then(function(item){
 											callback(item,d);
 										});
 									}
