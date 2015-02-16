@@ -185,7 +185,7 @@ define([
 				}
 			}
 			array.forEach(resolveProps, function(key){
-				var href = data[key][refattr];
+				var href = data[key] && typeof data[key] == "object" ? data[key][refattr] : null;
 				if(href) {
 					var req = {
 						handleAs:"json",
