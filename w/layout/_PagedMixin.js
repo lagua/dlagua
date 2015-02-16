@@ -205,7 +205,8 @@ define([
 					useXDomain:this.useXDomain
 				});
 				results.total.then(lang.hitch(this,function(total){
-					this.total = total;
+					this.total = parseInt(total,10);
+					if(this.total===0 || isNaN(this.total)) this.ready();
 				}));
 				results.forEach(lang.hitch(this,this.addItem));
 			}
