@@ -18,16 +18,16 @@ define([
 	"can/map", 
 	"can/view", 
 	"can/view/mustache",
+	"dlagua/c/store/Model",
 	"dforma/util/i18n"
 ],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,
 		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,
 		Memory, Trackable,
-		Map, can,mustache,
-		i18n){
+		Map, can, mustache,
+		Model, i18n){
 	
 	var ListItem = declare("dlagua.w.form.ListItem",[_WidgetBase,_Contained],{
-		data:null,
-		postCreate:function(){
+		onLoad:function(){
 			this.render();
 		},
 		render:function(){
@@ -106,10 +106,9 @@ define([
 	 	},
 	 	startup:function(){
 	 		this.inherited(arguments);
+	 		var self = this;
 			var parent = this.getParent();
-			var ancestor = parent ? parent.getParent() : null;
-			var templatePath = ancestor.templatePath+ancestor.currentItem.path + "/" + this.name + ".html";
-			request(templatePath).then(function(res){
+			request(this.templatePath).then(function(res){
 				self.template = res;
 				self.refresh();
 			});
@@ -140,13 +139,27 @@ define([
 			this.selected = id;
 		},
 		_add:function(){
-			this.store.add(lang.clone(this.defaultInstance)).then(lang.hitch(this,function(data){
-				var id = data.id;
-				this.onAdd(id);
-				this.newdata = true;
-				this.select(id);
-				this.onEdit(id);
-			}));
+			var data = lang.mixin({},this.defaultInstance);
+			//var parent = this.getParent();
+			// TODO do something with parent controller if have
+			var schema = this.schema.items ? this.schema.items[0] : this.schema;
+			var model = new Model({
+				data:data,
+				refAttribute:"_ref",
+				target:this.store.target,
+				schema:schema,
+				coerce:true,
+				resolve:true,
+				ready:lang.hitch(this,function(){
+					this.store.add(model.data).then(lang.hitch(this,function(data){
+						var id = data.id;
+						this.onAdd(id);
+						this.newdata = true;
+						this.select(id);
+						this.onEdit(id);
+					}));
+				})
+			});
 		},
 		onEdit:function(id,options){
 			// override to edit
