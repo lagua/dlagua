@@ -30,6 +30,7 @@ define([
 		},
 		_load:function(resolved, d){
 			d = d || new Deferred();
+			var md = new Deferred();
 			if(resolved) {
 				this.data = resolved;
 			}
@@ -41,9 +42,8 @@ define([
 				d.resolve();
 				return d;
 			}
-			var md = new Deferred();
 			var parent = this.getParent();
-			var schema = (parent && parent.schema ? parent.schema : this.schema);
+			var schema = this.schema || parent.schema;
 			var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
 			this._mixinRecursive(lang.clone(this.data),schema,resolveProps,new Mixin(),md);
 			md.then(lang.hitch(this,function(data){
@@ -59,6 +59,7 @@ define([
 			this.resolveLinks(item,schema,resolveProps,skipX).then(lang.hitch(this,function(resolved){
 				resolved.__resolved = true;
 				var children;
+				// resolve from data
 				for(var k in resolved) {
 					var val = item[k];
 					if(val && lang.isArray(val)) {
@@ -166,114 +167,49 @@ define([
 				return d;
 			}
 			var self = this;
-			var toResolve = [];
-			var toResolveX = [];
+			var toResolve = {};
 			if(typeof resolveProps == "string") {
 				resolveProps = resolveProps.split(",");
 			}
 			for(var k in schema.properties) {
 				var p = schema.properties[k];
 				if(p.type=="string" && p.format == "xuri") {
-					toResolveX.push(k);
+					if(!skipX) {
+						var service = parent.xuriService ? parent.xuriService : parent.base+"rest/"+parent.locale;
+						toResolve[k] = request(service+"/"+data[k],{
+							failOk:true
+						});
+					}
 				} else if((p.type=="string" && p.format=="xhtml") || p.type=="array"){
 					resolveProps.push(k);
 				}
 			}
-			var schemalinks = {}
-			if(resolveProps.length) {
-				array.forEach(schema.links, function(link){
-					var rel = link.rel;
-					if(array.indexOf(resolveProps,rel)==-1) return;
-					if(link.resolution=="lazy" && data[rel]) {
-						if(!link.href.match(/{|}/g)) schemalinks[rel] = link.href;
-						toResolve.push(rel);
-					}
-				});
-			}
-			var cnt = toResolve.length;
-			var cntx = toResolveX.length;
-			var total = cnt;
-			if(!skipX) total += cntx;
-			if(total>0) {
-				console.log("total",total)
-				array.forEach(toResolve, function(rel){
-					var link = data[rel][refattr] || schemalinks[rel];
-					var isXML = false;
-					if(link) {
-						if(schema.properties[rel]) {
-							var p = schema.properties[rel];
-							isXML = p.type=="string" && p.format=="xhtml";
+			array.forEach(resolveProps, function(key){
+				var href = data[key][refattr];
+				if(href) {
+					var req = {
+						handleAs:"json",
+						headers:{
+							accept:"application/json"
 						}
-						if(isXML) {
-							var t = parent.store.target;
-							request(t+link,{
-								failOk:true
-							}).then(function(res){
-								data[rel] = res;
-								total--;
-								console.log("total1s",total)
-								if(total==0) {
-									d.resolve(data);
-								}
-							},function(err){
-								total--;
-								console.log("total1f",total)
-								if(total==0) {
-									d.resolve(data);
-								}
-							});
-						} else {
-							parent.store.get(link).then(function(res){
-								data[rel] = res;
-								total--;
-								console.log("total2s",total)
-								if(total==0) {
-									d.resolve(data);
-								}
-							},function(err){
-								total--;
-								console.log("total2f",total)
-								if(total==0) {
-									d.resolve(data);
-								}
-							});
-						}
-					} else {
-						console.error("Link "+link+" for "+parent.id+" could not be resolved.");
-						total--;
-						console.log("total3f",total)
-						if(total==0) {
-							d.resolve(data);
-						}
-					}
-				});
-				if(!skipX) {
-					var service = parent.xuriService ? parent.xuriService : parent.base+"rest/"+parent.locale;
-					array.forEach(toResolveX, function(x){
-						var link = data[x];
-						request(service+"/"+link,{
+					};
+					var p = schema.properties[key];
+					if(p.type=="string" && p.format=="xhtml") {
+						// shouldn't we try to resolve XML?
+						req = {
+							handleAs:"text",
 							failOk:true
-						}).then(function(res){
-							data[x] = res;
-							total--;
-							console.log("total4s",total)
-							if(total==0) {
-								d.resolve(data);
-							}
-						},
-						function(){
-							data[x] = "";
-							total--;
-							console.log("total4f",total)
-							if(total==0) {
-								d.resolve(data);
-							}
-						});
-					});
+						};
+					}
+					console.log("Link "+key+" for "+parent.id+" will be resolved.");
+					toResolve[key] = request(parent.store.target + href,req);
+				} else {
+					console.warn("Link "+key+" for "+parent.id+" won't be resolved.");
 				}
-			} else {
-				d.resolve(data);
-			}
+			});
+			all(toResolve).then(function(resolved){
+				d.resolve(lang.mixin(data,resolved));
+			});
 			return d;
 		},
 		startup:function(){
