@@ -18,36 +18,11 @@ define([
 	"rql/query",
 	"rql/js-array",
 	"dojox/mobile/i18n",
-	"dlagua/c/store/FormData"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,JSON,ScrollableServicedPaneItem,TemplaMixin,Builder,controlmapjson,jsonschema,rqlQuery,jsArray,i18n,FormData) {
+	"dlagua/c/store/FormData",
+	"dlagua/c/store/Model"
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,JSON,ScrollableServicedPaneItem,TemplaMixin,Builder,controlmapjson,jsonschema,rqlQuery,jsArray,i18n,FormData,Model) {
 
 var controlmap = JSON.parse(controlmapjson);
-
-function coerce(data,schema) {
-	// summary:
-	// Given an input value, this method is responsible
-	// for converting it to the appropriate type for storing on the object.
-	for(var k in schema.properties) {
-		var type = schema.properties[k].type;
-		var value = data[k];
-		if(type) {
-			if (type === 'string') {
-				data[k] = '' + value;
-			} else if (type === 'number') {
-				value = +value;
-			} else if (type === 'boolean') {
-				value = !!value;
-			} else if (type === 'array') {
-				if(!(value instanceof Array)) value = new Array();
-			} else if (type === 'object') {
-				if(!(value instanceof Object)) value = new Object();
-			} else if (typeof type === 'function' && !(value instanceof type)) {
-				value = new type(value);
-			}
-			data[k] = value;
-		}
-	}
-}
 
 var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[ScrollableServicedPaneItem,TemplaMixin,Builder],{
 });
@@ -155,6 +130,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				// - assign schema url
 				// - get domain nls
 				// - provide global / persistent stores
+				// FIXME: why clone?
 				var schema = lang.clone(this.schema);
 				var formbundle = this.dojoModule ? i18n.load(this.dojoModule,this.formBundle) : {};
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
@@ -181,17 +157,28 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						return;
 					}
 				}
-				var data = {}
-				coerce(data,schema);
+				var model = new Model({
+					data:{},
+					schema:schema,
+					coerce:true
+				});
+				var locale = this.currentItem.locale ? this.currentItem.locale : this.locale;
+				var path = this.currentItem.path;
+				var templatePath = this.templatePath + (this.localizedTemplate ? locale + "/" : "") + path;
+				console.log(templatePath)
 				listItem = new ScrollableFormPaneItem({
 					itemHeight:"auto",
 					store:this.store,
+					value:model.data,
 					label:schema.title,
 					hint:schema.description,
 					configProperty:"config",
-					data:data,
+					schema:schema,
+					templatePath:templatePath,
+					controlmap:controlmap,
+					BuilderClass:Builder,
 					config:{
-						controls:jsonschema.schemaToControls(schema,data,{
+						controls:jsonschema.schemaToControls(schema,model.data,{
 							controlmap:controlmap
 						}),
 						submit:submit ? {label: submit} : {}
