@@ -53,7 +53,6 @@ define([
 			var doc = item.path.split("/").pop();
 			var ext = doc.match(/\.(xml|htm|html|xhtml)$/);
 			if(ext) mappedItem.extension = ext.pop();
-			if(item["default"]) mappedItem.defaultInstance = item.locale+"/"+item["default"];
 			return mappedItem;
 		},
 		getItem:function(){
@@ -144,8 +143,12 @@ define([
 			// SO this returns a whole path including target now... NO GOOD
 			// this will be for editor OR some pane with service holder
 			// so make it an item finally
-			if(item.defaultInstance) {
-				d = request(this.target+item.defaultInstance);
+			if(item.template) {
+				var parts = item.template.split("?");
+				var url = this.target+parts.shift();
+				var q = ioQuery.queryToObject(parts.shift());
+				if(!q.locale && item.locale) q.locale = item.locale;
+				d = request(url+"?"+ioQuery.objectToQuery(q));
 			} else {
 				if(!data) data = "<body/>";
 				d.resolve(data);
