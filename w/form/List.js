@@ -7,40 +7,68 @@ define([
 	"dojo/dom-attr",
 	"dojo/query",
 	"dojo/request",
+	"dojo/aspect",
+	"dojo/Deferred",
+	"dojo/when",
+	"dojo/sniff",
 	"dijit/_WidgetBase",
 	"dijit/_Contained",
 	"dijit/_Container",
 	"dijit/_TemplatedMixin",
 	"dijit/form/_FormValueMixin",
 	"dijit/form/Button",
+	"dijit/registry",
 	"dstore/Memory",
 	"dstore/Trackable",
-	"can/map", 
-	"can/view", 
-	"can/view/mustache",
+	"mustache/mustache",
 	"dlagua/c/store/Model",
 	"dforma/util/i18n"
-],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,
-		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,
+],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,aspect,Deferred,when,sniff,
+		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,registry,
 		Memory, Trackable,
-		Map, can, mustache,
+		mustache,
 		Model, i18n){
 	
+	var isIE = !!sniff("ie");
+	
 	var ListItem = declare("dlagua.w.form.ListItem",[_WidgetBase,_Contained],{
-		onLoad:function(){
+		template:"",
+		tokens:null,
+		value:null,
+		writer:null,
+		startup:function(){
+			if(this._started) return;
+			this._createContext();
 			this.render();
 		},
+		_setValueAttr:function(prop,value){
+			if(typeof prop=="string"){
+				// update individual property
+				if(this.context) delete this.context.cache[prop];
+				this.value[prop] = value;
+			} else {
+				this.value = prop;
+				this._createContext();
+			}
+			this.render();
+		},
+		_createContext:function(){
+			this.context = new mustache.Context(this.value);
+		},
 		render:function(){
-			var parent = this.getParent();
-			var tpl = parent.getTemplate();
-			//this.domNode.innerHTML = mustache.to_html(tpl, this.data);
-			var data = new Map(this.data);
-			var node = can.view(tpl, data);
-			this.domNode.appendChild(node);
+			if(!this.writer) return;
+			// update view:
+			// add watch to parent subform(!) value for the selected id
+			// delete (or update) this.context.cache.color;
+			// w.context.view.color="paars";
+			// w.render();
+			this.domNode.innerHTML = this.writer.renderTokens(this.tokens,this.context,{},this.template);
 			// IE style workaround
-			query("*[data-style]",this.domNode).forEach(function(_){
-				domAttr.set(_,"style",domAttr.get(_,"data-style"));
-			});
+			if(isIE) {
+				query("*[data-style]",this.domNode).forEach(function(_){
+					domAttr.set(_,"style",domAttr.get(_,"data-style"));
+				});
+			}
 		}
 	});
 	
@@ -91,6 +119,41 @@ define([
 			var self = this;
 			var common = i18n.load("dforma","common");
 			if(!this.store) this.store = new TrackableMemory();
+			var putFunc = function(put) {
+				return function(object,options) {
+					var d = new Deferred();
+					var target = this.target;
+					when(put.call(this,object,options),function(object){
+						var model = new Model({
+							data:object,
+							refAttribute:"_ref",
+							target:target,
+							schema:schema,
+							coerce:true,
+							resolve:true,
+							ready:function(){
+								d.resolve(this.data);
+							}
+						});
+					});
+					return d;
+				}
+			}
+			aspect.around(this.store,"put",function(put){
+				return putFunc(put);
+			});
+			aspect.around(this.store,"add",function(add){
+				return putFunc(add);
+			});
+			if(typeof this.store.on == "function") {
+				// on update requery links
+				var schema = this.schema.items ? this.schema.items[0] : this.schema;
+				this.own(
+					this.store.on("add,update,delete",lang.hitch(this,function(event){
+						console.log(event)
+					}))
+				);
+			}
 			this.inherited(arguments);
 			if(this.add){
 				this.addButton = new Button({
@@ -102,18 +165,30 @@ define([
 					}
 				}).placeAt(this.containerNode);
 			}
-			this._itemMap = {};
 	 	},
 	 	startup:function(){
-	 		this.inherited(arguments);
-	 		var self = this;
-			var parent = this.getParent();
-			request(this.templatePath).then(function(res){
-				self.template = res;
-				self.refresh();
-			});
+	 		if(this._started) return;
+			this.own(
+				this.subform.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
+					var sel = this._itemMap[this.selected];
+					if(sel) sel.set("value",newVal);
+				}))
+			);
+			request(this.templatePath).then(lang.hitch(this,function(tpl){
+				if(!tpl) return;
+				this.template = tpl;
+				if(!this.writer) {
+					this.writer = new mustache.Writer();
+					this.tokens = this.writer.parse(tpl);
+				}
+				this.refresh();
+			}));
+			this.inherited(arguments);
 	 	},
 	 	refresh:function(){
+	 		// prevent hiding
+	 		domClass.remove(this.domNode,"dijitHidden");
+	 		if(!this._itemMap) this._itemMap = {};
 	 		for(var id in this._itemMap) {
 	 			var child = this._itemMap[id];
 	 			if(!this.store.getSync(id)) {
@@ -127,39 +202,43 @@ define([
 	 	},
 	 	_addChild:function(item){
 	 		var child = new ListItem({
-	 			data:item
+	 			value:item,
+	 			writer:this.writer,
+	 			tokens:this.tokens,
+	 			template:this.template
 	 		});
+	 		var self = this;
+	 		child.own(
+	 			child.on("click",function(){
+	 				var w = registry.getEnclosingWidget(this);
+		 			self.select(w.value.id);
+		 		})
+	 		);
 	 		this.addChild(child);
+	 		this._itemMap[item.id] = child;
 	 	},
 		onAdd:function(id){
 			// override to set initial data
 		},
 		select:function(id){
+			if(this.selected && this.selected===id) return;
+			domClass.remove(this.domNode,"dijitHidden");
 			// TODO update css
+			if(this.selected)this.subform.cancel();
 			this.selected = id;
+			this.onEdit(id);
 		},
 		_add:function(){
 			var data = lang.mixin({},this.defaultInstance);
 			//var parent = this.getParent();
 			// TODO do something with parent controller if have
-			var schema = this.schema.items ? this.schema.items[0] : this.schema;
-			var model = new Model({
-				data:data,
-				refAttribute:"_ref",
-				target:this.store.target,
-				schema:schema,
-				coerce:true,
-				resolve:true,
-				ready:lang.hitch(this,function(){
-					this.store.add(model.data).then(lang.hitch(this,function(data){
-						var id = data.id;
-						this.onAdd(id);
-						this.newdata = true;
-						this.select(id);
-						this.onEdit(id);
-					}));
-				})
-			});
+			this.store.add(data).then(lang.hitch(this,function(data){
+				var id = data.id;
+				this.onAdd(id);
+				this.newdata = true;
+				this.select(id);
+				this.refresh();
+			}));
 		},
 		onEdit:function(id,options){
 			// override to edit
