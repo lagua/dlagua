@@ -28,12 +28,12 @@ var ScrollableFormPaneItem = declare("dlagua.w.layout.ScrollableFormPaneItem",[S
 });
 
 function traverse(obj,func, parent) {
-	for (i in obj){
+	for(var i in obj){
 		func.apply(obj,[i,obj[i],parent]);
 		if (obj[i] instanceof Object && !(obj[i] instanceof Array)) {
 			traverse(obj[i],func, i);
 		} else if(obj[i] instanceof Array) {
-			array.forEach(obj[i],function(o){
+			obj[i].forEach(function(o){
 				traverse(o,func, i);
 			});
 		}
@@ -41,7 +41,8 @@ function traverse(obj,func, parent) {
 }
 function replaceNlsRecursive(obj,nls){
 	traverse(obj, function(key, value, parent){
-		if(typeof value == "string" && value.indexOf("{")>-1){
+		// prevent links!
+		if(parent!="links" && typeof value == "string" && value.indexOf("{")>-1){
 			this[key] = lang.replace(value,nls);
 		}
 	});
@@ -112,6 +113,14 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				this.store = this.stores[target];
 			}
 			if(item.autoSelect && !this.store.query().length) {
+				if(typeof this.store.on == "function") {
+					// on update requery links
+					this.own(
+						this.store.on("add,update,delete",lang.hitch(this,function(event){
+							console.warn(event)
+						}))
+					);
+				}
 				var obj = this.store[this.store.putSync ? "putSync" : "put"]({});
 				this.store.selectedId = lang.isObject(obj) ? obj.id : obj;
 				this.store.newdata = true;
@@ -179,7 +188,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					BuilderClass:Builder,
 					config:{
 						controls:jsonschema.schemaToControls(schema,model.data,{
-							controlmap:controlmap
+							controlmap:controlmap,
+							uri:this.store.target
 						}),
 						submit:submit ? {label: submit} : {}
 					},
