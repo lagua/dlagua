@@ -58,12 +58,15 @@ define([
 			}));
 			this.inherited(arguments);
 		},
+		_getValueAttr:function(){
+			var idProp = this.store.idProperty;
+			return this.selection ? this.selection.value[idProp] : null;
+		},
 		_updateColors:function(prop,oldVal,newVal){
-			var parent = this.getParent();
-			var value = parent.get("value");
-			var colors = value.colors ? value.colors : [];
+			console.warn(newVal.colors)
+			var colors = newVal.colors && newVal.colors instanceof Array ? newVal.colors : [];
 			var color = colors.filter(function(_){
-				return _.name==newVal.color;
+				return _.id==newVal.color;
 			}).pop();
 			if(color) this.previewNode.style.color = color.code;
 		},
@@ -84,9 +87,14 @@ define([
 			var delta = angle*this.selected;
 			for(var i = 0; i < l; i ++) {
 				var a = (delta + i*angle);
-				this.items[i].domNode.style.transform = this.items[i].domNode.style.webkitTransform = 'rotateY(' + a + 'deg) translateZ(' + this.radius + 'px)';
+				this.items[i].domNode.style.transform = this.items[i].domNode.style.webkitTransform = 'rotateY(' + a + 'deg) translate3d(26px,-44px,' + this.radius + 'px) scale(.25,.25)';
 				this.items[i].domNode.style.zIndex = ((a >=0 && a < 90) || (a>270 && a<=360)) ? i+999 : 0;
+				if(i==0)console.log(a)
 			}
+			var s = this.selected ? l-this.selected : 0;
+			this.selection = this.items[s];
+			var idProp = this.store.idProperty;
+			this.set("value",this.selection.value[idProp]);
 		},
 		_setup:function(angle, left,data){
 			var items = [];
@@ -94,6 +102,7 @@ define([
 				var item = new CSItem({
 					width:this.itemWidth,
 					left:left,
+					value:data[i],
 					content:data[i][this.labelAttr]
 				});
 				// add the item to the container
