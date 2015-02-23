@@ -46,11 +46,33 @@ define([
 				// update individual property
 				if(this.context) delete this.context.cache[prop];
 				this.value[prop] = value;
+				this.render();
 			} else {
 				this.value = prop;
-				this._createContext();
+				var d = new Deferred();
+				if(this.value.designs instanceof Array && this.value.designs.length) {
+					// FIXME recursive model resolving
+					// FIXME use first item in items array(!) for Repeat
+					// FIXME resolve refs in schemas
+					var model = new Model({
+						data:this.value.designs[0],
+						refAttribute:"_ref",
+						target:this.target,
+						schema:{ "properties" : { "id" : { "type" : "integer", "primary" : true, "indexed" : true, "auto_increment" : "30" }, "name" : { "type" : "string", "title" : "Naam" }, "template" : { "type" : "string", "title" : "Sjabloon" }, "theme" : { "type" : "string", "title" : "Thema" }, "content" : { "type" : "string", "format" : "xhtml" } }, "id" : "Redesign", "prototype" : null, "links" : [{ "rel" : "content", "href" : "/rest/{template}", "resolution" : "lazy" }] },
+						resolve:true,
+						ready:function(){
+							d.resolve(this.data);
+						}
+					});
+				} else {
+					d.resolve();
+				}
+				d.then(lang.hitch(this,function(data){
+					if(data) this.value.designs[0] = data;
+					this._createContext();
+					this.render();
+				}));
 			}
-			this.render();
 		},
 		_createContext:function(){
 			this.context = new mustache.Context(this.value);
@@ -107,6 +129,7 @@ define([
 	 		return this.store.fetchSync();
 	 	},
 	 	_setValueAttr:function(data){
+	 		if(!this._started) return;
 	 		data = data || [];
 	 		// TODO means we have a Memory type store?
 	 		this.store.setData(data);
@@ -119,6 +142,7 @@ define([
 			var self = this;
 			var common = i18n.load("dforma","common");
 			if(!this.store) this.store = new TrackableMemory();
+			var schema = this.schema.items ? this.schema.items[0] : this.schema;
 			var putFunc = function(put) {
 				return function(object,options) {
 					var d = new Deferred();
@@ -145,15 +169,18 @@ define([
 			aspect.around(this.store,"add",function(add){
 				return putFunc(add);
 			});
-			if(typeof this.store.on == "function") {
+			aspect.before(this,"onEdit",lang.hitch(this,function(id){
+				// selected by way of onEdit
+				this.selected = id;
+			}),true);
+			/*if(typeof this.store.on == "function") {
 				// on update requery links
-				var schema = this.schema.items ? this.schema.items[0] : this.schema;
 				this.own(
 					this.store.on("add,update,delete",lang.hitch(this,function(event){
-						console.log(event)
+						this.refresh();
 					}))
 				);
-			}
+			}*/
 			this.inherited(arguments);
 			if(this.add){
 				this.addButton = new Button({
@@ -168,10 +195,34 @@ define([
 	 	},
 	 	startup:function(){
 	 		if(this._started) return;
+	 		var _resolving = false;
 			this.own(
+				aspect.after(this.subform,"cancel",lang.hitch(this,function(){
+					this.selected = null;
+					this.refresh();
+				})),
 				this.subform.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
+					if(_resolving){
+						_resolving = false;
+						return;
+					}
+					_resolving = true;
+					var target = this.store.target;
+					var schema = this.schema.items ? this.schema.items[0] : this.schema;
 					var sel = this._itemMap[this.selected];
-					if(sel) sel.set("value",newVal);
+					var self = this;
+					var model = new Model({
+						data:newVal,
+						refAttribute:"_ref",
+						target:target,
+						schema:schema,
+						resolve:true,
+						ready:function(){
+							console.log(this.data.colors)
+							self.subform.set("value",lang.mixin(newVal,this.data));
+							if(sel) sel.set("value",this.data);
+						}
+					});
 				}))
 			);
 			request(this.templatePath).then(lang.hitch(this,function(tpl){
@@ -187,25 +238,30 @@ define([
 	 	},
 	 	refresh:function(){
 	 		// prevent hiding
-	 		domClass.remove(this.domNode,"dijitHidden");
 	 		if(!this._itemMap) this._itemMap = {};
 	 		for(var id in this._itemMap) {
 	 			var child = this._itemMap[id];
-	 			if(!this.store.getSync(id)) {
+	 			var obj = this.store.getSync(id);
+	 			if(child && !obj) {
 	 				this.removeChild(child);
 	 				delete this._itemMap[id];
 	 			}
 	 		}
+	 		console.log(this.store.data)
 	 		this.store.fetchSync().forEach(function(item){
+	 			console.log(item)
 	 			if(!(item.id in this._itemMap)) this._addChild(item);
 	 		},this);
 	 	},
 	 	_addChild:function(item){
+	 		var schema = this.schema.items ? this.schema.items[0] : this.schema;
 	 		var child = new ListItem({
 	 			value:item,
 	 			writer:this.writer,
 	 			tokens:this.tokens,
-	 			template:this.template
+	 			template:this.template,
+	 			schema:schema,
+	 			target:this.store.target
 	 		});
 	 		var self = this;
 	 		child.own(
@@ -222,13 +278,18 @@ define([
 		},
 		select:function(id){
 			if(this.selected && this.selected===id) return;
-			domClass.remove(this.domNode,"dijitHidden");
 			// TODO update css
-			if(this.selected)this.subform.cancel();
+			if(this.selected) {
+				if(!this.subform.submit()) return;
+			}
 			this.selected = id;
 			this.onEdit(id);
 		},
 		_add:function(){
+			if(this.selected) {
+				if(!this.subform.submit()) return;
+				this.selected = null;
+			}
 			var data = lang.mixin({},this.defaultInstance);
 			//var parent = this.getParent();
 			// TODO do something with parent controller if have
@@ -243,9 +304,12 @@ define([
 		onEdit:function(id,options){
 			// override to edit
 		},
-		save:function(id,options){
+		save:function(obj,options){
 			this.newdata = false;
-			this.store.put(id,options);
+			// since we're saving from subform, reset selection
+			this.selected = null;
+			var id = obj.id || options.id;
+			this.store.put(obj,options);
 			this.refresh();
 		}
 	});
