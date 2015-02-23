@@ -9,7 +9,7 @@ define([
 	"dijit/_Contained"
 	//"dijit/layout/_LayoutWidget",
 	//"./utils" // layoutUtils.layoutChildren
-], function(array, declare, domClass, domStyle, lang, _Widget, _Container, _Contained/*, _LayoutWidget, layoutUtils*/){
+], function(array, declare, domClass, domStyle, lang, _WidgetBase, _Container, _Contained/*, _LayoutWidget, layoutUtils*/){
 
 	// module:
 	//		dijit/layout/LayoutContainer
