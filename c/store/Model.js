@@ -18,16 +18,17 @@ define([
 		constructor:function(params){
 			lang.mixin(this,params);
 			if(!this.resolveProps) this.resolveProps = [];
-			if(this.resolve) this.coerce = true;
 			if(this.coerce) this._coerce();
-			if(this.resolve) this._resolve();
+			if(this.resolve) {
+				if(!this.coerce) this._prepareLinks();
+				this._resolve();
+			}
 		},
 		_coerce:function() {
 			// summary:
 			// Given an input value, this method is responsible
 			// for converting it to the appropriate type for storing on the object.
 			var schema = this.schema;
-			var refattr = this.refAttribute;
 			if(!schema) return;
 			if(!this.data) this.data = {};
 			var data = this.data;
@@ -51,6 +52,12 @@ define([
 					data[k] = value;
 				}
 			}
+			this._prepareLinks();
+		},
+		_prepareLinks:function(){
+			var schema = this.schema;
+			var refattr = this.refAttribute;
+			var data = this.data;
 			if(schema.links instanceof Array) {
 				schema.links.forEach(function(link){
 					if(!data[link.rel]) return;
@@ -100,7 +107,9 @@ define([
 						};
 					}
 					console.log("Link "+key+" will be resolved.");
-					toResolve[key] = request(target + href,req);
+					// absolute URI
+					href = href.charAt(0) == "/" ? href : target + href;
+					toResolve[key] = request(href,req);
 				} else {
 					console.warn("Link "+key+" won't be resolved.");
 				}
