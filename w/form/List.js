@@ -105,6 +105,7 @@ define([
 		edit:true,
 		remove:true,
 		readOnly:false,
+		autosave:true,
 		baseClass:"dformaGrid",
 		multiple:true, // needed for setValueAttr array value
 		_setHintAttr: function(/*String*/ content){
@@ -126,7 +127,14 @@ define([
 			domClass.toggle(this.labelNode,"dijitHidden",!this.label);
 	 	},
 	 	_getValueAttr:function(){
-	 		return this.store.fetchSync();
+	 		var widgets = this.getChildren().filter(function(_){
+	 			return _ != this.addButton;
+	 		},this);
+	 		var arr = widgets.map(function(_){
+	 			return _.get("value");
+	 		});
+	 		if(this.autosave) this.store.setData(arr);
+	 		return arr;//this.store.fetchSync();
 	 	},
 	 	_setValueAttr:function(data){
 	 		if(!this._started) return;
@@ -202,6 +210,7 @@ define([
 					this.refresh();
 				})),
 				this.subform.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
+					if(this.autosave && this.newdata) this.newdata = false;
 					if(_resolving){
 						_resolving = false;
 						return;
@@ -248,7 +257,7 @@ define([
 	 			}
 	 		}
 	 		console.log(this.store.data)
-	 		this.store.fetchSync().forEach(function(item){
+	 		this.store.query().forEach(function(item){
 	 			console.log(item)
 	 			if(!(item.id in this._itemMap)) this._addChild(item);
 	 		},this);
@@ -291,12 +300,10 @@ define([
 				this.selected = null;
 			}
 			var data = lang.mixin({},this.defaultInstance);
-			//var parent = this.getParent();
 			// TODO do something with parent controller if have
 			this.store.add(data).then(lang.hitch(this,function(data){
 				var id = data.id;
 				this.onAdd(id);
-				this.newdata = true;
 				this.select(id);
 				this.refresh();
 			}));
@@ -305,7 +312,6 @@ define([
 			// override to edit
 		},
 		save:function(obj,options){
-			this.newdata = false;
 			// since we're saving from subform, reset selection
 			this.selected = null;
 			var id = obj.id || options.id;
