@@ -317,17 +317,17 @@ return declare("dlagua.w.layout._FormMixin", [], {
 								// as this can take a while, listItem may be destroyed in the meantime
 								if(self._beingDestroyed || this._beingDestroyed) return;
 								// ref item may have been resolved now
-								var item = this.data;
+								//var item = this.data;
 								self.template = self.getTemplate(self.templateDir,"preview");
-								self._fetchTpl(self.template).then(lang.hitch(this,function(tpl){
-									self.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-										this.applyTemplate(tplo.tpl,tplo.partials);
+								self._fetchTpl(self.template).then(function(tpl){
+									self.parseTemplate(tpl).then(function(tplo){
+										listItem.applyTemplate(tplo.tpl,tplo.partials);
 										fx.fadeIn({node:listItem.containerNode}).play();
-									}));
-								}));
+									});
+								});
 								self.itemnodesmap[-1] = listItem;
 							});
-							this.addChild(listItem);
+							self.addChild(listItem);
 						}
 					});
 				}
