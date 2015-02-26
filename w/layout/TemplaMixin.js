@@ -161,6 +161,7 @@ define([
 		resolveLinks: function(data,schema,resolveProps,skipX){
 			var d = new Deferred();
 			var parent = this.getParent();
+			var _resolveCache = parent._resolveCache || {};
 			var refattr = parent.refAttribute || "$ref";
 			if(!schema || data.__resolved) {
 				d.resolve(data);
@@ -171,14 +172,23 @@ define([
 			if(typeof resolveProps == "string") {
 				resolveProps = resolveProps.split(",");
 			}
+			var _uris = {};
 			for(var k in schema.properties) {
 				var p = schema.properties[k];
 				if(p.type=="string" && p.format == "xuri") {
 					if(!skipX) {
 						var service = parent.xuriService ? parent.xuriService : parent.base+"rest/"+parent.locale;
-						toResolve[k] = request(service+"/"+data[k],{
-							failOk:true
-						});
+						var uri = service+"/"+data[k];
+						_uris[k] = uri;
+						var req;
+						if(_resolveCache[uri]) {
+							req = new Deferred().resolve(_resolveCache[uri]);
+						} else {
+							req = request(uri,{
+								failOk:true
+							})
+						}
+						toResolve[k] = req;
 					}
 				} else if((p.type=="string" && p.format=="xhtml") || p.type=="array"){
 					resolveProps.push(k);
@@ -187,7 +197,7 @@ define([
 			array.forEach(resolveProps, function(key){
 				var href = data[key] && typeof data[key] == "object" ? data[key][refattr] : null;
 				if(href) {
-					var req = {
+					var params = {
 						handleAs:"json",
 						headers:{
 							accept:"application/json"
@@ -196,20 +206,30 @@ define([
 					var p = schema.properties[key];
 					if(p.type=="string" && p.format=="xhtml") {
 						// shouldn't we try to resolve XML?
-						req = {
+						params = {
 							handleAs:"text",
 							failOk:true
 						};
 					}
+					var uri = parent.store.target + href;
+					_uris[key] = uri;
+					if(_resolveCache[uri]) {
+						req = new Deferred().resolve(_resolveCache[uri]);
+					} else {
+						req = request(uri,params);
+					}
 					console.log("Link "+key+" for "+parent.id+" will be resolved.");
-					toResolve[key] = request(parent.store.target + href,req);
+					toResolve[key] = req;
 				} else {
 					console.warn("Link "+key+" for "+parent.id+" won't be resolved.");
 				}
 			});
-			all(toResolve).then(function(resolved){
+			all(toResolve).then(lang.hitch(this,function(resolved){
+				for(var k in resolved) {
+					if(_uris[k]) _resolveCache[_uris[k]] = resolved[k];
+				}
 				d.resolve(lang.mixin(data,resolved));
-			});
+			}));
 			return d;
 		},
 		startup:function(){
