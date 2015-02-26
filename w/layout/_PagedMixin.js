@@ -3,6 +3,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/_base/window",
+	"dojo/_base/fx",
 	"dojo/topic",
 	"dojo/on",
 	"dojo/aspect",
@@ -11,9 +12,8 @@ define([
 	"dojo/dom-geometry",
 	"dijit/typematic",
 	"dijit/form/Button",
-	"dojox/timing",
-	"dojox/fx/scroll"
-],function(declare,lang,array,win,topic,on,aspect,keys,domClass,domGeometry,typematic,Button,timing,scroll) {
+	"dojox/timing"
+],function(declare,lang,array,win,baseFx,topic,on,aspect,keys,domClass,domGeometry,typematic,Button,timing) {
 	return declare("dlagua.w.layout._PagedMixin",[],{
 		maxCount:Infinity,
 		pageSize:5,
@@ -23,21 +23,16 @@ define([
 		snap:false,
 		pageButtons:true,
 		pageButtonPlacement:"HF", // prev in Header + next in Footer (default), or both in either Header or Footer
-		// defaultTimeout: Number
-		//		Number of milliseconds before a held arrow key or up/down button becomes typematic
-		defaultTimeout: 500,
-
-		// minimumTimeout: Number
-		//		minimum number of milliseconds that typematic event fires when held key or button is held
-		minimumTimeout: 10,
-
-		// timeoutChangeRate: Number
-		//		Fraction of time used to change the typematic timer between events.
-		//		1.0 means that each typematic event fires at defaultTimeout intervals.
-		//		Less than 1.0 means that each typematic event fires at an increasing faster rate.
-		timeoutChangeRate: 0.90,
-		_timer:null,
-		autoSkipInterval:300,
+		// subsequentDelay:
+		//		if > 1, the number of milliseconds until the 3->n events occur
+		//		or else the fractional time multiplier for the next event's delay, default=0.9
+		// initialDelay:
+		//		the number of milliseconds until the 2nd event occurs, default=500ms
+		// minDelay:
+		//		the minimum delay in milliseconds for event to fire, default=10ms
+		initialDelay: 500,
+		minDelay: 5,
+		subsequentDelay: 0.5,
 		destroyRecursive: function(/*Boolean*/ preserveDom){
 			// summary:
 			//		Destroy the ContentPane and its contents
@@ -50,7 +45,6 @@ define([
 		startup:function(){
 			if(this._started) return;
 			this.inherited(arguments);
-			this._timer = new timing.Timer(this.autoSkipInterval);
 			if(this.pageButtons) {
 				this.prevButton = new Button({
 					label:"Prev",
@@ -63,22 +57,12 @@ define([
 					"class":"dlaguaScrollableServicedPaneNextButton"
 				});
 				this.own(
-					/*typematic.addListener(this.nextButton, this.domNode, {
-						keyCode: keys.DOWN_ARROW, 
-						ctrlKey: false, 
-						altKey: false, 
-						shiftKey: false, 
-						metaKey: false
-					}, this, this.skipNext, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),
+					typematic.addListener(this.nextButton, this.domNode, {
+						keyCode: keys.DOWN_ARROW
+					}, this, this.skipNext, this.subsequentDelay, this.initialDelay, this.minDelay),
 					typematic.addListener(this.prevButton, this.domNode, {
-						keyCode: keys.UP_ARROW, 
-						ctrlKey: false, 
-						altKey: false, 
-						shiftKey: false, 
-						metaKey: false
-					}, this, this.skipPrev, this.timeoutChangeRate, this.defaultTimeout, this.minimumTimeout),*/
-					aspect.after(this.nextButton,"onClick",lang.hitch(this,this.skipNext)),
-					aspect.after(this.prevButton,"onClick",lang.hitch(this,this.skipPrev)),
+						keyCode: keys.UP_ARROW
+					}, this, this.skipPrev, this.subsequentDelay, this.initialDelay, this.minDelay),
 					this.watch("focused",function(){
 						if(this.focused) {
 							try{ this.domNode.focus(); }catch(e){/*quiet*/}
@@ -132,29 +116,13 @@ define([
 			this.scrollToItem(index);
 		},
 		skipPrev:function(cnt) {
-			if(cnt>-1) this.scrollToItem(this.selectedIndex-1);
+			if(cnt>-1) this.scrollToItem(this.selectedIndex-1,cnt);
 		},
 		skipNext:function(cnt) {
-			if(cnt>-1) this.scrollToItem(this.selectedIndex+1);
+			console.log(arguments)
+			if(cnt>-1) this.scrollToItem(this.selectedIndex+1,cnt);
 		},
-		_stopFiring: function(){
-			this.MOUSE_UP.remove();
-			this.MOUSE_UP = null;
-			this._timer.stop();
-			this._timer.onTick = function(){};
-		},
-		autoFire: function(dir) {
-			if(this.MOUSE_UP) return;
-			this.MOUSE_UP = on(win.body(),"onmouseup",lang.hitch(this,this._stopFiring));
-			if(!this._timer.isRunning) {
-				var _me = this;
-				this._timer.onTick = function() {
-					_me.skip(dir);
-				};
-				this._timer.start();
-			}
-		},
-		scrollToItem: function(n) {
+		scrollToItem: function(n,cnt) {
 			// FIXME item should not scroll beyond min/max
 			var items = this.getChildren();
 			var len = items.length;
@@ -165,14 +133,20 @@ define([
 				y = items[n].marginBox.t - top;
 			}
 			if(this.nativeScroll) {
-				if(this.scrollTransition) {
-					new scroll({
-						node: items[n].domNode,
-						win: this.containerNode,
-						duration: this.scrollTransition
+				var self = this;
+				if(this.scrollTransition && cnt<1){
+					new baseFx.Animation({
+						beforeBegin: function(){
+							if(this.curve){ delete this.curve; }
+							this.curve = new baseFx._Line(self.containerNode.scrollTop,y);
+						},
+						onAnimate: (function(val){
+							self.containerNode.scrollTop = val;
+						}),
+						duration:this.scrollTransition
 					}).play();
 				} else {
-					items[n].domNode.scrollIntoView();
+					this.containerNode.scrollTop = y;
 				}
 			} else {
 				this.slideTo({x:0,y:-y},0.3,"ease-out");
