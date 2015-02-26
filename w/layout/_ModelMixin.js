@@ -10,6 +10,7 @@ define([
 	"dojo/dom-construct",
 	"dojo/dom-attr",
 	"dojo/Deferred",
+	"dojo/when",
 	"dlagua/c/store/JsonRest",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
@@ -18,7 +19,12 @@ define([
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-],function(reqr,declare,lang,array,fx,query,request,aspect,domConstruct,domAttr,Deferred,JsonRest,ScrollableServicedPaneItem,TemplaMixin,jsonref,rqlQuery,rqlParser) {
+	//"mustache/mustache"
+],function(reqr,declare,lang,array,fx,
+		query,request,aspect,domConstruct,domAttr,Deferred,when,
+		JsonRest,ScrollableServicedPaneItem,TemplaMixin,
+		jsonref,
+		rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
 });
@@ -41,9 +47,12 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	useItemChildren:false,
 	persistentStore:false,
 	_tplo:null,
+	_tplCache:{},
 	partials:"",
+	_resolveCache:null,
 	startup:function(){
 		if(this._started) return;
+		this._resolveCache = {};
 		// support templateModule for now
 		if(this.templateModule) this.templatePath = reqr.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.template = this.getTemplate();
@@ -148,7 +157,14 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	},
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
-		return request(this.templatePath+"/"+template);
+		var uri = this.templatePath+"/"+template;
+		var req = this._tplCache[uri] ? new Deferred().resolve(this._tplCache[uri]) : request(uri);
+		req._uri = uri;
+		var self = this;
+		when(req,function(tpl){
+			self._tplCache[uri] = tpl;
+		});
+		return req;
 	},
 	_getSchema:function(){
 		var d = new Deferred;
@@ -573,6 +589,11 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(tpath) xtemplate = (templateDir ? templateDir+"/" : "")+tpath+suffix+(this.filterById ? "_view.html" : ".html");
 		}
 		return (this.localizedTemplate ? locale+"/" : "")+(this.childTemplate ? this.childTemplate : xtemplate);
+	},
+	ready:function(){
+		this.inherited(arguments);
+		// reset resolveCache, TODO only reset on change
+		this._resolveCache = {};
 	}
 });
 
