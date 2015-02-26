@@ -133,7 +133,6 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		if(this.servicetype=="form") {
 			this._getSchema().then(lang.hitch(this,function(){
 				var self = this;
-				var listItem;
 				var common = i18n.load("dforma","common");
 				// TODO:
 				// - assign schema url
@@ -166,179 +165,182 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						return;
 					}
 				}
-				var model = new Model({
-					data:{},
-					schema:schema,
-					coerce:true
-				});
 				var locale = this.currentItem.locale ? this.currentItem.locale : this.locale;
 				var path = this.currentItem.path;
 				var templatePath = this.templatePath + (this.localizedTemplate ? locale + "/" : "") + path;
-				console.log(templatePath)
-				listItem = new ScrollableFormPaneItem({
-					itemHeight:"auto",
-					store:this.store,
-					value:model.data,
-					label:schema.title,
-					hint:schema.description,
-					configProperty:"config",
-					schema:schema,
-					templatePath:templatePath,
-					controlmap:controlmap,
-					BuilderClass:Builder,
-					config:{
-						controls:jsonschema.schemaToControls(schema,model.data,{
-							controlmap:controlmap,
-							uri:this.store.target
-						}),
-						submit:submit ? {label: submit} : {}
-					},
-					submit: function(){
-						if(!this.validate()) return;
-						var data = this.get("value");
-						for(var k in data) {
-							// it may be a group
-							// make all booleans explicit
-							if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
-								if(data[k].length===0) {
-									data[k] = false;
-								} else if(data[k].length<2) {
-									data[k] = data[k][0];
+				// always get linked data
+				this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(lang.hitch(this,function(data){
+					var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
+					var model = new Model({
+						data:data,
+						schema:schema,
+						coerce:true
+					});
+					var listItem = new ScrollableFormPaneItem({
+						itemHeight:"auto",
+						store:this.store,
+						value:model.data,
+						label:schema.title,
+						hint:schema.description,
+						configProperty:"config",
+						config:{
+							controls:jsonschema.schemaToControls(schema,model.data,{
+								controlmap:controlmap,
+								uri:this.store.target
+							}),
+							submit:submit ? {label: submit} : {}
+						},
+						schema:schema,
+						templatePath:templatePath,
+						controlmap:controlmap,
+						BuilderClass:Builder,
+						submit: function(){
+							if(!this.validate()) return;
+							var data = this.get("value");
+							for(var k in data) {
+								// it may be a group
+								// make all booleans explicit
+								if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
+									if(data[k].length===0) {
+										data[k] = false;
+									} else if(data[k].length<2) {
+										data[k] = data[k][0];
+									}
 								}
 							}
-						}
-						domClass.toggle(this.buttonNode,"dijitHidden",true);
-						this.set("message",formbundle.submitMessage);
-						var d = new Deferred();
-						if(schema.links) {
-							self.getLinkedData(schema.links,true).then(function(localData){
-								data = lang.mixin(data,localData);
+							domClass.toggle(this.buttonNode,"dijitHidden",true);
+							this.set("message",formbundle.submitMessage);
+							var d = new Deferred();
+							if(schema.links) {
+								self.getLinkedData(schema.links,true).then(function(localData){
+									data = lang.mixin(data,localData);
+									d.resolve(data);
+								});
+							} else {
 								d.resolve(data);
-							});
-						} else {
-							d.resolve(data);
-						}
-						d.then(lang.hitch(this,function(data){
-							if(item.search) {
-								if(!data.q) {
-									domClass.toggle(this.buttonNode,"dijitHidden",false);
-									this.set("message","Please enter your query");
-									return;
-								}
-								var q = new rqlQuery.Query();
-								array.forEach(item.search.split(","),function(_){
-									var a = _.split(":");
-									if(a.length==1) {
-										q = q.search(_,data.q,data.r);
-									} else if(data[a[0]]){
-										q = q.search(a[1],data.q,data.r);
+							}
+							d.then(lang.hitch(this,function(data){
+								if(item.search) {
+									if(!data.q) {
+										domClass.toggle(this.buttonNode,"dijitHidden",false);
+										this.set("message","Please enter your query");
+										return;
 									}
-								});
-								if(q.args.length>1) q.name = "or";
-								self.query = q.toString();
-								var oldHash = hash();
-								hash(oldHash+"/?"+self.query);
-								self.set("currentItem",lang.mixin(item,{
-									type:"model",
-									model:item.targetModel
-								}));
-								var _rh = aspect.after(self,"ready",function(){
-									_rh.remove();
-									if(!this.total) {
-										if(this.query) alert("no results");
-										this.query = "";
-										hash(oldHash);
-									}
-								});
-							} else if(item.action) {
-								var action = item.action;
-								if(action.charAt(0)=="#") {
-									hash(action);
-								} else {
-									var method = item.method || "post";
-									request(action,{
-										handleAs:"json",
-										method:method,
-										headers:{
-											"Content-Type":"application/json",
-											"Accept":"application/json"
+									var q = new rqlQuery.Query();
+									array.forEach(item.search.split(","),function(_){
+										var a = _.split(":");
+										if(a.length==1) {
+											q = q.search(_,data.q,data.r);
+										} else if(data[a[0]]){
+											q = q.search(a[1],data.q,data.r);
 										}
 									});
-								}
-							} else {
-								if(!data.locale) data.locale = item.locale;
-								this.store.put(data);
-								listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
-								if(item.preview) {
-									self._removeItemById(0);
-								}
-								listItem.containerNode = listItem.domNode;
-								listItem.data = data;
-								listItem._load().then(function(){
-									var form = {};
-									for(var k in formbundle) {
-										form[k] = formbundle[k];
+									if(q.args.length>1) q.name = "or";
+									self.query = q.toString();
+									var oldHash = hash();
+									hash(oldHash+"/?"+self.query);
+									self.set("currentItem",lang.mixin(item,{
+										type:"model",
+										model:item.targetModel
+									}));
+									var _rh = aspect.after(self,"ready",function(){
+										_rh.remove();
+										if(!this.total) {
+											if(this.query) alert("no results");
+											this.query = "";
+											hash(oldHash);
+										}
+									});
+								} else if(item.action) {
+									var action = item.action;
+									if(action.charAt(0)=="#") {
+										hash(action);
+									} else {
+										var method = item.method || "post";
+										request(action,{
+											handleAs:"json",
+											method:method,
+											headers:{
+												"Content-Type":"application/json",
+												"Accept":"application/json"
+											}
+										});
 									}
-									self.replaceChildTemplate(listItem,"",form);
-									listItem.layout();
-								});
-							}
-						}));
-					}
-				});
-				this.own(aspect.after(listItem,"layout",function(){
-					setTimeout(function(){
-						if(self._beingDestroyed || self.nativeScroll) return;
-						self._dim = self.getDim();
-						self.slideTo({x:0,y:0}, 0.3, "ease-out");
-						if(self.useScrollBar) {
-							self.showScrollBar();
+								} else {
+									if(!data.locale) data.locale = item.locale;
+									this.store.put(data);
+									listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
+									if(item.preview) {
+										self._removeItemById(0);
+									}
+									listItem.containerNode = listItem.domNode;
+									listItem.data = data;
+									listItem._load().then(function(){
+										var form = {};
+										for(var k in formbundle) {
+											form[k] = formbundle[k];
+										}
+										self.replaceChildTemplate(listItem,"",form);
+										listItem.layout();
+									});
+								}
+							}));
 						}
-					},100);
-				},true));
-				if(schema.condition || (schema.links && item.preview)) {
-					this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(function(data){
-						var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
-						// if there are no results for this query, display a message
+					});
+					this.own(aspect.after(listItem,"layout",function(){
+						setTimeout(function(){
+							if(self._beingDestroyed || self.nativeScroll) return;
+							self._dim = self.getDim();
+							self.slideTo({x:0,y:0}, 0.3, "ease-out");
+							if(self.useScrollBar) {
+								self.showScrollBar();
+							}
+						},100);
+					},true));
+					this.itemnodesmap[0] = listItem;
+					this.addChild(listItem);
+					fx.fadeIn({
+						node:listItem.containerNode,
+						onEnd:lang.hitch(this,"ready")
+					}).play();
+					// if there are no results for this query, display a message
+					if(schema.condition || (schema.links && item.preview)) {
 						if(!result.length) {
-							listItem.set("message",schema.condition.message);
-							domClass.add(listItem.containerNode,"dijitHidden");
-							domClass.add(listItem.hintNode,"dijitHidden");
-							domClass.add(listItem.buttonNode,"dijitHidden");
+							listItem.own(
+								aspect.after(listItem,"onLoad",lang.hitch(listItem,function(){
+									this.set("message",schema.condition.message);
+									domClass.add(this.containerNode,"dijitHidden");
+									domClass.add(this.hintNode,"dijitHidden");
+									domClass.add(this.buttonNode,"dijitHidden");
+								}))
+							);
 						} else if(item.preview) {
 							var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
-							listItem = new ScrollablePaneItem({
+							var listItem1 = new ScrollablePaneItem({
 								parent:this,
 								itemHeight:"auto",
 								data:data
 							});
-							var _lh = aspect.after(listItem,"onLoad",function(){
-								_lh.remove();
-								// as this can take a while, listItem may be destroyed in the meantime
-								if(self._beingDestroyed || this._beingDestroyed) return;
-								// ref item may have been resolved now
-								var item = this.data;
-								self.template = self.getTemplate(self.templateDir,"preview");
-								self._fetchTpl(self.template).then(lang.hitch(this,function(tpl){
-									self.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-										this.applyTemplate(tplo.tpl,tplo.partials);
-										fx.fadeIn({node:listItem.containerNode}).play();
+							listItem1.own(
+								aspect.after(listItem1,"onLoad",lang.hitch(this,function(){
+									// as this can take a while, listItem may be destroyed in the meantime
+									if(self._beingDestroyed || listItem1._beingDestroyed) return;
+									// ref item may have been resolved now
+									//var item = this.data;
+									this.template = this.getTemplate(this.templateDir,"preview");
+									this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+										this.parseTemplate(tpl).then(function(tplo){
+											listItem1.applyTemplate(tplo.tpl,tplo.partials);
+											fx.fadeIn({node:listItem1.containerNode}).play();
+										});
 									}));
-								}));
-								self.itemnodesmap[-1] = listItem;
-							});
-							this.addChild(listItem);
+								}))
+							);
+							this.addChild(listItem1);
+							this.itemnodesmap[-1] = listItem1;
 						}
-					});
-				}
-				this.addChild(listItem);
-				this.itemnodesmap[0] = listItem;
-				fx.fadeIn({
-					node:listItem.containerNode,
-					onEnd:function(){
-						self.ready();
 					}
-				}).play();
+				}));
 			}));
 		}
 	},
