@@ -201,6 +201,29 @@ define([
 				}).placeAt(this.containerNode);
 			}
 	 	},
+	 	_expandData:function(){
+	 		console.warn("subform changed, resolving")
+	 		var newVal = this.subform.get("value");
+			if(this.autosave && this.newdata) this.newdata = false;
+			var sel = this._itemMap ? this._itemMap[this.selected] : null;
+			if(!sel) return;
+			var target = this.store.target;
+			var schema = this.schema.items ? this.schema.items[0] : this.schema;
+			var self = this;
+			var model = new Model({
+				data:newVal,
+				refAttribute:"_ref",
+				target:target,
+				schema:schema,
+				resolve:true,
+				exclude:["theme"],//FIXME generalize
+				ready:function(){
+					console.log(this.data.colors)
+					self.subform._set("value",lang.mixin(newVal,this.data));
+					if(sel) sel.set("value",this.data);
+				}
+			});
+		},
 	 	startup:function(){
 	 		if(this._started) return;
 	 		var _resolving = false;
@@ -209,30 +232,7 @@ define([
 					this.selected = null;
 					this.refresh();
 				})),
-				this.subform.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
-					if(this.autosave && this.newdata) this.newdata = false;
-					if(_resolving){
-						_resolving = false;
-						return;
-					}
-					_resolving = true;
-					var target = this.store.target;
-					var schema = this.schema.items ? this.schema.items[0] : this.schema;
-					var sel = this._itemMap[this.selected];
-					var self = this;
-					var model = new Model({
-						data:newVal,
-						refAttribute:"_ref",
-						target:target,
-						schema:schema,
-						resolve:true,
-						ready:function(){
-							console.log(this.data.colors)
-							self.subform.set("value",lang.mixin(newVal,this.data));
-							if(sel) sel.set("value",this.data);
-						}
-					});
-				}))
+				aspect.after(this.subform,"_onChildChange",lang.hitch(this,"_expandData"),true)
 			);
 			request(this.templatePath).then(lang.hitch(this,function(tpl){
 				if(!tpl) return;
@@ -257,10 +257,13 @@ define([
 	 			}
 	 		}
 	 		console.log(this.store.data)
-	 		this.store.query().forEach(function(item){
-	 			console.log(item)
-	 			if(!(item.id in this._itemMap)) this._addChild(item);
-	 		},this);
+	 		this.store.fetch().then(lang.hitch(this,function(items){
+	 			items.forEach(function(item){
+		 			console.log(item)
+		 			if(!(item.id in this._itemMap)) this._addChild(item);
+		 		},this);
+	 			this._expandData();
+	 		}))
 	 	},
 	 	_addChild:function(item){
 	 		var schema = this.schema.items ? this.schema.items[0] : this.schema;

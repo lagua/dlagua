@@ -6,6 +6,19 @@ define([
 	"dojo/promise/all"
 ], function(declare,lang,request,Deferred,all) {
 	
+	// from https://github.com/kriszyp/json-schema/blob/master/lib/links.js#L41
+	function substitute(linkTemplate, instance, exclude){
+		exclude = exclude || [];
+		return linkTemplate.replace(/\{([^\}]*)\}/g, function(t, property){
+			var value = exclude.indexOf(property)>-1 ? "*" : instance[decodeURIComponent(property)];
+			if(value instanceof Array){
+				// the value is an array, it should produce a URI like /Table/(4,5,8) and store.get() should handle that as an array of values
+				return '(' + value.join(',') + ')';
+			}
+			return value;
+		});
+	};
+	
 	return declare("dlagua.c.store.Model",null,{
 		coerce:false,
 		resolve:false,
@@ -63,9 +76,9 @@ define([
 					if(!data[link.rel]) return;
 					if(link.resolution=="lazy"){
 						data[link.rel] = {};
-						data[link.rel][refattr] = lang.replace(link.href,data);
+						data[link.rel][refattr] = substitute(link.href,data,this.exclude);
 					}
-				});
+				},this);
 			}
 		},
 		_resolve:function(){
