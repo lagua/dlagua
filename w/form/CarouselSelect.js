@@ -23,6 +23,18 @@ define([
 			this.domNode.innerHTML = data;
 		}
 	});
+	
+	// from https://github.com/kriszyp/json-schema/blob/master/lib/links.js#L41
+	function substitute(linkTemplate, instance, exclude){
+		return linkTemplate.replace(/\{([^\}]*)\}/g, function(t, property){
+			var value = exclude.indexOf(property)>-1 ? "*" : instance[decodeURIComponent(property)];
+			if(value instanceof Array){
+				// the value is an array, it should produce a URI like /Table/(4,5,8) and store.get() should handle that as an array of values
+				return '(' + value.join(',') + ')';
+			}
+			return value;
+		});
+	};
 
 	return declare("dlagua.w.form.CarouselSelect",[_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin],{
 		templateString:"<div class=\"dijit dijitReset\" data-dojo-attach-point=\"focusNode\"><div class=\"dlaguaCarouselSelectContainer\" data-dojo-attach-point=\"containerNode\"><div class=\"dlaguaCarouselSelectPreview\" data-dojo-attach-point=\"previewNode\"></div></div></div>",
@@ -32,8 +44,79 @@ define([
 		itemWidth:130,
 		selected:0,
 		labelAttr:"content",
+		relProperty:"designs",
+		query:null,
 		postCreate:function(){
+			// FIXME generalize
 			if(this.store && this.store.labelProperty) this.labelAttr = this.store.labelProperty;
+			this.inherited(arguments);
+		},
+		_handleOnChange: function(/*anything*/ newValue, /*Boolean?*/ priorityChange){
+			this.inherited(arguments);
+			if(!this._started || !this.items) return;
+			this._select();
+		},
+		_updateFromParent:function(prop,oldVal,newVal){
+			// FIXME generalize
+			// each component with a store with queryString
+			// should be updated when parent changes
+			if(this.store.queryString){
+				this.set("query", substitute(this.store.queryString,newVal,[this.name]));
+			}
+			// each component with trigger should be updated
+			// when the target property changes
+			var triggers = [{
+			   property:"color",
+			   target:"previewNode.style.color",
+			   rel:"colors",
+			   foreignKey:"code"
+			}];
+			triggers.forEach(function(trigger){
+				var val = newVal[trigger.property];
+				if(val){
+					trigger.value = val;
+					if(trigger.rel){
+						var rel = trigger.rel;
+						var relProp = trigger.foreignKey || "id";
+						var relValue = newVal[rel];
+						// rql: Color/?id={color}&values(code)
+						// if trigger has rel, use it
+						// and assume that it's resolved
+						if(relValue && relValue instanceof Array) {
+							var obj = relValue.filter(function(_){
+								return _.id==trigger.value;
+							}).pop();
+							val = obj[relProp];
+						} else {
+							// don't update
+							val = null;
+						}
+					}
+					if(val){
+						// default to value
+						var triggerTarget = trigger.target || "value";
+						if(triggerTarget.indexOf(".")>-1){
+							lang.setObject(triggerTarget,val,this);
+						} else {
+							this.set(triggerTarget,val);
+						}
+					}
+				}
+			},this);
+		},
+		startup:function(){
+			if(this._started) return;
+			this.inherited(arguments);
+			var parent = this.getParent();
+			this.own(
+				parent.watch("value",lang.hitch(this,"_updateFromParent")),
+				this.watch("query",function(){
+					this.getChildren().forEach(function(_){
+						if(_!=this.previewNode) _.destroyRecursive();
+					},this);
+					this._init();
+				})
+			);
 			request("/rest/resources/shirt.svg").then(lang.hitch(this,function(res){
 				this.previewNode.innerHTML = res;
 				this._init();
@@ -56,54 +139,52 @@ define([
 					})
 				}).placeAt(this.domNode);
 			}));
-			this.inherited(arguments);
 		},
-		_getValueAttr:function(){
+		_select:function(){
+			if(!this.value){
+				this._page(0);
+				return;
+			}
+			var i=0,l = this.items.length;
 			var idProp = this.store.idProperty;
-			return this.selection ? this.selection.value[idProp] : null;
-		},
-		_updateColors:function(prop,oldVal,newVal){
-			console.warn(newVal.colors)
-			var colors = newVal.colors && newVal.colors instanceof Array ? newVal.colors : [];
-			var color = colors.filter(function(_){
-				return _.id==newVal.color;
-			}).pop();
-			if(color) this.previewNode.style.color = color.code;
-		},
-		startup:function(){
-			if(this._started) return;
-			this.inherited(arguments);
-			var parent = this.getParent();
-			this.own(
-				parent.watch("value",lang.hitch(this,"_updateColors"))
-			);
+			for(;i<l;i++) {
+				if(this.items[i].value[idProp] == this.value) {
+					break;
+				}
+			}
+			var s = this.selected;// ? l-this.selected : 0;
+			var t = i ? l-i : 0;
+			this._page(t-s);
 		},
 		_page:function(d) {
-			var l = this.itemCount;
+			var l = this.items.length;
 			var angle = 360 / l;
 			this.selected+=d;
 			this.prevButton.set("disabled",this.selected==0);
-			this.nextButton.set("disabled",this.selected==this.itemCount-1);
+			this.nextButton.set("disabled",this.selected==l-1);
 			var delta = angle*this.selected;
 			for(var i = 0; i < l; i ++) {
 				var a = (delta + i*angle);
 				this.items[i].domNode.style.transform = this.items[i].domNode.style.webkitTransform = 'rotateY(' + a + 'deg) translate3d(26px,-44px,' + this.radius + 'px) scale(.25,.25)';
-				this.items[i].domNode.style.zIndex = ((a >=0 && a < 90) || (a>270 && a<=360)) ? i+999 : 0;
-				if(i==0)console.log(a)
+				this.items[i].domNode.style.zIndex = ((a >=0 && a < 90) || (a>270 && a<=360)) ? l+i : 0;
 			}
 			var s = this.selected ? l-this.selected : 0;
-			this.selection = this.items[s];
 			var idProp = this.store.idProperty;
-			this.set("value",this.selection.value[idProp]);
+			if(this.items[s]) {
+				this._set("value",this.items[s].value[idProp]);
+			}
 		},
-		_setup:function(angle, left,data){
+		_setup:function(left,data){
 			var items = [];
-			for (var i = 0; i < this.itemCount; i ++) {
+			var l = data.length;
+			var angle = 360 / l;
+			for (var i = 0; i < l; i ++) {
+				var obj = data[i ? l-i : 0]
 				var item = new CSItem({
 					width:this.itemWidth,
 					left:left,
-					value:data[i],
-					content:data[i][this.labelAttr]
+					value:obj,
+					content:obj[this.labelAttr]
 				});
 				// add the item to the container
 				this.addChild(item)
@@ -112,12 +193,12 @@ define([
 			return items;
 		},
 		_init:function() {
+			//this.items = [];
 			var d = 0;
-			var angle = 360 / this.itemCount;
 			var w = this.radius * 2.3;
 			this.containerNode.style.width = w+"px";
 			var left = (w-this.itemWidth)/2;
-			this.store.query({},{
+			this.store.query(this.query,{
 				start:0,
 				count:this.itemCount
 			}).then(lang.hitch(this,function(data){
@@ -134,8 +215,8 @@ define([
 					}
 					return d;
 				})).then(lang.hitch(this,function(data){
-					this.items = this._setup(angle,left,data);
-					this._page(0);
+					this.items = this._setup(left,data);
+					this._select();
 				}));
 			}));
 		}
