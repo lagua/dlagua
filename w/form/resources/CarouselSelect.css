@@ -11,5 +11,5 @@
 
 .dlaguaCarouselSelect-child {
 	position: absolute;
-	transition: all 1s ease 0s;
+	transition: transform 1s ease 0s, z-index 1s ease 0s;
 }
