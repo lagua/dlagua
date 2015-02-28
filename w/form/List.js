@@ -202,7 +202,6 @@ define([
 			}
 	 	},
 	 	_expandData:function(){
-	 		console.warn("subform changed, resolving")
 	 		var newVal = this.subform.get("value");
 			if(this.autosave && this.newdata) this.newdata = false;
 			var sel = this._itemMap ? this._itemMap[this.selected] : null;
@@ -234,7 +233,7 @@ define([
 				})),
 				aspect.after(this.subform,"_onChildChange",lang.hitch(this,"_expandData"),true)
 			);
-			request(this.templatePath).then(lang.hitch(this,function(tpl){
+			request(this.templatePath+this.templateExtension).then(lang.hitch(this,function(tpl){
 				if(!tpl) return;
 				this.template = tpl;
 				if(!this.writer) {
