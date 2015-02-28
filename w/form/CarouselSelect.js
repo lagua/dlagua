@@ -2,6 +2,7 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
 	"dojo/Deferred",
+	"dojo/when",
 	"dojo/promise/all",
 	"dojo/request",
 	"dijit/_WidgetBase",
@@ -11,7 +12,7 @@ define([
 	"dijit/form/_FormValueMixin",
 	"dijit/form/Button",
 	"dstore/Memory"
-],function(declare,lang,Deferred,all,request,_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button, Memory) {
+],function(declare,lang,Deferred,when,all,request,_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button, Memory) {
 	
 	var CSItem = declare("dlagua.w.form.CarouselSelectItem", [_WidgetBase,_Contained,_TemplatedMixin], {
 		width:100,
@@ -86,7 +87,7 @@ define([
 							var obj = relValue.filter(function(_){
 								return _.id==trigger.value;
 							}).pop();
-							val = obj[relProp];
+							val = obj ? obj[relProp] : null;
 						} else {
 							// don't update
 							val = null;
@@ -110,34 +111,32 @@ define([
 			var parent = this.getParent();
 			this.own(
 				parent.watch("value",lang.hitch(this,"_updateFromParent")),
-				this.watch("query",function(){
-					this.getChildren().forEach(function(_){
-						if(_!=this.previewNode) _.destroyRecursive();
-					},this);
-					this._init();
+				this.watch("query",function(prop,oldVal,newVal){
+					this._init(newVal);
 				})
 			);
+			this.prevButton = new Button({
+				label:"prev",
+				showLabel:false,
+				iconClass:"dlaguaCarouselSelectPrevButtonIcon",
+				"class":"dlaguaCarouselSelectPrevButton",
+				onClick:lang.hitch(this,function(){
+					this._page(-1);
+				})
+			}).placeAt(this.domNode);
+			this.nextButton = new Button({
+				label:"next",
+				showLabel:false,
+				iconClass:"dlaguaCarouselSelectNextButtonIcon",
+				"class":"dlaguaCarouselSelectNextButton",
+				onClick:lang.hitch(this,function(){
+					this._page(1);
+				})
+			}).placeAt(this.domNode);
+			this._queue = [];
 			request("/rest/resources/shirt.svg").then(lang.hitch(this,function(res){
 				this.previewNode.innerHTML = res;
-				this._init();
-				this.prevButton = new Button({
-					label:"prev",
-					showLabel:false,
-					iconClass:"dlaguaCarouselSelectPrevButtonIcon",
-					"class":"dlaguaCarouselSelectPrevButton",
-					onClick:lang.hitch(this,function(){
-						this._page(-1);
-					})
-				}).placeAt(this.domNode);
-				this.nextButton = new Button({
-					label:"next",
-					showLabel:false,
-					iconClass:"dlaguaCarouselSelectNextButtonIcon",
-					"class":"dlaguaCarouselSelectNextButton",
-					onClick:lang.hitch(this,function(){
-						this._page(1);
-					})
-				}).placeAt(this.domNode);
+				this._init(this.query);
 			}));
 		},
 		_select:function(){
@@ -192,13 +191,17 @@ define([
 			}
 			return items;
 		},
-		_init:function() {
-			//this.items = [];
+		_init:function(query) {
+			if(this._loading) {
+				this._queue.push(query);
+				return;
+			}
+			this._loading = true;
 			var d = 0;
 			var w = this.radius * 2.3;
 			this.containerNode.style.width = w+"px";
 			var left = (w-this.itemWidth)/2;
-			this.store.query(this.query,{
+			this.store.query(query,{
 				start:0,
 				count:this.itemCount
 			}).then(lang.hitch(this,function(data){
@@ -215,8 +218,17 @@ define([
 					}
 					return d;
 				})).then(lang.hitch(this,function(data){
+					this._loading = false;
+					this.getChildren().forEach(function(_){
+						if(_!=this.previewNode) {
+							_.destroyRecursive();
+						}
+					},this);
 					this.items = this._setup(left,data);
 					this._select();
+					if(this._queue.length){
+						this._init(this._queue.shift());
+					}
 				}));
 			}));
 		}
