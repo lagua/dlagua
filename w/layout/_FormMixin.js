@@ -287,6 +287,16 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							}));
 						}
 					});
+					if(!result.length) {
+						listItem.own(
+							aspect.after(listItem,"onLoad",lang.hitch(listItem,function(){
+								this.set("message",schema.condition.message);
+								domClass.add(this.containerNode,"dijitHidden");
+								domClass.add(this.hintNode,"dijitHidden");
+								domClass.add(this.buttonNode,"dijitHidden");
+							}))
+						);
+					}
 					this.own(aspect.after(listItem,"layout",function(){
 						setTimeout(function(){
 							if(self._beingDestroyed || self.nativeScroll) return;
@@ -304,41 +314,30 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						onEnd:lang.hitch(this,"ready")
 					}).play();
 					// if there are no results for this query, display a message
-					if(schema.condition || (schema.links && item.preview)) {
-						if(!result.length) {
-							listItem.own(
-								aspect.after(listItem,"onLoad",lang.hitch(listItem,function(){
-									this.set("message",schema.condition.message);
-									domClass.add(this.containerNode,"dijitHidden");
-									domClass.add(this.hintNode,"dijitHidden");
-									domClass.add(this.buttonNode,"dijitHidden");
-								}))
-							);
-						} else if(item.preview) {
-							var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
-							var listItem1 = new ScrollablePaneItem({
-								parent:this,
-								itemHeight:"auto",
-								data:data
-							});
-							listItem1.own(
-								aspect.after(listItem1,"onLoad",lang.hitch(this,function(){
-									// as this can take a while, listItem may be destroyed in the meantime
-									if(self._beingDestroyed || listItem1._beingDestroyed) return;
-									// ref item may have been resolved now
-									//var item = this.data;
-									this.template = this.getTemplate(this.templateDir,"preview");
-									this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-										this.parseTemplate(tpl).then(function(tplo){
-											listItem1.applyTemplate(tplo.tpl,tplo.partials);
-											fx.fadeIn({node:listItem1.containerNode}).play();
-										});
-									}));
-								}))
-							);
-							this.addChild(listItem1);
-							this.itemnodesmap[-1] = listItem1;
-						}
+					if(item.preview) {
+						var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
+						var listItem1 = new ScrollablePaneItem({
+							parent:this,
+							itemHeight:"auto",
+							data:data
+						});
+						listItem1.own(
+							aspect.after(listItem1,"onLoad",lang.hitch(this,function(){
+								// as this can take a while, listItem may be destroyed in the meantime
+								if(self._beingDestroyed || listItem1._beingDestroyed) return;
+								// ref item may have been resolved now
+								//var item = this.data;
+								this.template = this.getTemplate(this.templateDir,"preview");
+								this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+									this.parseTemplate(tpl).then(function(tplo){
+										listItem1.applyTemplate(tplo.tpl,tplo.partials);
+										fx.fadeIn({node:listItem1.containerNode}).play();
+									});
+								}));
+							}))
+						);
+						this.addChild(listItem1);
+						this.itemnodesmap[-1] = listItem1;
 					}
 				}));
 			}));
