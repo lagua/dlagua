@@ -49,29 +49,8 @@ define([
 				this.render();
 			} else {
 				this.value = prop;
-				var d = new Deferred();
-				if(this.value.designs instanceof Array && this.value.designs.length) {
-					// FIXME recursive model resolving
-					// FIXME use first item in items array(!) for Repeat
-					// FIXME resolve refs in schemas
-					var model = new Model({
-						data:this.value.designs[0],
-						refAttribute:"_ref",
-						target:this.target,
-						schema:{ "properties" : { "id" : { "type" : "integer", "primary" : true, "indexed" : true, "auto_increment" : "30" }, "name" : { "type" : "string", "title" : "Naam" }, "template" : { "type" : "string", "title" : "Sjabloon" }, "theme" : { "type" : "string", "title" : "Thema" }, "content" : { "type" : "string", "format" : "xhtml" } }, "id" : "Redesign", "prototype" : null, "links" : [{ "rel" : "content", "href" : "/rest/{template}", "resolution" : "lazy" }] },
-						resolve:true,
-						ready:function(){
-							d.resolve(this.data);
-						}
-					});
-				} else {
-					d.resolve();
-				}
-				d.then(lang.hitch(this,function(data){
-					if(data) this.value.designs[0] = data;
-					this._createContext();
-					this.render();
-				}));
+				this._createContext();
+				this.render();
 			}
 		},
 		_createContext:function(){
@@ -97,7 +76,7 @@ define([
 	var TrackableMemory = declare([Memory, Trackable]);
 	
 	return declare("dlagua.w.form.List",[_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin],{
-		templateString: "<div class=\"dijit dijitReset\" data-dojo-attach-point=\"focusNode\" aria-labelledby=\"${id}_label\"><div class=\"dijitReset dijitHidden dformaGridLabel\" data-dojo-attach-point=\"labelNode\" id=\"${id}_label\"></div><div class=\"dijitReset dijitHidden dformaGridHint\" data-dojo-attach-point=\"hintNode\"></div><div class=\"dformaGridContainer\" data-dojo-attach-point=\"containerNode\"></div><div class=\"dijitReset dijitHidden dformaGridMessage\" data-dojo-attach-point=\"messageNode\"></div></div>",
+		templateString: "<div class=\"dijit dijitReset\" data-dojo-attach-point=\"focusNode\" aria-labelledby=\"${id}_label\"><div class=\"dijitReset dijitHidden dformaListLabel\" data-dojo-attach-point=\"labelNode\" id=\"${id}_label\"></div><div class=\"dijitReset dijitHidden dformaListHint\" data-dojo-attach-point=\"hintNode\"></div><div class=\"dformaListContainer\" data-dojo-attach-point=\"containerNode\"></div><div class=\"dijitReset dijitHidden dformaListMessage\" data-dojo-attach-point=\"messageNode\"></div></div>",
 		store:null,
 		newdata:false,
 		defaultInstance:{},
@@ -106,7 +85,7 @@ define([
 		remove:true,
 		readOnly:false,
 		autosave:true,
-		baseClass:"dformaGrid",
+		baseClass:"dformaList",
 		multiple:true, // needed for setValueAttr array value
 		_setHintAttr: function(/*String*/ content){
 			// summary:
@@ -201,28 +180,6 @@ define([
 				}).placeAt(this.containerNode);
 			}
 	 	},
-	 	_expandData:function(){
-	 		var newVal = this.subform.get("value");
-			if(this.autosave && this.newdata) this.newdata = false;
-			var sel = this._itemMap ? this._itemMap[this.selected] : null;
-			if(!sel) return;
-			var target = this.store.target;
-			var schema = this.schema.items ? this.schema.items[0] : this.schema;
-			var self = this;
-			var model = new Model({
-				data:newVal,
-				refAttribute:"_ref",
-				target:target,
-				schema:schema,
-				resolve:true,
-				exclude:["theme"],//FIXME generalize
-				ready:function(){
-					console.log(this.data.colors)
-					self.subform._set("value",lang.mixin(newVal,this.data));
-					if(sel) sel.set("value",this.data);
-				}
-			});
-		},
 	 	startup:function(){
 	 		if(this._started) return;
 	 		var _resolving = false;
@@ -231,7 +188,14 @@ define([
 					this.selected = null;
 					this.refresh();
 				})),
-				aspect.after(this.subform,"_onChildChange",lang.hitch(this,"_expandData"),true)
+				this.subform.watch("value",lang.hitch(this,function(prop,oldVal,newVal){
+					if(this.autosave && this.newdata) {
+						this.newdata = false;
+					}
+					var sel = this._itemMap ? this._itemMap[this.selected] : null;
+					console.warn("newVal",newVal)
+					if(sel) sel.set("value",newVal);
+				}))
 			);
 			request(this.templatePath+this.templateExtension).then(lang.hitch(this,function(tpl){
 				if(!tpl) return;
@@ -261,7 +225,6 @@ define([
 		 			console.log(item)
 		 			if(!(item.id in this._itemMap)) this._addChild(item);
 		 		},this);
-	 			this._expandData();
 	 		}))
 	 	},
 	 	_addChild:function(item){
