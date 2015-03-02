@@ -24,18 +24,6 @@ define([
 			this.domNode.innerHTML = data;
 		}
 	});
-	
-	// from https://github.com/kriszyp/json-schema/blob/master/lib/links.js#L41
-	function substitute(linkTemplate, instance, exclude){
-		return linkTemplate.replace(/\{([^\}]*)\}/g, function(t, property){
-			var value = exclude.indexOf(property)>-1 ? "*" : instance[decodeURIComponent(property)];
-			if(value instanceof Array){
-				// the value is an array, it should produce a URI like /Table/(4,5,8) and store.get() should handle that as an array of values
-				return '(' + value.join(',') + ')';
-			}
-			return value;
-		});
-	};
 
 	return declare("dlagua.w.form.CarouselSelect",[_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin],{
 		templateString:"<div class=\"dijit dijitReset\" data-dojo-attach-point=\"focusNode\"><div class=\"dlaguaCarouselSelectContainer\" data-dojo-attach-point=\"containerNode\"><div class=\"dlaguaCarouselSelectPreview\" data-dojo-attach-point=\"previewNode\"></div></div></div>",
@@ -46,7 +34,7 @@ define([
 		selected:0,
 		labelAttr:"content",
 		relProperty:"designs",
-		query:null,
+		query:"",
 		postCreate:function(){
 			// FIXME generalize
 			if(this.store && this.store.labelProperty) this.labelAttr = this.store.labelProperty;
@@ -57,60 +45,11 @@ define([
 			if(!this._started || !this.items) return;
 			this._select();
 		},
-		_updateFromParent:function(prop,oldVal,newVal){
-			// FIXME generalize
-			// each component with a store with queryString
-			// should be updated when parent changes
-			if(this.store.queryString){
-				this.set("query", substitute(this.store.queryString,newVal,[this.name]));
-			}
-			// each component with trigger should be updated
-			// when the target property changes
-			var triggers = [{
-			   property:"color",
-			   target:"previewNode.style.color",
-			   rel:"colors",
-			   foreignKey:"code"
-			}];
-			triggers.forEach(function(trigger){
-				var val = newVal[trigger.property];
-				if(val){
-					trigger.value = val;
-					if(trigger.rel){
-						var rel = trigger.rel;
-						var relProp = trigger.foreignKey || "id";
-						var relValue = newVal[rel];
-						// rql: Color/?id={color}&values(code)
-						// if trigger has rel, use it
-						// and assume that it's resolved
-						if(relValue && relValue instanceof Array) {
-							var obj = relValue.filter(function(_){
-								return _.id==trigger.value;
-							}).pop();
-							val = obj ? obj[relProp] : null;
-						} else {
-							// don't update
-							val = null;
-						}
-					}
-					if(val){
-						// default to value
-						var triggerTarget = trigger.target || "value";
-						if(triggerTarget.indexOf(".")>-1){
-							lang.setObject(triggerTarget,val,this);
-						} else {
-							this.set(triggerTarget,val);
-						}
-					}
-				}
-			},this);
-		},
 		startup:function(){
 			if(this._started) return;
 			this.inherited(arguments);
 			var parent = this.getParent();
 			this.own(
-				parent.watch("value",lang.hitch(this,"_updateFromParent")),
 				this.watch("query",function(prop,oldVal,newVal){
 					this._init(newVal);
 				})
@@ -193,7 +132,7 @@ define([
 		},
 		_init:function(query) {
 			if(this._loading) {
-				this._queue.push(query);
+				//this._queue.push(query);
 				return;
 			}
 			this._loading = true;
@@ -206,6 +145,7 @@ define([
 				count:this.itemCount
 			}).then(lang.hitch(this,function(data){
 				var labelAttr = this.labelAttr;
+				// FIXME apply some kind of schema to resolve
 				all(data.map(function(_){
 					var d = new Deferred();
 					if(_[labelAttr]["_ref"]){
