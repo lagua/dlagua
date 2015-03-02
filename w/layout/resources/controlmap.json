@@ -28,7 +28,6 @@
 		"array":{
 			"*":"repeat",
 			"grid":"grid",
-			"select":"select",
 			"list":"list"
 		},
 		"object":{
