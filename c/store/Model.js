@@ -103,7 +103,7 @@ define([
 				}
 			}
 			resolveProps.forEach(function(key){
-				var href = data[key][refattr];
+				var href = data[key] ? data[key][refattr] : null;
 				if(href) {
 					var req = {
 						handleAs:"json",
