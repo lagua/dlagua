@@ -5,6 +5,7 @@ define([
 	"dojo/when",
 	"dojo/promise/all",
 	"dojo/request",
+	"dojo/dom-class",
 	"dijit/_WidgetBase",
 	"dijit/_Contained",
 	"dijit/_Container",
@@ -12,7 +13,8 @@ define([
 	"dijit/form/_FormValueMixin",
 	"dijit/form/Button",
 	"dstore/Memory"
-],function(declare,lang,Deferred,when,all,request,_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button, Memory) {
+],function(declare,lang,Deferred,when,all,request,domClass,
+		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button, Memory) {
 	
 	var CSItem = declare("dlagua.w.form.CarouselSelectItem", [_WidgetBase,_Contained,_TemplatedMixin], {
 		width:100,
@@ -49,11 +51,15 @@ define([
 			if(this._started) return;
 			this.inherited(arguments);
 			var parent = this.getParent();
+			this.items = [];
 			this.own(
 				this.watch("query",function(prop,oldVal,newVal){
+					this.items = [];
 					this._init(newVal);
 				})
 			);
+			var w = this.radius * 2.3;
+			this.containerNode.style.width = w+"px";
 			this.prevButton = new Button({
 				label:"prev",
 				showLabel:false,
@@ -94,30 +100,52 @@ define([
 			var t = i ? l-i : 0;
 			this._page(t-s);
 		},
+		_updateItems:function(){
+			var shown = [];
+			this.items.forEach(function(_){
+				if(_.hidden){
+					domClass.add(_.domNode,"dijitHidden");
+				} else {
+					domClass.remove(_.domNode,"dijitHidden");
+					shown.push(_);
+				}
+			});
+			var l = shown.length;
+			var angle = 360 / l;
+			var delta = angle*this.selected;
+			for(var i = 0; i < l; i ++) {
+				var item = shown[i];
+				var a = (delta + i*angle);
+				item.domNode.style.transform = item.domNode.style.webkitTransform = 'rotateY(' + a + 'deg) translate3d(26px,-44px,' + this.radius + 'px) scale(.25,.25)';
+				item.domNode.style.zIndex = ((a >=0 && a < 90) || (a>270 && a<=360)) ? l+i : 0;
+			}
+		},
 		_page:function(d) {
 			var l = this.items.length;
-			var angle = 360 / l;
 			this.selected+=d;
 			this.prevButton.set("disabled",this.selected==0);
 			this.nextButton.set("disabled",this.selected==l-1);
-			var delta = angle*this.selected;
-			for(var i = 0; i < l; i ++) {
-				var a = (delta + i*angle);
-				this.items[i].domNode.style.transform = this.items[i].domNode.style.webkitTransform = 'rotateY(' + a + 'deg) translate3d(26px,-44px,' + this.radius + 'px) scale(.25,.25)';
-				this.items[i].domNode.style.zIndex = ((a >=0 && a < 90) || (a>270 && a<=360)) ? l+i : 0;
-			}
+			this._updateItems();
 			var s = this.selected ? l-this.selected : 0;
 			var idProp = this.store.idProperty;
 			if(this.items[s]) {
 				this._set("value",this.items[s].value[idProp]);
 			}
+			// TODO get stuff from the store
+			/*if(d>0){
+				this._init(this.query,{
+					start:this.selected+(this.items.length-1),
+					count:d,
+					add:true
+				});
+			}*/
 		},
-		_setup:function(left,data){
-			var items = [];
+		_setup:function(left,data,options){
+			var add = !!options.add;
 			var l = data.length;
-			var angle = 360 / l;
 			for (var i = 0; i < l; i ++) {
-				var obj = data[i ? l-i : 0]
+				var index = i ? l-i : 0;
+				var obj = data[index];
 				var item = new CSItem({
 					width:this.itemWidth,
 					left:left,
@@ -125,52 +153,69 @@ define([
 					content:obj[this.labelAttr]
 				});
 				// add the item to the container
-				this.addChild(item)
-				items.push(item);
+				this.addChild(item);
+				this.items.push(item);
 			}
-			return items;
 		},
-		_init:function(query) {
+		_init:function(query,options) {
 			if(this._loading) {
 				//this._queue.push(query);
 				return;
 			}
-			this._loading = true;
-			var d = 0;
-			var w = this.radius * 2.3;
-			this.containerNode.style.width = w+"px";
-			var left = (w-this.itemWidth)/2;
-			this.store.query(query,{
+			options = options || {
 				start:0,
 				count:this.itemCount
-			}).then(lang.hitch(this,function(data){
-				var labelAttr = this.labelAttr;
-				// FIXME apply some kind of schema to resolve
-				all(data.map(function(_){
-					var d = new Deferred();
-					if(_[labelAttr]["_ref"]){
-						request(_[labelAttr]["_ref"]).then(function(res){
-							_[labelAttr] = res;
+			};
+			this._loading = true;
+			var add = !!options.add;
+			var labelAttr = this.labelAttr;
+			var w = this.radius * 2.3;
+			var left = (w-this.itemWidth)/2;
+			var req = this.store.query(query,options);
+			req.then(lang.hitch(this,function(data){
+				req.total.then(lang.hitch(this,function(total){
+					// FIXME apply some kind of schema to resolve
+					this.total = total;
+					all(data.map(function(_){
+						var d = new Deferred();
+						if(_[labelAttr]["_ref"]){
+							request(_[labelAttr]["_ref"]).then(function(res){
+								_[labelAttr] = res;
+								d.resolve(_);
+							})
+						} else {
 							d.resolve(_);
-						})
-					} else {
-						d.resolve(_);
-					}
-					return d;
-				})).then(lang.hitch(this,function(data){
-					this._loading = false;
-					this.getChildren().forEach(function(_){
-						if(_!=this.previewNode) {
-							_.destroyRecursive();
 						}
-					},this);
-					this.items = this._setup(left,data);
-					this._select();
-					if(this._queue.length){
-						this._init(this._queue.shift());
-					}
+						return d;
+					})).then(lang.hitch(this,function(data){
+						this._loading = false;
+						if(add){
+							var shown = this.items.filter(function(_){
+								return !_.hidden;
+							});
+							var l = data.length;
+							for(var i=0;i<l;i++){
+								//shown[i].hidden=true;
+							}
+						} else {
+							this.getChildren().forEach(function(_){
+								_.destroyRecursive();
+							},this);
+						}
+						this._setup(left,data,options);
+						if(!add) {
+							this._select();
+						} else {
+							this._updateItems();
+						}
+						//if(this._queue.length){
+						//	this._init(this._queue.shift());
+						//}
+					}));
 				}));
-			}));
+			}),function(err){
+				
+			});
 		}
 	});
 });
