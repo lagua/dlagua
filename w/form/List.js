@@ -203,6 +203,16 @@ define([
 				}
 				this.refresh();
 			}));
+			// TODO move to domain-specific widget
+			this.addButton.set("showLabel",false);
+			this.addButton.set("iconClass","dlaguaListAddButtonIcon");
+			this.addButton.iconNode.innerHTML = "+";
+			request("/rest/resources/shirt.svg").then(lang.hitch(this,function(res){
+				domConstruct.create("span",{
+					innerHTML:res,
+					style:"height:240px;margin-left:-28px;"
+				},this.addButton.containerNode,"before");
+			}));
 			this.inherited(arguments);
 	 	},
 	 	refresh:function(){
