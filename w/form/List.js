@@ -21,13 +21,13 @@ define([
 	"dstore/Memory",
 	"dstore/Trackable",
 	"mustache/mustache",
-	"dlagua/c/store/Model",
+	"dforma/util/model",
 	"dforma/util/i18n"
 ],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,aspect,Deferred,when,sniff,
 		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,registry,
 		Memory, Trackable,
 		mustache,
-		Model, i18n){
+		model, i18n){
 	
 	var isIE = !!sniff("ie");
 	
@@ -135,16 +135,13 @@ define([
 					var d = new Deferred();
 					var target = this.target;
 					when(put.call(this,object,options),function(object){
-						var model = new Model({
-							data:object,
-							refAttribute:"_ref",
-							target:target,
-							schema:schema,
-							coerce:true,
+						model.coerce(object,schema,{
 							resolve:true,
-							ready:function(){
-								d.resolve(this.data);
-							}
+							fetch:true,
+							refAttribute:"_ref",
+							target:target
+						}).then(function(data){
+							d.resolve(data);
 						});
 					});
 					return d;
