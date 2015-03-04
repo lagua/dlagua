@@ -4,7 +4,7 @@ define([
 	"dojo/hash",
 	"dijit/form/Button",
 	"dojox/uuid/generateRandomUuid",
-	"dlagua/c/store/FormData",
+	"dforma/store/FormData",
 	"dlagua/c/string/toProperCase"
 ], function(lang,on,hash,Button,generateRandomUuid,FormData) {
 
@@ -43,6 +43,7 @@ var form = function(val,options) {
 	var action = options.action;
 	var service = options.service || "/model/";
 	var target = service+options.model+"/";
+	var path = options.path;
 	var _parsable = options._parsable;
 	delete options.values;
 	delete options.action;
@@ -55,11 +56,10 @@ var form = function(val,options) {
 		_parsable:_parsable,
 		onClick:function(){
 			var store = ref.stores[target];
-			// FIXME handle dstore async here? what to do if no store?
-			var obj = store[store.putSync ? "putSync" : "put"](data);
+			var obj = store.put(data);
 			store.selectedId = obj.id;
 			store.newdata = true;
-			hash(action);
+			if(action) hash(action);
 		}
 	});
 };
