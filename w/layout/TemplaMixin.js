@@ -13,9 +13,12 @@ define([
 	"mustache/mustache",
 	"dlagua/c/templa/Mixin",
 	"dojo/dom-attr",
-	"dojo/query"
-],function(declare,lang,array,domGeometry,request,Deferred,all,stamp,_Widget,_Templated,_Contained,mustache,Mixin,domAttr,query) {
+	"dojo/query",
+	"dojo/sniff"
+],function(declare,lang,array,domGeometry,request,Deferred,all,stamp,_Widget,_Templated,_Contained,mustache,Mixin,domAttr,query,sniff) {
 
+	var isIE = !!sniff("ie");
+	
 	return declare("dlagua.w.layout.TemplaMixin", [], {
 		resolveProperties:null,
 		schema:null,
@@ -23,10 +26,12 @@ define([
 		mixeddata:null,
 		applyTemplate: function(tpl,partials){
 			this.set("content",mustache.to_html(tpl,this.mixeddata,partials));
-			// IE style workaround
-			query("*[data-style]",this.domNode).forEach(function(_){
-				domAttr.set(_,"style",domAttr.get(_,"data-style"));
-			});
+			if(isIE){
+				// IE style workaround
+				query("*[data-style]",this.domNode).forEach(function(_){
+					domAttr.set(_,"style",domAttr.get(_,"data-style"));
+				});
+			}
 		},
 		_load:function(resolved, d){
 			d = d || new Deferred();
@@ -45,10 +50,11 @@ define([
 			var parent = this.getParent();
 			var schema = this.schema || parent.schema;
 			var resolveProps = (parent && parent.resolveProperties ? parent.resolveProperties : this.resolveProperties ? this.resolveProperties : []);
-			this._mixinRecursive(lang.clone(this.data),schema,resolveProps,new Mixin(),md);
+			var clone = lang.clone(this.data);
+			this._mixinRecursive(clone,schema,resolveProps,new Mixin(),md);
 			md.then(lang.hitch(this,function(data){
-				this.mixeddata = data;
-				d.resolve(true);
+				this.mixeddata = data ? data : clone;
+				d.resolve();
 			}));
 			return d;
 		},
@@ -181,6 +187,7 @@ define([
 						var uri = service+"/"+data[k];
 						_uris[k] = uri;
 						var req;
+						console.warn(uri)
 						if(_resolveCache[uri]) {
 							req = new Deferred().resolve(_resolveCache[uri]);
 						} else {
@@ -229,7 +236,13 @@ define([
 					if(_uris[k]) _resolveCache[_uris[k]] = resolved[k];
 				}
 				d.resolve(lang.mixin(data,resolved));
-			}));
+			}),function(err){
+				console.warn(err.toString());
+				for(var k in toResolve){
+					delete data[k];
+				}
+				d.resolve(data);
+			});
 			return d;
 		},
 		startup:function(){
