@@ -146,9 +146,13 @@ define([
 			if(item.template) {
 				var parts = item.template.split("?");
 				var url = this.target+parts.shift();
-				var q = ioQuery.queryToObject(parts.shift());
-				if(!q.locale && item.locale) q.locale = item.locale;
-				d = request(url+"?"+ioQuery.objectToQuery(q));
+				var qstr = parts.shift();
+				if(qstr){
+					var q = ioQuery.queryToObject(qstr);
+					if(!q.locale && item.locale) q.locale = item.locale;
+					url += "?"+ioQuery.objectToQuery(q);
+				}
+				d = request(url);
 			} else {
 				if(!data) data = "<body/>";
 				d.resolve(data);
