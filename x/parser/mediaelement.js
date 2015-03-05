@@ -73,13 +73,14 @@ dlagua.x.parser.mediaelement.audio = function(val,options) {
 		"mp3":"audio/mpeg",
 		"ogg":"audio/ogg"
 	};
+	var t = new Date().getMilliseconds();
 	array.forEach(types,function(type){
 		var mime = exts[type];
 		var src = val.replace("."+types[0],"");
-		text += '<source type="'+mime+'" src="'+src+'.'+type+'"/>';
+		text += '<source type="'+mime+'" src="'+src+'.'+type+"?t="+t+'"/>';
 	});
 	text += '</audio>';
-	if(has("IE") && has("IE")<9) text = '<span style="display:none;">&nbsp;</span><audio id="audio_'+id+'" controls type="'+mime+'" src="'+val+'">&nbsp;</audio>';	
+	if(has("IE") && has("IE")<9) text = '<span style="display:none;">&nbsp;</span><audio id="audio_'+id+'" controls type="'+mime+'" src="'+val+"?t="+t+'">&nbsp;</audio>';	
 	return text;
 };
 
