@@ -18,16 +18,13 @@ define([
 	"dijit/form/_FormValueMixin",
 	"dijit/form/Button",
 	"dijit/registry",
-	"dstore/Memory",
-	"dstore/Trackable",
-	"mustache/mustache",
+	"dforma/store/FormData",
 	"dforma/util/model",
-	"dforma/util/i18n"
+	"dforma/util/i18n",
+	"mustache/mustache"
 ],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,aspect,Deferred,when,sniff,
 		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,registry,
-		Memory, Trackable,
-		mustache,
-		model, i18n){
+		FormData,model,i18n,mustache){
 	
 	var isIE = !!sniff("ie");
 	
@@ -72,8 +69,6 @@ define([
 			}
 		}
 	});
-	
-	var TrackableMemory = declare([Memory, Trackable]);
 	
 	return declare("dlagua.w.form.List",[_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin],{
 		templateString: "<div class=\"dijit dijitReset\" data-dojo-attach-point=\"focusNode\" aria-labelledby=\"${id}_label\"><div class=\"dijitReset dijitHidden dformaListLabel\" data-dojo-attach-point=\"labelNode\" id=\"${id}_label\"></div><div class=\"dijitReset dijitHidden dformaListHint\" data-dojo-attach-point=\"hintNode\"></div><div class=\"dformaListContainer\" data-dojo-attach-point=\"containerNode\"></div><div class=\"dijitReset dijitHidden dformaListMessage\" data-dojo-attach-point=\"messageNode\"></div></div>",
@@ -128,7 +123,10 @@ define([
 	 	postCreate:function(){
 			var self = this;
 			var common = i18n.load("dforma","common");
-			if(!this.store) this.store = new TrackableMemory();
+			if(!this.store) this.store = new FormData({
+				local:true,
+				target:"/model/bla/"
+			});
 			var schema = this.schema.items ? this.schema.items[0] : this.schema;
 			var putFunc = function(put) {
 				return function(object,options) {
@@ -153,6 +151,7 @@ define([
 			aspect.around(this.store,"add",function(add){
 				return putFunc(add);
 			});
+			
 			aspect.before(this,"onEdit",lang.hitch(this,function(id){
 				// selected by way of onEdit
 				this.selected = id;
