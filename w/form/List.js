@@ -18,13 +18,12 @@ define([
 	"dijit/form/_FormValueMixin",
 	"dijit/form/Button",
 	"dijit/registry",
-	"dforma/store/FormData",
 	"dforma/util/model",
 	"dforma/util/i18n",
 	"mustache/mustache"
 ],function(declare,lang,array,domConstruct,domClass,domAttr,query,request,aspect,Deferred,when,sniff,
 		_WidgetBase,_Contained,_Container,_TemplatedMixin, _FormValueMixin, Button,registry,
-		FormData,model,i18n,mustache){
+		model,i18n,mustache){
 	
 	var isIE = !!sniff("ie");
 	
@@ -38,17 +37,17 @@ define([
 			this._createContext();
 			this.render();
 		},
-		_setValueAttr:function(prop,value){
-			if(typeof prop=="string"){
+		_setValueAttr:function(value){
+			console.warn(value)
+			/*if(typeof prop=="string"){
 				// update individual property
 				if(this.context) delete this.context.cache[prop];
 				this.value[prop] = value;
 				this.render();
-			} else {
-				this.value = prop;
-				this._createContext();
-				this.render();
-			}
+			} else {*/
+			this.value = value;
+			this._createContext();
+			this.render();
 		},
 		_createContext:function(){
 			this.context = new mustache.Context(this.value);
@@ -123,35 +122,6 @@ define([
 	 	postCreate:function(){
 			var self = this;
 			var common = i18n.load("dforma","common");
-			if(!this.store) this.store = new FormData({
-				local:true,
-				target:"/model/bla/"
-			});
-			var schema = this.schema.items ? this.schema.items[0] : this.schema;
-			var putFunc = function(put) {
-				return function(object,options) {
-					var d = new Deferred();
-					var target = this.target;
-					when(put.call(this,object,options),function(object){
-						model.coerce(object,schema,{
-							resolve:true,
-							fetch:true,
-							refAttribute:"_ref",
-							target:target
-						}).then(function(data){
-							d.resolve(data);
-						});
-					});
-					return d;
-				}
-			}
-			aspect.around(this.store,"put",function(put){
-				return putFunc(put);
-			});
-			aspect.around(this.store,"add",function(add){
-				return putFunc(add);
-			});
-			
 			aspect.before(this,"onEdit",lang.hitch(this,function(id){
 				// selected by way of onEdit
 				this.selected = id;
