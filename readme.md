@@ -27,41 +27,38 @@ A typical app would be:
 		</div>
 	</div>
 	
-The Persevere Menu model for this particular setup is defined like this:
-	var Model = require("perstore/model").Model,
-		DefaultStore = require("perstore/stores").DefaultStore;
-	
-	var menuStore = DefaultStore();
-	Menu = exports.Menu = Model(menuStore, {
-		properties: { // schema definitions for property types
-			name: {
-				type:"string",
-				indexed:true
-			},
-			type: {
-				type:"string",
-				default:"page",
-				indexed:true
-			},
-			title:{
-				type:"string",
-				optional:true
-			},
-			model:{
-				type:"string",
-				optional:true
-			},
-			locale: {
-				type:"string",
-				indexed:true
-			},
-			path: {
-				type:"string",
-				optional:true,
-				indexed:true
-			}
+The Menu model for this particular setup is defined by the following json schema:
+
+{
+	properties: { // schema definitions for property types
+		name: {
+			type:"string",
+			indexed:true
+		},
+		type: {
+			type:"string",
+			default:"page",
+			indexed:true
+		},
+		title:{
+			type:"string",
+			optional:true
+		},
+		model:{
+			type:"string",
+			optional:true
+		},
+		locale: {
+			type:"string",
+			indexed:true
+		},
+		path: {
+			type:"string",
+			optional:true,
+			indexed:true
 		}
-	});
+	}
+}
 
 The path property contains a path to the HTML page to be displayed when a navigational component selects this item.
 
