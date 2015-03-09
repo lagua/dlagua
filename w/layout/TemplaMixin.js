@@ -248,11 +248,12 @@ define([
 		startup:function(){
 			if(this._started) return;
 			this._started = true;
-			if(!this.data) {
+			this.inherited(arguments);
+			/*if(!this.data) {
 				this.onLoad();
 				return;
-			}
-			this._load().then(lang.hitch(this,this.onLoad));
+			}*/
+			//this._load().then(lang.hitch(this,this.onLoad));
 		},
 		_setContentAttr: function(/*String|DomNode|Nodelist*/data){
 			this._setContent(data || "");
