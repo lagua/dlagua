@@ -11,18 +11,16 @@ define([
 	"dojo/dom-attr",
 	"dojo/Deferred",
 	"dojo/when",
-	"dlagua/c/store/JsonRest",
+	"dforma/store/FormData",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
-	//"dojo/store/Memory",
-	//"dojo/store/Cache",
+	"dbrota/widget/TemplateMixin",
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
-	//"mustache/mustache"
 ],function(reqr,declare,lang,array,fx,
 		query,request,aspect,domConstruct,domAttr,Deferred,when,
-		JsonRest,ScrollableServicedPaneItem,TemplaMixin,
+		FormData,ScrollableServicedPaneItem,TemplaMixin,Mixin,
 		jsonref,
 		rqlQuery,rqlParser) {
 
@@ -33,7 +31,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	store:null,
 	stores:{},
 	schema:null,
-	schemata:{},
 	templateModule:"",
 	templatePath:"",
 	base:"",
@@ -49,6 +46,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	_tplo:null,
 	_tplCache:{},
 	partials:"",
+	ChildClass:ScrollableServicedPaneItem,
 	_resolveCache:null,
 	startup:function(){
 		if(this._started) return;
@@ -56,48 +54,37 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		// support templateModule for now
 		if(this.templateModule) this.templatePath = reqr.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.template = this.getTemplate();
-		// use Observable if has persistent
-		if(this.persistentStore && this.store) {
-			this.stores[this.store.target] = this.store;
-			var openStore = lang.hitch(this,function(Observable){
-				this.store = this.stores[this.store.target] = new Observable(this.store);
-				
-				var results = this.store.query();
-				if(this.template) {
-					this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-						this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
-							this._tplo = tplo;
-							results.forEach(lang.hitch(this,this.addItem));
-						}));
+		// if persistent
+		if(this.store && this.store.persistent) {
+			this.stores[this.store.storeName] = this.store;
+			var results = this.store.query();
+			if(this.template) {
+				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
+						this._tplo = tplo;
+						results.forEach(lang.hitch(this,this.addItem));
 					}));
-				}
-				this.own(
-					results.observe(lang.hitch(this,function(item, removed, inserted){
-						if(removed > -1){ // existing object removed
-							this._removeItemById(item[this.idProperty]);
-						}
-						if(inserted > -1){ // new or updated object inserted
-							this.addItem(item);
-							this.currentId = item[this.idProperty];
-						}
-					})),
-					this.watch("newItem",function(name,oldItem,item){
-						this.store.add(item);
-						this.newItem = null;
-					}),
-					this.watch("removeItem",function(name,oldId,id){
-						this.store.remove(id);
-						this.removeItem = null;
-					})
-				);
-			});
-			if(this.store.open) {
-				this.store.open().then(function(){
-					reqr(["dojo/store/Observable"],openStore);
-				});
-			} else { 
-				reqr(["dojo/store/Observable"],openStore);
+				}));
 			}
+			this.own(
+				results.observe(lang.hitch(this,function(item, removed, inserted){
+					if(removed > -1){ // existing object removed
+						this._removeItemById(item[this.idProperty]);
+					}
+					if(inserted > -1){ // new or updated object inserted
+						this.addItem(item);
+						this.currentId = item[this.idProperty];
+					}
+				})),
+				this.watch("newItem",function(name,oldItem,item){
+					this.store.add(item);
+					this.newItem = null;
+				}),
+				this.watch("removeItem",function(name,oldId,id){
+					this.store.remove(id);
+					this.removeItem = null;
+				})
+			);
 		}
 		this.inherited(arguments);
 		this.own(
@@ -139,6 +126,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		);
 	},
 	replaceChildTemplate: function(child,templateDir,partials) {
+		var d = new Deferred();
 		if(!templateDir) templateDir = this.templateDir;
 		var template = this.getTemplate(templateDir);
 		this._fetchTpl(template).then(lang.hitch(this,function(tpl){
@@ -152,8 +140,10 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 						li.applyTemplate(tplo.tpl,tplo.partials);
 					});
 				}
+				d.resolve();
 			});
 		}));
+		return d;
 	},
 	_fetchTpl: function(template) {
 		// TODO add xdomain fetch
@@ -165,37 +155,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			self._tplCache[uri] = tpl;
 		});
 		return req;
-	},
-	_getSchema:function(){
-		var d = new Deferred;
-		// prevent getting schema again
-		if(this.schemata[this.store.schemaUri]) {
-			this.schemaUri = this.store.schemaUri;
-			var schema = this.schema = this.schemata[this.schemaUri];
-			for(var k in schema.properties) {
-				if(schema.properties[k].primary) this.idProperty = k;
-				if(schema.properties[k].hrkey) this.hrProperty = k;
-			}
-			this.store.idProperty = this.idProperty;
-			d.resolve(true);
-			return d;
-		}
-		if(!this.schemaUri || this.schemaUri!=this.store.schemaUri) {
-			this.schemaUri = this.store.schemaUri;
-			this.store.getSchema(this.store.schemaUri,{useXDomain:(this.useXDomain)}).then(lang.hitch(this,function(schema){
-				this.schema = schema;
-				this.schemata[this.schemaUri] = schema;
-				for(var k in schema.properties) {
-					if(schema.properties[k].primary) this.idProperty = k;
-					if(schema.properties[k].hrkey) this.hrProperty = k;
-				}
-				this.store.idProperty = this.idProperty;
-				d.resolve(true);
-			}));
-		} else {
-			d.resolve(true);
-		}
-		return d;
 	},
 	onFilters:function(){
 		if(!this.orifilters) {
@@ -252,7 +211,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(!item.model) return;
 			var model = item.model;
 			var target = item.service+model+"/";
-			var schemaUri = item.service+"Class/"+model;
 			// reset if triggered by currentItem
 			if(arguments.length>0) {
 				this.sort = "";
@@ -270,10 +228,12 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.filter = item.filter;
 			if(!this.stores[target]) {
-				this.store = new JsonRest({
+				this.store = new FormData({
+					model:model,
 					target:target,
-					headers:this.headers || {},
-					schemaUri:schemaUri
+					refProperty:this.refAttribute,
+					mixin:new Mixin(),
+					headers:this.headers || {}
 				});
 				this.stores[target] = this.store;// new Cache(this.store, new Memory());
 			} else {
@@ -285,7 +245,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	rebuild:function(){
 		this.inherited(arguments);
 		if(this.servicetype=="model") {
-			this._getSchema().then(lang.hitch(this,function(){
+			this.store.getSchema().then(lang.hitch(this,function(schema){
+				this.schema = schema;
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 					var partials = {};
 					if(this.partials) {
@@ -309,23 +270,24 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 								this.total = parseInt(total,10);
 								if(this.total===0 || isNaN(this.total)) this.ready();
 							}));
-							results.forEach(lang.hitch(this,this.addItem));
+							results.forEach(this.addItem,this);
 						} else {
 							results.then(lang.hitch(this,function(res){
 								res = (!res || !res.length) ? [] : res;
 								var children = res.length && res[0].children ? res[0].children : [];
 								this.total = children.length;
 								if(this.total===0 || isNaN(this.total)) this.ready();
-								var refattr = jsonref.refAttribute = this.refAttribute;//"$ref";
-								var store = this.store;
+								//var refattr = jsonref.refAttribute = this.refAttribute;//"$ref";
+								/*var store = this.store;
 								var item = jsonref.resolveJson(res[0],{
 									loader:function(callback,d){
 										store.get(this[refattr]).then(function(item){
 											callback(item,d);
 										});
 									}
-								});
-								item.children.forEach(lang.hitch(this,this.addItem));
+								});*/
+								
+								item.children.forEach(this.addItem,this);
 							}));
 						}
 					}));
@@ -371,7 +333,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		if(this.sort) {
 			qo = qo.sort(this.sort);
 		}
-		return "?"+qo.toString();
+		return qo.toString();
 	},
 	_compare: function (a, b) {
 		var sort = this.sort.split(",");
@@ -446,15 +408,39 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	addItem:function(item,index,items,insertIndex) {
 		if(this._beingDestroyed) return;
 		var content = "";
-		var listItem = new ScrollableTemplatedPaneItem({
-			parent:this,
-			data:item,
-			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
-		});
+		
 		items = items || this.getChildren();
 		var len = items.length;
+		var id = item[this.idProperty];
 		if(!insertIndex && this.sort) insertIndex = this._findIndex(item);
-		aspect.after(listItem,"onLoad",lang.hitch(this,function(){
+		this.store.get(item.id).then(lang.hitch(this,function(resolved){
+			console.warn(item)
+			var listItem;
+			listItem = new this.ChildClass({
+				parent:this,
+				data:item,
+				mixeddata:lang.mixin(resolved,{
+					node:listItem,
+					ref:this
+				}),
+				itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
+			});
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
+			// ref item may have been resolved now
+			if(item.name) listItem.set("id","dlaguaSSPItem_"+item.name.replace(/\s/g,"_"));
+			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
+			fx.fadeIn({node:listItem.containerNode}).play();
+			this.childrenReady++;
+			if(this.childrenReady == len) {
+				// wait for the margin boxes to be set
+				setTimeout(lang.hitch(this,function(){
+					this.ready();
+				}),10);
+			}
+			this.itemnodesmap[id] = listItem;
+			this.addChild(listItem,insertIndex);
+		}));
+		/*aspect.after(listItem,"onLoad",lang.hitch(this,function(){
 			// as this can take a while, listItem may be destroyed in the meantime
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			// ref item may have been resolved now
@@ -472,7 +458,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			}
 			this.itemnodesmap[id] = listItem;
 		}));
-		this.addChild(listItem,insertIndex);
+		this.addChild(listItem,insertIndex);*/
 	},
 	_removeItemById:function(id) {
 		var i=0;
