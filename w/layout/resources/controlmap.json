@@ -7,7 +7,7 @@
 		},
 		"number":{
 			"*":"number",
-			"integer":"spinner"
+			"integer":"spinner",
 			"currency":"currency"
 		},
 		"date":{
