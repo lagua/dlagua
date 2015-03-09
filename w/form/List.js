@@ -100,14 +100,7 @@ define([
 			domClass.toggle(this.labelNode,"dijitHidden",!this.label);
 	 	},
 	 	_getValueAttr:function(){
-	 		var widgets = this.getChildren().filter(function(_){
-	 			return _ != this.addButton;
-	 		},this);
-	 		var arr = widgets.map(function(_){
-	 			return _.get("value");
-	 		});
-	 		if(this.autosave) this.store.setData(arr);
-	 		return arr;//this.store.fetchSync();
+	 		return this.store.fetchSync();
 	 	},
 	 	_setValueAttr:function(data){
 	 		if(!this._started) return;
@@ -122,18 +115,19 @@ define([
 	 	postCreate:function(){
 			var self = this;
 			var common = i18n.load("dforma","common");
-			aspect.before(this,"onEdit",lang.hitch(this,function(id){
-				// selected by way of onEdit
-				this.selected = id;
-			}),true);
-			/*if(typeof this.store.on == "function") {
-				// on update requery links
-				this.own(
-					this.store.on("add,update,delete",lang.hitch(this,function(event){
-						this.refresh();
-					}))
-				);
-			}*/
+			var tracked = this.store.track();
+			this.own(
+				aspect.before(this,"onEdit",lang.hitch(this,function(id){
+					// selected by way of onEdit
+					this.selected = id;
+				}),true),
+				tracked.on("add, update, delete", lang.hitch(this,function(event){
+					if(event.type=="update"){
+						var sel = this._itemMap ? this._itemMap[event.target.id] : null;
+						if(sel) sel.set("value",event.target);
+					}
+				}))
+			);
 			this.inherited(arguments);
 			if(this.add){
 				this.addButton = new Button({
@@ -158,9 +152,7 @@ define([
 					if(this.autosave && this.newdata) {
 						this.newdata = false;
 					}
-					var sel = this._itemMap ? this._itemMap[this.selected] : null;
-					console.warn("newVal",newVal)
-					if(sel) sel.set("value",newVal);
+					this.store.put(newVal);
 				}))
 			);
 			request(this.templatePath+this.templateExtension).then(lang.hitch(this,function(tpl){
