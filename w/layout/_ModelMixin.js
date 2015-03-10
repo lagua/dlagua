@@ -14,7 +14,7 @@ define([
 	"dforma/store/FormData",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
-	"dbrota/widget/TemplateMixin",
+	"dlagua/c/templa/Mixin",
 	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
