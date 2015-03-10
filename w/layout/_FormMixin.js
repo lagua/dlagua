@@ -102,6 +102,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						persistent:item.persistentStorage,
 						model:model,
 						schemaModel:schemaModel,
+						refProperty:this.refAttribute,
 						service:item.service
 					});
 				} else {
@@ -121,17 +122,25 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						}))
 					);
 				}
-				var obj = this.store[this.store.putSync ? "putSync" : "put"]({});
-				this.store.selectedId = lang.isObject(obj) ? obj.id : obj;
-				this.store.newdata = true;
+				//var obj = this.store[this.store.putSync ? "putSync" : "put"]({});
+				this.store.add({}).then(lang.hitch(this,function(obj){
+					// set the new id on the store so
+					// it can be retrieved as linked
+					this.store.selectedId = obj.id;
+					this.rebuild(item);
+				}));
+				//this.store.selectedId = lang.isObject(obj) ? obj.id : obj;
+				//this.store.newdata = true;
+			} else {
+				this.rebuild(item);
 			}
-			this.rebuild(item);
 		}
 	},
 	rebuild:function(item){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
-			this._getSchema().then(lang.hitch(this,function(){
+			this.store.getSchema().then(lang.hitch(this,function(schema){
+				this.schema = schema;
 				var self = this;
 				var common = i18n.load("dforma","common");
 				// TODO:
@@ -139,7 +148,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				// - get domain nls
 				// - provide global / persistent stores
 				// FIXME: why clone?
-				var schema = lang.clone(this.schema);
+				schema = lang.clone(schema);
 				var formbundle = this.dojoModule ? i18n.load(this.dojoModule,this.formBundle) : {};
 				if(formbundle) schema = replaceNlsRecursive(schema,formbundle);
 				var submit = schema.submit ? schema.submit : (formbundle.buttonSubmit ? formbundle.buttonSubmit : "");
@@ -170,226 +179,201 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				var templatePath = this.templatePath + (this.localizedTemplate ? locale + "/" : "") + path;
 				// always get linked data
 				this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(lang.hitch(this,function(data){
+					console.warn(data,schema.condition ? schema.condition.query : null)
 					var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
-					modelUtil.coerce(data,schema,{
-						resolve:true,
-						fetch:true,
-						refProperty:this.refAttribute,
-						target:this.store.target
-					}).then(lang.hitch(this,function(data){
-						var listItem = new ScrollableFormPaneItem({
-							itemHeight:"auto",
-							store:this.store,
-							value:data,
-							label:schema.title,
-							hint:schema.description,
-							configProperty:"config",
-							config:{
-								controls:jsonschema.schemaToControls(schema,data,{
-									controlmap:controlmap,
-									uri:this.store.target
-								}),
-								submit:submit ? {label: submit} : {}
-							},
-							schema:schema,
-							templatePath:templatePath,
-							controlmap:controlmap,
-							BuilderClass:Builder,
-							submit: function(){
-								if(!this.validate()) return;
-								var data = this.get("value");
-								for(var k in data) {
-									// it may be a group
-									// make all booleans explicit
-									if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
-										if(data[k].length===0) {
-											data[k] = false;
-										} else if(data[k].length<2) {
-											data[k] = data[k][0];
-										}
+					var listItem = new ScrollableFormPaneItem({
+						itemHeight:"auto",
+						store:this.store,
+						value:data,
+						label:schema.title,
+						hint:schema.description,
+						configProperty:"config",
+						config:{
+							controls:jsonschema.schemaToControls(schema,data,{
+								controlmap:controlmap,
+								uri:this.store.target
+							}),
+							submit:submit ? {label: submit} : {}
+						},
+						schema:schema,
+						templatePath:templatePath,
+						controlmap:controlmap,
+						BuilderClass:Builder,
+						submit: function(){
+							if(!this.validate()) return;
+							var data = this.get("value");
+							for(var k in data) {
+								// it may be a group
+								// make all booleans explicit
+								if(data[k] instanceof Array && schema.properties[k].type=="boolean") {
+									if(data[k].length===0) {
+										data[k] = false;
+									} else if(data[k].length<2) {
+										data[k] = data[k][0];
 									}
 								}
-								domClass.toggle(this.buttonNode,"dijitHidden",true);
-								this.set("message",formbundle.submitMessage);
-								var d = new Deferred();
-								if(schema.links) {
-									self.getLinkedData(schema.links,true).then(function(localData){
-										data = lang.mixin(data,localData);
-										d.resolve(data);
-									});
-								} else {
-									d.resolve(data);
-								}
-								d.then(lang.hitch(this,function(data){
-									if(item.search) {
-										if(!data.q) {
-											domClass.toggle(this.buttonNode,"dijitHidden",false);
-											this.set("message","Please enter your query");
-											return;
-										}
-										var q = new rqlQuery.Query();
-										array.forEach(item.search.split(","),function(_){
-											var a = _.split(":");
-											if(a.length==1) {
-												q = q.search(_,data.q,data.r);
-											} else if(data[a[0]]){
-												q = q.search(a[1],data.q,data.r);
-											}
-										});
-										if(q.args.length>1) q.name = "or";
-										self.query = q.toString();
-										var oldHash = hash();
-										hash(oldHash+"/?"+self.query);
-										self.set("currentItem",lang.mixin(item,{
-											type:"model",
-											model:item.targetModel
-										}));
-										var _rh = aspect.after(self,"ready",function(){
-											_rh.remove();
-											if(!this.total) {
-												if(this.query) alert("no results");
-												this.query = "";
-												hash(oldHash);
-											}
-										});
-									} else if(item.action) {
-										var action = item.action;
-										if(action.charAt(0)=="#") {
-											hash(action);
-										} else {
-											var method = item.method || "post";
-											request(action,{
-												handleAs:"json",
-												method:method,
-												headers:{
-													"Content-Type":"application/json",
-													"Accept":"application/json"
-												}
-											});
-										}
-									} else {
-										if(!data.locale) data.locale = item.locale;
-										this.store.put(data);
-										listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
-										if(item.preview) {
-											self._removeItemById(0);
-										}
-										listItem.containerNode = listItem.domNode;
-										listItem.data = data;
-										listItem._load().then(function(){
-											var form = {};
-											for(var k in formbundle) {
-												form[k] = formbundle[k];
-											}
-											self.replaceChildTemplate(listItem,"",form);
-											listItem.layout();
-										});
-									}
-								}));
 							}
-						});
-						if(!result.length) {
-							listItem.own(
-								aspect.after(listItem,"onLoad",lang.hitch(listItem,function(){
-									this.set("message",schema.condition.message);
-									domClass.add(this.containerNode,"dijitHidden");
-									domClass.add(this.hintNode,"dijitHidden");
-									domClass.add(this.buttonNode,"dijitHidden");
-								}))
-							);
-						}
-						this.own(aspect.after(listItem,"layout",function(){
-							setTimeout(function(){
-								if(self._beingDestroyed || self.nativeScroll) return;
-								self._dim = self.getDim();
-								self.slideTo({x:0,y:0}, 0.3, "ease-out");
-								if(self.useScrollBar) {
-									self.showScrollBar();
-								}
-							},100);
-						},true));
-						this.itemnodesmap[0] = listItem;
-						this.addChild(listItem);
-						fx.fadeIn({
-							node:listItem.containerNode,
-							onEnd:lang.hitch(this,"ready")
-						}).play();
-						// if there are no results for this query, display a message
-						if(item.preview) {
-							var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
-							var listItem1 = new ScrollablePaneItem({
-								parent:this,
-								itemHeight:"auto",
-								data:data
-							});
-							listItem1.own(
-								aspect.after(listItem1,"onLoad",lang.hitch(this,function(){
-									// as this can take a while, listItem may be destroyed in the meantime
-									if(self._beingDestroyed || listItem1._beingDestroyed) return;
-									// ref item may have been resolved now
-									//var item = this.data;
-									this.template = this.getTemplate(this.templateDir,"preview");
-									this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
-										this.parseTemplate(tpl).then(function(tplo){
-											listItem1.applyTemplate(tplo.tpl,tplo.partials);
-											fx.fadeIn({node:listItem1.containerNode}).play();
-										});
+							domClass.toggle(this.buttonNode,"dijitHidden",true);
+							this.set("message",formbundle.submitMessage);
+							var d = new Deferred();
+							if(schema.links) {
+								self.getLinkedData(schema.links,true).then(function(localData){
+									data = lang.mixin(data,localData);
+									d.resolve(data);
+								});
+							} else {
+								d.resolve(data);
+							}
+							d.then(lang.hitch(this,function(data){
+								if(item.search) {
+									if(!data.q) {
+										domClass.toggle(this.buttonNode,"dijitHidden",false);
+										this.set("message","Please enter your query");
+										return;
+									}
+									var q = new rqlQuery.Query();
+									array.forEach(item.search.split(","),function(_){
+										var a = _.split(":");
+										if(a.length==1) {
+											q = q.search(_,data.q,data.r);
+										} else if(data[a[0]]){
+											q = q.search(a[1],data.q,data.r);
+										}
+									});
+									if(q.args.length>1) q.name = "or";
+									self.query = q.toString();
+									var oldHash = hash();
+									hash(oldHash+"/?"+self.query);
+									self.set("currentItem",lang.mixin(item,{
+										type:"model",
+										model:item.targetModel
 									}));
-								}))
-							);
-							this.addChild(listItem1);
-							this.itemnodesmap[-1] = listItem1;
+									var _rh = aspect.after(self,"ready",function(){
+										_rh.remove();
+										if(!this.total) {
+											if(this.query) alert("no results");
+											this.query = "";
+											hash(oldHash);
+										}
+									});
+								} else if(item.action) {
+									var action = item.action;
+									if(action.charAt(0)=="#") {
+										hash(action);
+									} else {
+										var method = item.method || "post";
+										request(action,{
+											handleAs:"json",
+											method:method,
+											headers:{
+												"Content-Type":"application/json",
+												"Accept":"application/json"
+											}
+										});
+									}
+								} else {
+									if(!data.locale) data.locale = item.locale;
+									this.store.put(data);
+									listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
+									if(item.preview) {
+										self._removeItemById(0);
+									}
+									listItem.containerNode = listItem.domNode;
+									listItem.data = data;
+									listItem._load().then(function(){
+										var form = {};
+										for(var k in formbundle) {
+											form[k] = formbundle[k];
+										}
+										self.replaceChildTemplate(listItem,"",form);
+										listItem.layout();
+									});
+								}
+							}));
 						}
-					}));
+					});
+					if(!result.length) {
+						listItem.own(
+							aspect.after(listItem,"startup",lang.hitch(listItem,function(){
+								this.set("message",schema.condition.message);
+								domClass.add(this.containerNode,"dijitHidden");
+								domClass.add(this.hintNode,"dijitHidden");
+								domClass.add(this.buttonNode,"dijitHidden");
+							}))
+						);
+					}
+					this.own(aspect.after(listItem,"layout",function(){
+						setTimeout(function(){
+							if(self._beingDestroyed || self.nativeScroll) return;
+							self._dim = self.getDim();
+							self.slideTo({x:0,y:0}, 0.3, "ease-out");
+							if(self.useScrollBar) {
+								self.showScrollBar();
+							}
+						},100);
+					},true));
+					this.itemnodesmap[0] = listItem;
+					this.addChild(listItem);
+					fx.fadeIn({
+						node:listItem.containerNode,
+						onEnd:lang.hitch(this,"ready")
+					}).play();
+					// if there are no results for this query, display a message
+					if(item.preview) {
+						var ScrollablePaneItem = declare([ScrollableServicedPaneItem,TemplaMixin]);
+						var listItem1 = new ScrollablePaneItem({
+							parent:this,
+							itemHeight:"auto",
+							data:data
+						});
+						listItem1.own(
+							aspect.after(listItem1,"startup",lang.hitch(this,function(){
+								// as this can take a while, listItem may be destroyed in the meantime
+								if(self._beingDestroyed || listItem1._beingDestroyed) return;
+								// ref item may have been resolved now
+								//var item = this.data;
+								this.template = this.getTemplate(this.templateDir,"preview");
+								this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
+									this.parseTemplate(tpl).then(function(tplo){
+										listItem1.applyTemplate(tplo.tpl,tplo.partials);
+										fx.fadeIn({node:listItem1.containerNode}).play();
+									});
+								}));
+							}))
+						);
+						this.addChild(listItem1);
+						this.itemnodesmap[-1] = listItem1;
+					}
 				}));
 			}));
 		}
 	},
 	getLinkedData:function(links,clear){
-		var data = {};
-		var d = new Deferred();
-		function getData(store,name){
-			var d = new Deferred();
-			var res = store.query();
-			if(clear) {
-				(store.clear && store.clear()) || 
-				(store.engine && store.engine.clear && store.engine.clear());
-			}
-			if(res.then) {
-				res.then(function(res){
-					data[name] = data[name].concat(res);
-					d.resolve();
-				});
-			} else {
-				data[name] = data[name].concat(res);
-				d.resolve();
-			}
-			return d;
-		}
-		if(links) {
+		var dd = new Deferred();
+		links = links || {};
+		// assume all store data should be mixed in
+		var req = this.store.selectedId ? this.store.get(this.store.selectedId) : new Deferred().resolve({});
+		var stores = this.stores;
+		req.then(function(data){
 			all(array.map(links,function(link){
 				var d = new Deferred();
-				if(!data[link.rel]) data[link.rel] = [];
-				var store = this.stores[link.href];
-				if(store) {
-					if(store.open) {
-						return store.open().then(function(){
-							return getData(store,link.rel).promise;
-						});
-					} else {
-						return getData(store,link.rel).promise;
-					}
+				var store = stores[link.href];
+				if(clear && store && store.clear) store.clear();
+				if(store && store.selectedId) {
+					store.get(store.selectedId).then(function(res){
+						console.log(res)
+						d.resolve(lang.mixin(data,res));
+					});
+					if(clear) delete store.selectedId;
 				} else {
-					d.resolve();
-					return d.promise;
+					d.resolve(data);
 				}
-			},this)).then(function(){
-				d.resolve(data);
+				return d;
+			})).then(function(){
+				dd.resolve(data);
 			});
-		} else {
-			d.resolve(data);
-		}
-		return d;
+		});
+		return dd;
 	}
 });
 
