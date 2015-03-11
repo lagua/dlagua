@@ -202,6 +202,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						submit: function(){
 							if(!this.validate()) return;
 							var data = this.get("value");
+							console.warn("forma",data)
 							for(var k in data) {
 								// it may be a group
 								// make all booleans explicit
@@ -257,6 +258,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 										}
 									});
 								} else if(item.action) {
+									if(!data.locale) data.locale = item.locale;
+									this.store.put(data);
 									var action = item.action;
 									if(action.charAt(0)=="#") {
 										hash(action);
@@ -351,7 +354,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	getLinkedData:function(links,clear){
 		var dd = new Deferred();
 		links = links || {};
-		// assume all store data should be mixed in
+		// assume in id has been set on the store by the previous form
+		// we set it there because its the only thing that's persisted
+		// but for persistent data it should even go to a more 'global' scope
 		var req = this.store.selectedId ? this.store.get(this.store.selectedId) : new Deferred().resolve({});
 		var stores = this.stores;
 		req.then(function(data){
@@ -361,8 +366,8 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				if(clear && store && store.clear) store.clear();
 				if(store && store.selectedId) {
 					store.get(store.selectedId).then(function(res){
-						console.log(res)
-						d.resolve(lang.mixin(data,res));
+						data[link.rel] = res[link.rel];
+						d.resolve(data);
 					});
 					if(clear) delete store.selectedId;
 				} else {
