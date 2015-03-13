@@ -20,7 +20,9 @@ define([
 	"dojox/mobile/i18n",
 	"dforma/store/FormData",
 	"dforma/util/model"
-],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,JSON,ScrollableServicedPaneItem,TemplaMixin,Builder,controlmapjson,jsonschema,rqlQuery,jsArray,i18n,FormData,modelUtil) {
+],function(declare,lang,array,fx,request,aspect,hash,Deferred,all,domClass,JSON,
+		ScrollableServicedPaneItem,TemplaMixin,Builder,controlmapjson,
+		jsonschema,rqlQuery,jsArray,i18n,FormData,modelUtil) {
 
 var controlmap = JSON.parse(controlmapjson);
 
