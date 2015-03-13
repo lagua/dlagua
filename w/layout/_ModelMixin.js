@@ -11,7 +11,7 @@ define([
 	"dojo/dom-attr",
 	"dojo/Deferred",
 	"dojo/when",
-	"dforma/store/FormData",
+	"dlagua/c/store/FormData",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
 	"dlagua/c/templa/Mixin",
@@ -47,6 +47,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	_tplCache:{},
 	partials:"",
 	ChildClass:ScrollableServicedPaneItem,
+	Mixin:Mixin,
 	_resolveCache:null,
 	startup:function(){
 		if(this._started) return;
@@ -54,6 +55,22 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		// support templateModule for now
 		if(this.templateModule) this.templatePath = reqr.toUrl(this.templateModule)+"/"+this.templatePath;
 		this.template = this.getTemplate();
+		/*if(this.store) {
+			// FIXME perhaps not needed?
+			var service = this.xuriService ? this.xuriService : this.base+"rest/"+this.locale;
+			var xroot = "../../"+service+"/";
+			var resolveProps = this.resolveProperties;
+			if(typeof resolveProps == "string") {
+				resolveProps = resolveProps ? resolveProps.split(",") : [];
+			}
+			lang.mixin({
+				refProperty:this.refAttribute,
+				mixin:new this.Mixin(),
+				xroot:xroot,
+				resolveProperties:resolveProps,
+				headers:this.headers
+			},this.store);
+		}*/
 		// if persistent
 		if(this.store && this.store.persistent) {
 			this.stores[this.store.storeName] = this.store;
@@ -228,11 +245,19 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.filter = item.filter;
 			if(!this.stores[target]) {
+				var service = this.xuriService ? this.xuriService : this.base+"rest/"+this.locale;
+				var xroot = "../../"+service+"/";
+				var resolveProps = this.resolveProperties;
+				if(typeof resolveProps == "string") {
+					resolveProps = resolveProps ? resolveProps.split(",") : [];
+				}
 				this.store = new FormData({
 					model:model,
 					target:target,
 					refProperty:this.refAttribute,
-					mixin:new Mixin(),
+					mixin:new this.Mixin(),
+					xroot:xroot,
+					resolveProperties:resolveProps,
 					headers:this.headers || {}
 				});
 				this.stores[target] = this.store;// new Cache(this.store, new Memory());
@@ -413,42 +438,22 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		var len = items.length;
 		var id = item[this.idProperty];
 		if(!insertIndex && this.sort) insertIndex = this._findIndex(item);
-		this.store.get(item.id).then(lang.hitch(this,function(resolved){
-			console.warn(item)
-			var listItem;
-			listItem = new this.ChildClass({
-				parent:this,
-				data:item,
-				mixeddata:lang.mixin(resolved,{
-					node:listItem,
-					ref:this
-				}),
-				itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
+		var listItem = new this.ChildClass({
+			parent:this,
+			data:item,
+			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
+		});
+		var skipX = this.currentItem.noHtmlPreview || this.skipXuriResolving;
+		this.store.get(item.id,{skipX:skipX}).then(lang.hitch(this,function(resolved){
+			if(this._beingDestroyed || listItem._beingDestroyed) return;
+			listItem.mixeddata = lang.mixin(resolved,{
+				node:listItem,
+				ref:this
 			});
-			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			// ref item may have been resolved now
 			if(item.name) listItem.set("id","dlaguaSSPItem_"+item.name.replace(/\s/g,"_"));
 			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
-			fx.fadeIn({node:listItem.containerNode}).play();
-			this.childrenReady++;
-			if(this.childrenReady == len) {
-				// wait for the margin boxes to be set
-				setTimeout(lang.hitch(this,function(){
-					this.ready();
-				}),10);
-			}
-			this.itemnodesmap[id] = listItem;
-			this.addChild(listItem,insertIndex);
-		}));
-		/*aspect.after(listItem,"onLoad",lang.hitch(this,function(){
-			// as this can take a while, listItem may be destroyed in the meantime
-			if(this._beingDestroyed || listItem._beingDestroyed) return;
-			// ref item may have been resolved now
-			var item = listItem.data;
-			if(item.name) listItem.set("id","dlaguaSSPItem_"+item.name.replace(/\s/g,"_"));
-			var id = item[this.idProperty];
-			listItem.applyTemplate(this._tplo.tpl,this._tplo.partials);
-			fx.fadeIn({node:listItem.containerNode}).play();
+			fx.fadeIn({duration:100,node:listItem.containerNode}).play();
 			this.childrenReady++;
 			if(this.childrenReady == len) {
 				// wait for the margin boxes to be set
@@ -458,7 +463,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			}
 			this.itemnodesmap[id] = listItem;
 		}));
-		this.addChild(listItem,insertIndex);*/
+		this.addChild(listItem,insertIndex);
 	},
 	_removeItemById:function(id) {
 		var i=0;
