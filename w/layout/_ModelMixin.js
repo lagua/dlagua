@@ -46,7 +46,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	_tplo:null,
 	_tplCache:{},
 	partials:"",
-	ChildClass:ScrollableServicedPaneItem,
+	ChildClass:ScrollableTemplatedPaneItem,
 	Mixin:Mixin,
 	_resolveCache:null,
 	startup:function(){
