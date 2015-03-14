@@ -38,13 +38,6 @@ define([
 			this.render();
 		},
 		_setValueAttr:function(value){
-			console.warn(value)
-			/*if(typeof prop=="string"){
-				// update individual property
-				if(this.context) delete this.context.cache[prop];
-				this.value[prop] = value;
-				this.render();
-			} else {*/
 			this.value = value;
 			this._createContext();
 			this.render();
@@ -102,12 +95,14 @@ define([
 	 	_getValueAttr:function(){
 	 		return this.store.fetchSync();
 	 	},
-	 	_setValueAttr:function(data){
-	 		if(!this._started) return;
+	 	_handleOnChange:function(data){
+	 		this.inherited(arguments);
 	 		data = data || [];
 	 		// TODO means we have a Memory type store?
-	 		this.store.setData(data);
-	 		this.refresh();
+	 		data.forEach(function(obj){
+	 			this.store.putSync(obj);
+	 		},this);
+	 		if(this._started) this.refresh();
 	 	},
 	 	destroyRecursive:function(){
 	 		this.inherited(arguments);
@@ -187,13 +182,9 @@ define([
 	 				delete this._itemMap[id];
 	 			}
 	 		}
-	 		console.log(this.store.data)
-	 		this.store.fetch().then(lang.hitch(this,function(items){
-	 			items.forEach(function(item){
-		 			console.log(item)
-		 			if(!(item.id in this._itemMap)) this._addChild(item);
-		 		},this);
-	 		}))
+	 		this.store.fetchSync().forEach(function(item){
+	 			if(!(item.id in this._itemMap)) this._addChild(item);
+		 	},this);
 	 	},
 	 	_addChild:function(item){
 	 		var schema = this.schema.items ? this.schema.items[0] : this.schema;
