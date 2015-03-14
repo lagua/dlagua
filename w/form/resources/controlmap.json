@@ -1,0 +1,37 @@
+{
+	"boolean":{
+		"*":"checkbox"
+	},
+	"integer":{
+		"*":"spinner"
+	},
+	"number":{
+		"*":"number",
+		"integer":"spinner",
+		"currency":"currency"
+	},
+	"date":{
+		"*":"date"
+	},
+	"string":{
+		"*":"input",
+		"date":"date",
+		"time":"time",
+		"email":"email",
+		"phone":"phone",
+		"radiogroup":"radiogroup",
+		"text":"textarea",
+		"carousel":"carousel",
+		"lookup":"lookup",
+		"select":"select",
+		"combo":"combo"
+	},
+	"array":{
+		"*":"repeat",
+		"grid":"grid",
+		"list":"list"
+	},
+	"object":{
+		"*":"group"
+	}
+}

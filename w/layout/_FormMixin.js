@@ -13,7 +13,7 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
 	"dlagua/w/form/Builder",
-	"dojo/text!./resources/controlmap.json",
+	"dojo/text!dlagua/w/form/resources/controlmap.json",
 	"dforma/jsonschema",
 	"rql/query",
 	"rql/js-array",
