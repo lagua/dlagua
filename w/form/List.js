@@ -16,7 +16,7 @@ define([
 			request("/rest/resources/shirt.svg").then(lang.hitch(this,function(res){
 				domConstruct.create("span",{
 					innerHTML:res,
-					style:"height:240px;margin-left:-28px;"
+					style:"height:240px;margin-left:-130px;"
 				},this.addButton.containerNode,"before");
 			}));
 			this.inherited(arguments);
