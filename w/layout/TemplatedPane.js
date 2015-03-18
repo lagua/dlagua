@@ -1,17 +1,20 @@
 define([
 	"dojo/_base/declare",
 	"dijit/layout/ContentPane",
-	"mustache/mustache",
+	"dforma/_TemplatedMixin",
 	"dlagua/w/Subscribable"
-],function(declare,ContentPane,mustache,Subscribable) {
-	return declare("dlagua.w.layout.TemplatedPane",[ContentPane,Subscribable],{
-		template:"",
+],function(declare,ContentPane,_TemplatedMixin,Subscribable) {
+	return declare("dlagua.w.layout.TemplatedPane",[ContentPane,_TemplatedMixin,Subscribable],{
+		templatePath:"",
 		data:null,
-		_setTemplateAttr:function(template){
-			this.set("content",mustache.to_html(template,this.data,this.partials));
+		_setTemplatePathAttr:function(tpl){
+			this.fetchTemplate(tpl);
 		},
 		_setDataAttr:function(data){
-			this.set("content",mustache.to_html(this.template,data,this.partials));			
+			this.renderTemplate(data);
+		},
+		onTemplate:function(){
+			this.renderTemplate(this.data);
 		}
 	});
 });
