@@ -6,15 +6,20 @@ define([
 ],function(declare,ContentPane,_TemplatedMixin,Subscribable) {
 	return declare("dlagua.w.layout.TemplatedPane",[ContentPane,_TemplatedMixin,Subscribable],{
 		templatePath:"",
+		template:"",
 		data:null,
-		_setTemplatePathAttr:function(tpl){
-			this.fetchTemplate(tpl);
+		_setTemplateAttr:function(tpl){
+			this.parseTemplate(tpl);
+		},
+		_setTemplatePathAttr:function(tplp){
+			this.fetchTemplate(tplp);
 		},
 		_setDataAttr:function(data){
-			this.renderTemplate(data);
+			this.data = data;
+			this.onTemplate();
 		},
 		onTemplate:function(){
-			this.renderTemplate(this.data);
+			this.set("content",this.renderTemplate(this.data || {}));
 		}
 	});
 });
