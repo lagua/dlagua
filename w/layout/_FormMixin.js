@@ -278,21 +278,19 @@ return declare("dlagua.w.layout._FormMixin", [], {
 									}
 								} else {
 									if(!data.locale) data.locale = item.locale;
-									this.store.put(data);
-									listItem = item.preview ? self.itemnodesmap[-1] : self.itemnodesmap[0];
-									if(item.preview) {
-										self._removeItemById(0);
-									}
-									listItem.containerNode = listItem.domNode;
-									listItem.data = data;
-									listItem._load().then(function(){
+									this.store.put(data,{noop:true}).then(lang.hitch(this,function(data){
+										var listItem = item.preview ? this.itemnodesmap[-1] : this.itemnodesmap[0];
+										if(item.preview) {
+											this._removeItemById(0);
+										}
+										listItem.containerNode = listItem.domNode;
 										var form = {};
 										for(var k in formbundle) {
 											form[k] = formbundle[k];
 										}
-										self.replaceChildTemplate(listItem,"",form);
+										this.replaceChildTemplate(listItem,"",form);
 										listItem.layout();
-									});
+									}));
 								}
 							}));
 						}
