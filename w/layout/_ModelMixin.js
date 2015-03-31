@@ -74,7 +74,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		// if persistent
 		if(this.store && this.store.persistent) {
 			this.stores[this.store.storeName] = this.store;
-			var results = this.store.query();
+			var results = this.store.fetch();
 			if(this.template) {
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
@@ -84,13 +84,12 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				}));
 			}
 			this.own(
-				results.observe(lang.hitch(this,function(item, removed, inserted){
-					if(removed > -1){ // existing object removed
-						this._removeItemById(item[this.idProperty]);
-					}
-					if(inserted > -1){ // new or updated object inserted
-						this.addItem(item);
-						this.currentId = item[this.idProperty];
+				this.store.track("add, update, delete",lang.hitch(this,function(evt){
+					if(evt.type == "delete"){
+						this._removeItemById(evt.target[this.idProperty]);
+					} else {
+						this.addItem(evt.target);
+						this.currentId = evt.target[this.idProperty];
 					}
 				})),
 				this.watch("newItem",function(name,oldItem,item){
@@ -131,12 +130,12 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 					this.currentId = item[this.idProperty];
 				}));
 			}),
-			this.watch("filters",this.onFilters)/*,
+			this.watch("filters",this.onFilters),
 			this.watch("sort",function(){
 				this.newsort = true;
 				this.forcedLoad();
 				this.newsort = false;
-			}),
+			})/*,
 			this.watch("childTemplate",function(){
 				this.replaceChildTemplate();
 			})*/
@@ -311,7 +310,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 										});
 									}
 								});*/
-								
+
 								item.children.forEach(this.addItem,this);
 							}));
 						}
@@ -379,7 +378,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				term.attribute = ta.join(":");
 			}
 			// if one of items doesn't have attr we cannot compare?
-			// if(a.hasOwnProperty(term.attribute) && b.hasOwnProperty(term.attribute)) 
+			// if(a.hasOwnProperty(term.attribute) && b.hasOwnProperty(term.attribute))
 			terms.push(term);
 		}
 		for (var term, i = 0; term = terms[i]; i++) {
@@ -433,7 +432,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 	addItem:function(item,index,items,insertIndex) {
 		if(this._beingDestroyed) return;
 		var content = "";
-		
+
 		items = items || this.getChildren();
 		var len = items.length;
 		var id = item[this.idProperty];
