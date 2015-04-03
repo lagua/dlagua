@@ -119,7 +119,6 @@ define([
 			if(cnt>-1) this.scrollToItem(this.selectedIndex-1,cnt);
 		},
 		skipNext:function(cnt) {
-			console.log(arguments)
 			if(cnt>-1) this.scrollToItem(this.selectedIndex+1,cnt);
 		},
 		scrollToItem: function(n,cnt) {
