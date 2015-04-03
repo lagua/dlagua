@@ -134,7 +134,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 				model:this.model
 			};
 		}
-		this.loadFromItem();
+		debounce(lang.hitch(this,"loadFromItem",10));
 	},
 	cancel:function(){
 		var o = this.oldItem;
