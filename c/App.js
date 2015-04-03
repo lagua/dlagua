@@ -3,17 +3,16 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/array",
 	"dojo/Deferred",
-	"dojo/Stateful",
 	"dojo/topic",
 	"dojo/on",
 	"dojo/when",
 	"dojo/hash",
-	"dijit/registry"
-],function(declare,lang,array,Deferred,Stateful,topic,on,when,dhash,registry){
+	"./_MetaMixin",
+],function(declare,lang,array,Deferred,topic,on,when,dhash,_MetaMixin){
 
 	window.onbeforeappunload = function() {};
 	
-return declare("dlagua.c.App", [Stateful], {
+return declare("dlagua.c.App", [_MetaMixin], {
 	currentItem:null,
 	path:"",
 	defaultHash:"",
@@ -67,101 +66,6 @@ return declare("dlagua.c.App", [Stateful], {
 			__fromHash:true
 		};
 		return item;
-	},
-	getMeta:function(node){
-		var i18n = {};
-		if(this.i18n) {
-			for(var i=0;i<this.i18n.length;i++) {
-				i18n.locale = this.i18n[i].locale;
-				if(this.i18n[i].component==node.data.id) {
-					if(this.i18n[i].properties) i18n = lang.mixin(i18n,this.i18n[i].properties);
-					break;
-				}
-			}
-		}
-		return lang.mixin(this.meta,{i18n:i18n});
-	},
-	replaceMeta:function(node,type) {
-		if(!type) type="";
-		// replace variables in properties:
-		var v, newv;
-		var meta = this.getMeta(node);
-		for(var i in node.data) {
-			if(i=="id" || i=="type") continue;
-			v = node.data[i];
-			if(typeof v == "string" && v.indexOf("{"+type)>-1) {
-				newv = lang.replace(v,meta).replace(/undefined|null/,"");
-				if(v!=newv) {
-					if(v.indexOf("{i18n.")>-1) {
-						// keep track of what is replaced
-						if(!this.replaced["i18n"]) this.replaced["i18n"] = {};
-						if(!this.replaced["i18n"][node.id]) this.replaced["i18n"][node.id] = {};
-						this.replaced["i18n"][node.id][i] = v;
-					}
-					if(v.indexOf("{inferred.")>-1) {
-						// keep track of what is replaced
-						if(!this.replaced["inferred"]) this.replaced["inferred"] = {};
-						if(!this.replaced["inferred"][node.id]) this.replaced["inferred"][node.id] = {};
-						this.replaced["inferred"][node.id][i] = v;
-					}
-					node.data[i] = inferType(newv);
-				}
-			}
-		}
-		return node;
-	},
-	replaceInferred:function(){
-		var k,v;
-		var reset = [];
-		for(var id in this.replaced["inferred"]) {
-			var node = this.nodes ? this.nodes[id] : this.nodeStore.get(id);
-			var meta = this.getMeta(node);
-			if(node.created) {
-				// get rendered object from page
-				var dojoo = node.dojoo ? registry.byId(node.data.id) : null;
-				if(dojoo) {
-					for(k in this.replaced["inferred"][id]) {
-						v = this.replaced["inferred"][id][k];
-						if(typeof v == "string") {
-							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							reset.push({dojoo:dojoo,key:k,value:newv});
-						}
-					}
-				}
-			} else {
-				for(k in this.replaced["inferred"][id]) {
-					v = this.replaced["inferred"][id][k];
-					if(typeof v == "string") node.data[k] = v;
-				}
-			}
-		}
-		return reset;
-	},
-	replaceI18n:function(){
-		var k,v;
-		var reset = [];
-		for(var id in this.replaced["i18n"]) {
-			var node = dijit.registry.byId(id);
-			var meta = this.getMeta(node);
-			if(!node._beingDestroyed) {
-				for(k in this.replaced["i18n"][id]) {
-					v = this.replaced["i18n"][id][k];
-					if(typeof v == "string") {
-						var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-						//console.log("reset",k,v,newv)
-						reset.push({dojoo:node,key:k,value:newv});
-					}
-				}
-			} else {
-				//console.log("reset i18n: ",id,k,v);
-				for(k in this.replaced["i18n"][id]) {
-					v = this.replaced["i18n"][id][k];
-					if(typeof v == "string") node[k] = v;
-				}
-				//delete this.replaced["i18n"][id];
-			}
-		}
-		return reset;
 	},
 	onItem: function(oldValue,newValue){
 		// first check to see if we should navigate away...

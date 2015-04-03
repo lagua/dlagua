@@ -16,9 +16,10 @@ define([
 	"dojo/store/Memory",
 	"dojo/store/Cache",
 	"dlagua/c/store/JsonRest",
+	"./_MetaMixin",
 	"rql/js-array",
 	"dijit/registry"
-],function(require,declare,lang,array,fx,request,Deferred,when,all,aspect,dhash,dom,domStyle,domConstruct,Memory,Cache,JsonRest,rqlArray,registry){
+],function(require,declare,lang,array,fx,request,Deferred,when,all,aspect,dhash,dom,domStyle,domConstruct,Memory,Cache,JsonRest,_MetaMixin,rqlArray,registry){
 	
 	function sortRels(rels) {
 		var tmp = rels.slice(0);
@@ -62,17 +63,10 @@ define([
 		return d;
 	};
 	
-	var inferType = function(val){
-		var nint = parseInt(val,10);
-		if(nint == val) return nint;
-		if(val == "true" || val == "false") return val==="true";
-		return val;
-	};
-	
 	// set private app node and views
 	var domainNode,appNode,views,view,curPath;
 	
-return declare("dlagua.c.Renderer",null,{
+return declare("dlagua.c.Renderer",[_MetaMixin],{
 	_started:true, // escape initial startup
 	url:null,
 	nodes: {},
@@ -89,104 +83,7 @@ return declare("dlagua.c.Renderer",null,{
 	refProperty:"$ref",
 	targetNode:"",
 	domain:"",
-	getMeta:function(node){
-		var i18n = {};
-		if(this.i18n) {
-			for(var i=0;i<this.i18n.length;i++) {
-				i18n.locale = this.i18n[i].locale;
-				if(this.i18n[i].component==node.data.id) {
-					if(this.i18n[i].properties) i18n = lang.mixin(i18n,this.i18n[i].properties);
-					break;
-				}
-			}
-		}
-		return lang.mixin(this.meta,{i18n:i18n});
-	},
-	replaceMeta:function(node,type) {
-		if(!type) type="";
-		// replace variables in properties:
-		var v, newv;
-		var meta = this.getMeta(node);
-		for(var i in node.data) {
-			if(i=="id" || i=="type") continue;
-			v = node.data[i];
-			if(typeof v == "string" && v.indexOf("{"+type)>-1) {
-				newv = lang.replace(v,meta).replace(/undefined|null/,"");
-				if(v!=newv) {
-					if(v.indexOf("{i18n.")>-1) {
-						// keep track of what is replaced
-						if(!this.replaced["i18n"]) this.replaced["i18n"] = {};
-						if(!this.replaced["i18n"][node.id]) this.replaced["i18n"][node.id] = {};
-						this.replaced["i18n"][node.id][i] = v;
-					}
-					if(v.indexOf("{inferred.")>-1) {
-						// keep track of what is replaced
-						if(!this.replaced["inferred"]) this.replaced["inferred"] = {};
-						if(!this.replaced["inferred"][node.id]) this.replaced["inferred"][node.id] = {};
-						this.replaced["inferred"][node.id][i] = v;
-					}
-					node.data[i] = inferType(newv);
-				}
-			}
-		}
-		return node;
-	},
-	replaceInferred:function(){
-		var k,v;
-		var reset = [];
-		for(var id in this.replaced["inferred"]) {
-			var node = this.nodeStore.get(id);
-			var meta = this.getMeta(node);
-			if(node.created) {
-				// get rendered object from page
-				var dojoo = node.dojoo ? registry.byId(node.data.id) : null;
-				if(dojoo) {
-					for(k in this.replaced["inferred"][id]) {
-						v = this.replaced["inferred"][id][k];
-						if(typeof v == "string") {
-							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							reset.push({dojoo:dojoo,key:k,value:newv});
-						}
-					}
-				}
-			} else {
-				for(k in this.replaced["inferred"][id]) {
-					v = this.replaced["inferred"][id][k];
-					if(typeof v == "string") node.data[k] = v;
-				}
-			}
-		}
-		return reset;
-	},
-	replaceI18n:function(){
-		var k,v;
-		var reset = [];
-		for(var id in this.replaced["i18n"]) {
-			var node = this.nodeStore.get(id);
-			var meta = this.getMeta(node);
-			if(node.created) {
-				// get rendered object from page
-				var dojoo = node.dojoo ? registry.byId(node.data.id) : null;
-				if(dojoo) {
-					for(k in this.replaced["i18n"][id]) {
-						v = this.replaced["i18n"][id][k];
-						if(typeof v == "string") {
-							var newv = lang.replace(v,meta).replace(/undefined|false|null/,"");
-							reset.push({dojoo:dojoo,key:k,value:newv});
-							//node.dojoo.set(k,newv);
-						}
-					}
-				}
-			} else {
-				for(k in this.replaced["i18n"][id]) {
-					v = this.replaced["i18n"][id][k];
-					if(typeof v == "string") node.data[k] = v;
-				}
-				//delete this.replaced["i18n"][id];
-			}
-		}
-		return reset;
-	},
+	
 	getIncomingNodes:function(node,type) {
 		var incoming = node.incoming_relationships;
 		var innodes = [];
