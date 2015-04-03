@@ -79,7 +79,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
 						this._tplo = tplo;
-						results.forEach(lang.hitch(this,this.addItem));
+						results.forEach(this.addItem,this);
 					}));
 				}));
 			}
@@ -442,7 +442,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			data:item,
 			itemHeight:(this.itemHeight?this.itemHeight+"px":"auto")
 		});
-		var skipX = this.currentItem.noHtmlPreview || this.skipXuriResolving;
+		var skipX = this.currentItem && this.currentItem.noHtmlPreview || this.skipXuriResolving;
 		this.store.get(item.id,{skipX:skipX}).then(lang.hitch(this,function(resolved){
 			if(this._beingDestroyed || listItem._beingDestroyed) return;
 			listItem.mixeddata = lang.mixin(resolved,{
