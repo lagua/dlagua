@@ -62,7 +62,6 @@ define([
 			this.getRoot().then(lang.hitch(this,function(res){
 				var root = this.root = res[0];
 				var children = [];
-				var loadRoot = false;
 				if(root[this.childrenAttr]) {
 					this.store.getChildren(root).then(lang.hitch(this,function(children){
 						if(forceView) {
@@ -72,16 +71,9 @@ define([
 						this.ready();
 					}));
 				} else {
-					loadRoot = true;
 					array.forEach([root],this._addItem,this);
-				}
-				if(loadRoot) {
 					if(forceView) {
-						if(loadRoot) {
-							this.currentId = root.path;
-						} else {
-							setCurrentId(root);
-						}
+						this.currentId = root.path;
 					}
 					this.ready();
 				}
@@ -161,6 +153,7 @@ define([
 				this.ready();
 				return;
 			}
+			
 			// preserve original currentId for reload top level on history.back
 			// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
 			// don't republish when truncated again
@@ -170,6 +163,7 @@ define([
 			var currentId = check.currentId;
 			var truncated = check.truncated;
 			var node = this._itemNodesMap[currentId];
+			/*
 			var child;
 			if(node && truncated && this.depth<this.maxDepth) {
 				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
@@ -184,7 +178,7 @@ define([
 			var force = (checkOld.truncated && truncated && this._compareTruncated(checkOld.truncated,truncated));
 			if(!force && this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) {
 				return;
-			}
+			}*/
 			console.log(this.id,"loading currentID ",currentId, truncated);
 			this.selectNode(node,truncated,this.depth);
 			return node;
