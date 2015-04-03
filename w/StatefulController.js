@@ -22,7 +22,7 @@ define([
 		_loading:false,
 		_itemNodesMap:null,
 		labelAttr:"title",
-		localeChanged:false,// this should work with false if path is published after this widget is started 
+		localeChanged:false,// this should work with false if path is published after this widget is started
 		_lh:null,
 		_bh:null,
 		idProperty:"path",
@@ -153,7 +153,7 @@ define([
 				this.ready();
 				return;
 			}
-			
+
 			// preserve original currentId for reload top level on history.back
 			// skip reload if selectedItem.id==currentId AND previous not truncated OR current truncated:
 			// don't republish when truncated again
@@ -163,7 +163,7 @@ define([
 			var currentId = check.currentId;
 			var truncated = check.truncated;
 			var node = this._itemNodesMap[currentId];
-			/*
+
 			var child;
 			if(node && truncated && this.depth<this.maxDepth) {
 				if(node.popup && node.popup._loadFromId && node.popup.depth<=this.maxDepth) {
@@ -178,7 +178,7 @@ define([
 			var force = (checkOld.truncated && truncated && this._compareTruncated(checkOld.truncated,truncated));
 			if(!force && this._selectedNode && this._selectedNode.item[this.idProperty]==currentId && (!checkOld.truncated || truncated)) {
 				return;
-			}*/
+			}
 			console.log(this.id,"loading currentID ",currentId, truncated);
 			this.selectNode(node,truncated,this.depth);
 			return node;
