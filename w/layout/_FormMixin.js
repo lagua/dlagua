@@ -186,6 +186,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 					var listItem = new ScrollableFormPaneItem({
 						itemHeight:"auto",
 						store:this.store,
+						autoSave:item.autoSave,
 						value:data,
 						label:schema.title,
 						hint:schema.description,
