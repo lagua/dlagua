@@ -1,6 +1,20 @@
 {
-    "name": "dlagua",
-    "description": "dlagua",
-    "version": 1.0,
-    "dojoBuild": "dlagua.profile.js"
+	"name": "dlagua",
+	"description": "dlagua",
+	"version": "1.0.0",
+	"repository": {
+		"type": "git",
+		"url": "http://github.com/lagua/dlagua"
+	},
+	"dependencies": {
+		"dojo": "^1.9.0"
+	},
+	"devDependencies": {
+		"intern-geezer": "^2",
+		"rql": "~0.3.3"
+	},
+	"directories": {
+	"lib": "."
+	},
+	"dojoBuild": "dlagua.profile.js"
 }
