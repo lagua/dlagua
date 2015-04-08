@@ -11,13 +11,12 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/parser",
-	"dojo/debounce",
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
 	"dojo/text!./templates/ScrollableServicedPane.html",
 	"dlagua/c/string/toProperCase"
-],function(declare,lang,fx,dfx,easing,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,debounce,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
+],function(declare,lang,fx,dfx,easing,request,dom,domConstruct,domGeometry,domClass,domStyle,parser,ScrollableServicedPaneItem,_LayoutWidget,_TemplatedMixin,templateString){
 	
 return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _TemplatedMixin],{
 	itemnodesmap:null,
@@ -134,7 +133,13 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 				model:this.model
 			};
 		}
-		debounce(lang.hitch(this,"loadFromItem",10))();
+		if(this._onChangeDelayTimer){
+			this._onChangeDelayTimer.remove();
+		}
+		this._onChangeDelayTimer = this.defer(function(){
+			delete this._onChangeDelayTimer;
+			this.loadFromItem();
+		},20);
 	},
 	cancel:function(){
 		var o = this.oldItem;
