@@ -7,7 +7,7 @@ define([
 	"dojo/on",
 	"dojo/when",
 	"dojo/hash",
-	"./_MetaMixin",
+	"./_MetaMixin"
 ],function(declare,lang,array,Deferred,topic,on,when,dhash,_MetaMixin){
 
 	window.onbeforeappunload = function() {};
