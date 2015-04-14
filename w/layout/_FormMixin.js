@@ -116,23 +116,16 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				this.store = this.stores[target];
 			}
 			if(item.autoSelect && !this.store.query().length) {
-				if(typeof this.store.on == "function") {
-					// on update requery links
-					this.own(
-						this.store.on("add,update,delete",lang.hitch(this,function(event){
-							console.warn(event)
-						}))
-					);
-				}
 				//var obj = this.store[this.store.putSync ? "putSync" : "put"]({});
-				this.store.add({}).then(lang.hitch(this,function(obj){
+				/*this.store.add({}).then(lang.hitch(this,function(obj){
 					// set the new id on the store so
 					// it can be retrieved as linked
 					this.store.selectedId = obj.id;
 					this.rebuild(item);
-				}));
+				}));*/
 				//this.store.selectedId = lang.isObject(obj) ? obj.id : obj;
 				//this.store.newdata = true;
+				this.rebuild(item);
 			} else {
 				this.rebuild(item);
 			}
@@ -141,8 +134,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 	rebuild:function(item){
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
+			// reset schema
+			delete this.store.schema;
 			this.store.getSchema().then(lang.hitch(this,function(schema){
-				this.schema = schema;
 				var self = this;
 				var common = i18n.load("dforma","common");
 				// TODO:
@@ -183,19 +177,31 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(lang.hitch(this,function(data){
 					console.warn(data,schema.condition ? schema.condition.query : null)
 					var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
+					var controls = jsonschema.schemaToControls(schema,data,{
+						controlmap:controlmap,
+						uri:this.store.target
+					});
+					if(item.bindStore){
+						this.store.bound = true;
+						var p = schema.properties[item.bindStore];
+						if(p && p.items) {
+							this.store.schema = p.items;
+						}
+						controls.forEach(function(control){
+							if(control.name==item.bindStore){
+								control.store = this.store;
+								control.autoSave = item.autoSave;
+							}
+						},this);
+					}
 					var listItem = new ScrollableFormPaneItem({
 						itemHeight:"auto",
-						store:this.store,
-						autoSave:item.autoSave,
 						value:data,
 						label:schema.title,
 						hint:schema.description,
 						configProperty:"config",
 						config:{
-							controls:jsonschema.schemaToControls(schema,data,{
-								controlmap:controlmap,
-								uri:this.store.target
-							}),
+							controls:controls,
 							submit:submit ? {label: submit} : {}
 						},
 						schema:schema,
@@ -205,7 +211,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						submit: function(){
 							if(!this.validate()) return;
 							var data = this.get("value");
-							console.warn("forma",data)
+							console.warn("forma",data);
 							for(var k in data) {
 								// it may be a group
 								// make all booleans explicit
@@ -262,7 +268,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 									});
 								} else if(item.action) {
 									if(!data.locale) data.locale = item.locale;
-									this.store.put(data);
+									if(!item.bindStore && !item.autoSave) self.store.put(data,{noop:true});
 									var action = item.action;
 									if(action.charAt(0)=="#") {
 										hash(action);
@@ -279,7 +285,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 									}
 								} else {
 									if(!data.locale) data.locale = item.locale;
-									this.store.put(data,{noop:true}).then(lang.hitch(this,function(data){
+									self.store.put(data,{noop:true}).then(lang.hitch(this,function(data){
 										var listItem = item.preview ? this.itemnodesmap[-1] : this.itemnodesmap[0];
 										if(item.preview) {
 											this._removeItemById(0);
@@ -306,16 +312,23 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							}))
 						);
 					}
-					this.own(aspect.after(listItem,"layout",function(){
-						setTimeout(function(){
-							if(self._beingDestroyed || self.nativeScroll) return;
-							self._dim = self.getDim();
-							self.slideTo({x:0,y:0}, 0.3, "ease-out");
-							if(self.useScrollBar) {
-								self.showScrollBar();
-							}
-						},100);
-					},true));
+					if(!self.nativeScroll){
+						this.own(aspect.after(listItem,"layout",function(){
+							setTimeout(function(){
+								if(self._beingDestroyed || self.nativeScroll) return;
+								self._dim = self.getDim();
+								self.slideTo({x:0,y:0}, 0.3, "ease-out");
+								if(self.useScrollBar) {
+									self.showScrollBar();
+								}
+							},100);
+						},true));
+					}
+					listItem.own(
+						aspect.after(listItem,"rebuild",lang.hitch(listItem,function(d){
+							console.warn("listItem rebuild",d)
+						}),true)
+					);
 					this.itemnodesmap[0] = listItem;
 					this.addChild(listItem);
 					fx.fadeIn({
@@ -358,6 +371,10 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		// assume in id has been set on the store by the previous form
 		// we set it there because its the only thing that's persisted
 		// but for persistent data it should even go to a more 'global' scope
+		// UPDATE:
+		// selectedId deprecated because of bindStore: 
+		// any autoSelect property will be passed to a controlling array widget
+		// TODO: if there's no bindStore, autoSelect may still set selectedId
 		var req = this.store.selectedId ? this.store.get(this.store.selectedId) : new Deferred().resolve({});
 		var stores = this.stores;
 		req.then(function(data){
@@ -371,6 +388,12 @@ return declare("dlagua.w.layout._FormMixin", [], {
 						d.resolve(data);
 					});
 					if(clear) delete store.selectedId;
+				} else if(store && store.bound) {
+					store.fetch().then(function(res){
+						data[link.rel] = res;
+						d.resolve(data);
+					});
+					if(clear) store.setData([]);
 				} else {
 					d.resolve(data);
 				}
