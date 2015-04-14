@@ -243,26 +243,31 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
 			if(item.filter) this.filter = item.filter;
+			var service = this.xuriService ? this.xuriService : this.base+"rest/"+this.locale;
+			var xroot = "../../"+service+"/";
+			var resolveProps = this.resolveProperties;
+			if(typeof resolveProps == "string") {
+				resolveProps = resolveProps ? resolveProps.split(",") : [];
+			}
 			if(!this.stores[target]) {
-				var service = this.xuriService ? this.xuriService : this.base+"rest/"+this.locale;
-				var xroot = "../../"+service+"/";
-				var resolveProps = this.resolveProperties;
-				if(typeof resolveProps == "string") {
-					resolveProps = resolveProps ? resolveProps.split(",") : [];
-				}
 				this.store = new FormData({
 					model:model,
-					target:target,
-					refProperty:this.refAttribute,
-					mixin:new this.Mixin(),
-					xroot:xroot,
-					resolveProperties:resolveProps,
-					headers:this.headers || {}
+					target:target
 				});
 				this.stores[target] = this.store;// new Cache(this.store, new Memory());
 			} else {
 				this.store = this.stores[target];
 			}
+			// do update all properties, since meta may change them 
+			lang.mixin(this.store,{
+				model:model,
+				target:target,
+				refProperty:this.refAttribute,
+				mixin:new this.Mixin(),
+				xroot:xroot,
+				resolveProperties:resolveProps,
+				headers:this.headers || {}
+			});
 			this.rebuild(item);
 		}
 	},
@@ -381,12 +386,12 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			// if(a.hasOwnProperty(term.attribute) && b.hasOwnProperty(term.attribute))
 			terms.push(term);
 		}
+		var iso = /^([0-9]{4})(-([0-9]{2})(-([0-9]{2})([T ]([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?(Z|(([-+])([0-9]{2})((:?)([0-9]{2}))?))?)?)?)?$/;
 		for (var term, i = 0; term = terms[i]; i++) {
 			var aa = a[term.attribute];
 			var ab = b[term.attribute];
 			aa = aa instanceof Date ? aa.getTime() : aa;
 			ab = ab instanceof Date ? ab.getTime() : ab;
-			var iso = /^([0-9]{4})(-([0-9]{2})(-([0-9]{2})([T ]([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?(Z|(([-+])([0-9]{2})((:?)([0-9]{2}))?))?)?)?)?$/;
 			aa = typeof aa==="string" && aa.match(iso) ? (new Date(aa)).getTime() : aa;
 			ab = typeof ab==="string" && ab.match(iso) ? (new Date(ab)).getTime() : ab;
 			switch(term.type) {
