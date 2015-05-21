@@ -173,6 +173,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 		return req;
 	},
 	onFilters:function(){
+		console.warn(this.filters)
 		if(!this.orifilters) {
 			this.orifilters = this.filters;
 		} else {
@@ -231,6 +232,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			if(arguments.length>0) {
 				this.sort = "";
 				this.filter = "";
+				if(item.filter) this.orifilter = this.filter = item.filter;
 				if(this.orifilters) this.filters = this.orifilters;
 				this.orifilters = null;
 			}
@@ -242,7 +244,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				this.count = this._oricount;
 			}
 			if(!this.newsort && item.sort) this.sort = item.sort;
-			if(item.filter) this.filter = item.filter;
 			var service = this.xuriService ? this.xuriService : this.base+"rest/"+this.locale;
 			var xroot = "../../"+service+"/";
 			var resolveProps = this.resolveProperties;
