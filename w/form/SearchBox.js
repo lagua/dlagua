@@ -8,6 +8,7 @@ return declare("dlagua.w.form.SearchBox",[TextBox],{
 	buttonLabel:"",
 	filterProperty:"",
 	filterName:"",
+	publishOnCreation:false,
 	intermediateChanges:true,
 	wildcard:true,
 	button:null,
@@ -18,7 +19,7 @@ return declare("dlagua.w.form.SearchBox",[TextBox],{
 	},
 	postCreate: function(){
 		var self = this;
-		self.publishFilters();
+		if(this.publishOnCreation) self.publishFilters();
 		this.button = new Button({
 			label:this.buttonLabel,
 			onClick:function(){
