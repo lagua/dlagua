@@ -74,7 +74,16 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this.watch("locale",this.forcedLoad),
 			this.watch("reload",this.loadFromItem),
 			this.watch("currentId",this.selectItemByCurrentId),
-			this.watch("currentItem",this.loadFromItem)
+			this.watch("currentItem",function(prop,oldVal,newVal){
+				if(this._onChangeDelayTimer){
+					this._onChangeDelayTimer.remove();
+				}
+				this._onChangeDelayTimer = this.defer(function(){
+					this.reload = true;
+					delete this._onChangeDelayTimer;
+					this.loadFromItem(prop,oldVal,newVal);
+				},20);
+			})
 		);
 		var self = this;
 		var node, params = {};
@@ -122,7 +131,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		}
 	},
 	forcedLoad: function(){
-		this.reload = true;
 		if(this.model || this.path) {
 			// set default servicetype
 			if(!this.servicetype) {
@@ -137,6 +145,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 			this._onChangeDelayTimer.remove();
 		}
 		this._onChangeDelayTimer = this.defer(function(){
+			this.reload = true;
 			delete this._onChangeDelayTimer;
 			this.loadFromItem();
 		},20);
@@ -157,7 +166,10 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 				}
 			}
 		}
-		if(!cancel) return;
+		if(cancel) {
+			console.warn("Cancel cancelled!");
+			return;
+		}
 		switch(o.type || this.servicetype) {
 			case "model":
 				if(this.results && this.results.fired==-1) {
@@ -216,6 +228,7 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		} else {
 			console.warn("reload!",this.id);
 		}
+		console.trace()
 		// resetters
 		this._loading = true;
 		this.reload = false;
