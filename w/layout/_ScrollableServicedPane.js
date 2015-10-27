@@ -228,7 +228,6 @@ return declare("dlagua.w.layout._ScrollableServicedPane",[_LayoutWidget, _Templa
 		} else {
 			console.warn("reload!",this.id);
 		}
-		console.trace()
 		// resetters
 		this._loading = true;
 		this.reload = false;

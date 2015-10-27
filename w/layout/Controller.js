@@ -124,7 +124,7 @@ define([
 			this.destroyDescendants();
 			children = newVal.children;
 			if(children && children.length && !newVal._resolved) {
-				var data = this.resolve(this.currentItem,new JsonRest({target:"/model/Page/"}),lang.hitch(this,function(root){
+				var data = this.resolve(this.currentItem,new JsonRest({target:"model/Page/"}),lang.hitch(this,function(root){
 					this._rebuild("",null,root);
 				}));
 				array.forEach(newVal.children,function(c,i,all){ c._loadObject(function(item){

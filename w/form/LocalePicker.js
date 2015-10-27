@@ -34,11 +34,11 @@ var LocalePicker = declare("dlagua.w.form.LocalePicker", [FilteringSelect,Subscr
 		var locales = locstr.split(",");
 		var store = args.store || new JsonRest({
 			idProperty:"id",
-			target:"/model/Nls/"
+			target:"model/Nls/"
 		});
 		var pageStore = new JsonRest({
 			idProperty:"id",
-			target:"/model/Page/"
+			target:"model/Page/"
 		});
 		aspect.around(store,"query",function(oriQuery){
 			return function(query, options){

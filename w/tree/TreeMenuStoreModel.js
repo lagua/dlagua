@@ -32,7 +32,7 @@ return declare("dlagua.w.tree.TreeMenuStoreModel", [TreeStoreModel], {
 	constructor:function(args) {
 		if(!args.store) {
 			this.store = new JsonRest({
-				target:"/model/Page/"
+				target:"model/Page/"
 			});
 		}
 		this.inherited(arguments);

@@ -98,7 +98,7 @@ define([
 			this.childrenReady = 0;
 			if(this.servicetype=="model") {
 				var item = lang.mixin({},this.currentItem);
-				if(!item.service) item.service = (this.service || "/model/");
+				if(!item.service) item.service = (this.service || "model/");
 				var model = "Page";
 				var target = item.service+model+"/";
 				var schemaUri = item.service+"Class/"+model;
