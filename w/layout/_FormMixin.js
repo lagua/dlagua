@@ -83,7 +83,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 		this.inherited(arguments);
 		if(this.servicetype=="form") {
 			var item = lang.mixin({},this.currentItem);
-			if(!item.service) item.service = (this.service || "/model/");
+			if(!item.service) item.service = (this.service || "model/");
 			if(!item.model) return;
 			var model = item.model;
 			var schemaModel = this.schemaModel;
@@ -174,12 +174,13 @@ return declare("dlagua.w.layout._FormMixin", [], {
 				var path = this.currentItem.path;
 				var templatePath = this.templatePath + (this.localizedTemplate ? locale + "/" : "") + path;
 				// always get linked data
-				this.getLinkedData(schema.condition && schema.condition.links || schema.links).then(lang.hitch(this,function(data){
+				this.getLinkedData(schema).then(lang.hitch(this,function(data){
 					console.warn(data,schema.condition ? schema.condition.query : null)
 					var result = schema.condition && schema.condition.query ? jsArray.executeQuery(schema.condition.query,{},[data]) : [true];
 					var controls = jsonschema.schemaToControls(schema,data,{
 						controlmap:controlmap,
-						uri:this.store.target
+						uri:this.store.target,
+						stores:this.stores
 					});
 					if(item.bindStore){
 						this.store.bound = true;
@@ -227,7 +228,7 @@ return declare("dlagua.w.layout._FormMixin", [], {
 							this.set("message",formbundle.submitMessage);
 							var d = new Deferred();
 							if(schema.links) {
-								self.getLinkedData(schema.links,true).then(function(localData){
+								self.getLinkedData(schema,true).then(function(localData){
 									data = lang.mixin(data,localData);
 									d.resolve(data);
 								});
@@ -285,18 +286,18 @@ return declare("dlagua.w.layout._FormMixin", [], {
 									}
 								} else {
 									if(!data.locale) data.locale = item.locale;
-									self.store.put(data,{noop:true}).then(lang.hitch(this,function(data){
-										var listItem = item.preview ? this.itemnodesmap[-1] : this.itemnodesmap[0];
+									self.store.put(data,{noop:true}).then(lang.hitch(this,function(res){
 										if(item.preview) {
-											this._removeItemById(0);
+											//this._removeItemById(0);
 										}
-										listItem.containerNode = listItem.domNode;
+										this.mixeddata = this.data = data;
+										//listItem.containerNode = listItem.domNode;
 										var form = {};
 										for(var k in formbundle) {
 											form[k] = formbundle[k];
 										}
-										this.replaceChildTemplate(listItem,"",form);
-										listItem.layout();
+										this.parent.replaceChildTemplate(this,"",form);
+										this.resize();
 									}));
 								}
 							}));
@@ -365,9 +366,9 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			}));
 		}
 	},
-	getLinkedData:function(links,clear){
+	getLinkedData:function(schema,clear){
 		var dd = new Deferred();
-		links = links || {};
+		var links = schema.condition && schema.condition.links ? schema.condition.links : schema.links ? schema.links : {};
 		// assume in id has been set on the store by the previous form
 		// we set it there because its the only thing that's persisted
 		// but for persistent data it should even go to a more 'global' scope
@@ -381,19 +382,23 @@ return declare("dlagua.w.layout._FormMixin", [], {
 			all(array.map(links,function(link){
 				var d = new Deferred();
 				var store = stores[link.href];
-				if(clear && store && store.clear) store.clear();
-				if(store && store.selectedId) {
-					store.get(store.selectedId).then(function(res){
-						data[link.rel] = res[link.rel];
+				if(store){
+					if(clear && store.clear) store.clear();
+					if(store.selectedId) {
+						store.get(store.selectedId).then(function(res){
+							data[link.rel] = res[link.rel];
+							d.resolve(data);
+						});
+						if(clear) delete store.selectedId;
+					} else if(store.bound || schema.properties.hasOwnProperty(link.rel)) {
+						store.fetch().then(function(res){
+							data[link.rel] = res;
+							d.resolve(data);
+						});
+						if(clear) store.setData([]);
+					} else {
 						d.resolve(data);
-					});
-					if(clear) delete store.selectedId;
-				} else if(store && store.bound) {
-					store.fetch().then(function(res){
-						data[link.rel] = res;
-						d.resolve(data);
-					});
-					if(clear) store.setData([]);
+					}
 				} else {
 					d.resolve(data);
 				}
