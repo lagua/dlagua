@@ -647,7 +647,7 @@ return declare("dlagua.c.Renderer",[_MetaMixin],{
 	},
 	_init:function(){
 		var self = this;
-		var master = new JsonRest({target:"/model/Node/"});
+		var master = new JsonRest({target:"model/Node/"});
 		aspect.around(master,"get",function(oriGet){
 			return function(id,options){
 				options = options || {};
@@ -670,7 +670,7 @@ return declare("dlagua.c.Renderer",[_MetaMixin],{
 		});
 		var memory = new Memory();
 		this.nodeStore = new Cache(master,memory);
-		this.relStore = new JsonRest({target:"/model/Relationship/"});
+		this.relStore = new JsonRest({target:"model/Relationship/"});
 		aspect.around(this.relStore,"get",function(oriGet){
 			return function(id,options){
 				options = options || {};
@@ -705,6 +705,7 @@ return declare("dlagua.c.Renderer",[_MetaMixin],{
 					var rels = sortRels(item.outgoing_relationships);
 					var outgoing = filter ? rqlArray.query(filter,{},rels) : rels;
 					return all(outgoing.map(function(rel,index){
+						if(rel.end[self.refProperty]=="../") console.warn(rel)
 						 return when(self.nodeStore.get(rel.end[self.refProperty].replace("../Node/","")),function(node){
 							 return node;
 						 });
