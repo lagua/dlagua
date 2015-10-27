@@ -6,12 +6,8 @@
 	position:absolute;
 	z-index:2;
 }
-.dlaguaScrollableServicedPaneContainer {
-	position:absolute;
-	z-index:1;
-	cursor:move;
-	unselectable:true;
-	overflow:hidden;
+.dlaguaScrollableContainer {
+	overflow:auto;
 }
 .dlaguaScrollableServicedPaneFooter {
 	position:absolute;
