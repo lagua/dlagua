@@ -10,7 +10,7 @@ define([
 	 	startup:function(){
 	 		if(this._started) return;
 			// TODO move to domain-specific widget
-			this.addButton.set("showLabel",false);
+			/*this.addButton.set("showLabel",false);
 			this.addButton.set("iconClass","dlaguaListAddButtonIcon");
 			this.addButton.iconNode.innerHTML = "+";
 			request("/rest/resources/shirt.svg").then(lang.hitch(this,function(res){
@@ -18,7 +18,7 @@ define([
 					innerHTML:res,
 					style:"height: 230px;margin: -10px;width: 230px;"
 				},this.addButton.containerNode,"before");
-			}));
+			}));*/
 			this.inherited(arguments);
 	 	}
 	});
