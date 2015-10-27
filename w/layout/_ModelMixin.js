@@ -15,13 +15,12 @@ define([
 	"dlagua/w/layout/ScrollableServicedPaneItem",
 	"dlagua/w/layout/TemplaMixin",
 	"dlagua/c/templa/Mixin",
-	"dojox/json/ref",
+//	"dojox/json/ref",
 	"rql/query",
 	"rql/parser"
 ],function(reqr,declare,lang,array,fx,
 		query,request,aspect,domConstruct,domAttr,Deferred,when,
 		FormData,ScrollableServicedPaneItem,TemplaMixin,Mixin,
-		jsonref,
 		rqlQuery,rqlParser) {
 
 var ScrollableTemplatedPaneItem = declare("dlagua.w.layout.ScrollableTemplatedPaneItem",[ScrollableServicedPaneItem,TemplaMixin],{
@@ -71,25 +70,35 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 				headers:this.headers
 			},this.store);
 		}*/
-		// if persistent
-		if(this.store && this.store.persistent) {
-			this.stores[this.store.storeName] = this.store;
-			var results = this.store.fetch();
+		if(this.store) {
+			if(this.stores[this.store.target]){
+				var store = this.stores[this.store.target];
+				if(this.store.id == store.id){
+					// FIXME hack to enable store reuse
+					this.store = store;
+				}
+			} else {
+				this.stores[this.store.target] = this.store;
+			}
+			//var results = this.store.fetch();
 			if(this.template) {
 				this._fetchTpl(this.template).then(lang.hitch(this,function(tpl){
 					this.parseTemplate(tpl).then(lang.hitch(this,function(tplo){
 						this._tplo = tplo;
-						results.forEach(this.addItem,this);
+						//results.forEach(this.addItem,this);
 					}));
 				}));
 			}
 			this.own(
-				this.store.track("add, update, delete",lang.hitch(this,function(evt){
+				this.store.on("add,update,delete",lang.hitch(this,function(evt){
 					if(evt.type == "delete"){
-						this._removeItemById(evt.target[this.idProperty]);
-					} else {
-						this.addItem(evt.target);
-						this.currentId = evt.target[this.idProperty];
+						this._removeItemById(evt[this.idProperty]);
+					} else if(evt.type == "add"){
+						var ret = typeof evt.target == "object" ? new Deferred().resolve(evt.target) : this.store.get(evt.target,{noop:true}) 
+						ret.then(lang.hitch(this,function(item){
+							this.addItem(item);
+							this.currentId = item[this.idProperty];
+						}));
 					}
 				})),
 				this.watch("newItem",function(name,oldItem,item){
@@ -231,6 +240,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 			// reset if triggered by currentItem
 			if(arguments.length>0) {
 				this.sort = "";
+				if(item.sort) this.sort = item.sort;
 				this.filter = "";
 				if(item.filter) this.orifilter = this.filter = item.filter;
 				if(this.orifilters) this.filters = this.orifilters;
@@ -288,6 +298,7 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 					this.parseTemplate(tpl,partials).then(lang.hitch(this,function(tplo){
 						this._tplo = tplo;
 						var q = this.createQuery();
+						q = q === "" ? null : q;
 						var start = this.start;
 						this.start += this.count;
 						var results = this.results = this.store.query(q,{
@@ -296,7 +307,8 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 							useXDomain:this.useXDomain
 						});
 						if(!this.useItemChildren){
-							results.total.then(lang.hitch(this,function(total){
+							var tot = typeof results.total == "number" ? new Deferred().resolve(results.total) : results.total;
+							tot.then(lang.hitch(this,function(total){
 								this.total = parseInt(total,10);
 								if(this.total===0 || isNaN(this.total)) this.ready();
 							}));
@@ -307,16 +319,6 @@ return declare("dlagua.w.layout._ModelMixin", [], {
 								var children = res.length && res[0].children ? res[0].children : [];
 								this.total = children.length;
 								if(this.total===0 || isNaN(this.total)) this.ready();
-								//var refattr = jsonref.refAttribute = this.refAttribute;//"$ref";
-								/*var store = this.store;
-								var item = jsonref.resolveJson(res[0],{
-									loader:function(callback,d){
-										store.get(this[refattr]).then(function(item){
-											callback(item,d);
-										});
-									}
-								});*/
-
 								item.children.forEach(this.addItem,this);
 							}));
 						}
